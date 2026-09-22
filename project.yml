@@ -23,7 +23,18 @@ targets:
     sources:
       - path: IME/PrefsPane
       - path: Shared/Config/IMEAppearancePrefs.swift
+      - path: Shared/Config/RimeBehaviorPrefs.swift
+      - path: Shared/Config/RimeResourceDeployer.swift
+      - path: Shared/Config/AppGroupPaths.swift
       - path: Shared/Prefs/IMESettingsControls.swift
+      - path: Shared/Prefs/CandidatePreviewPanelController.swift
+      - path: Shared/Prefs/RoundedChromeView.swift
+      # 设置面板标题旁圆角品牌图
+      - path: Shared/Brand/BrandIconRounded.png
+        buildPhase: resources
+      - path: Shared/Brand/SettingsLogo.png
+        buildPhase: resources
+      - path: Shared/Brand/BrandIcon.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cn.kylebing.inputmethod.meifengwubi.Preferences
@@ -32,7 +43,7 @@ targets:
         INFOPLIST_FILE: IME/PrefsPane/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "5"
         SKIP_INSTALL: YES
         DEFINES_MODULE: YES
     dependencies:
@@ -47,13 +58,18 @@ targets:
         excludes:
           - "*.iconset"
           - "PrefsPane"
-          # 源 PNG 仅作制作素材；打包只用预合成的 ime.tiff，避免 Xcode TiffUtil 冲突
+          # 源 PNG 仅作制作素材；打包使用三份按用途命名的 TIFF
           - "ime.png"
           - "ime@1x.png"
           - "ime@2x.png"
+          - "ime64.png"
+          - "ime128.png"
       - path: Shared
       - path: Resources/Rime
         type: folder
+        buildPhase: resources
+      # 与主 App 共用桌面图标，便于在「输入法」目录识别
+      - path: App/AppIcon.icns
         buildPhase: resources
     settings:
       base:
@@ -62,8 +78,9 @@ targets:
         INFOPLIST_FILE: IME/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "5"
         SKIP_INSTALL: YES
+        # 输入法为 UIElement，Dock 不显示；仍带 icns 供 Finder 识别
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
         LIBRARY_SEARCH_PATHS:
           - "$(inherited)"
@@ -98,6 +115,8 @@ targets:
     platform: macOS
     sources:
       - path: App
+        excludes:
+          - "*.iconset"
       - path: Shared
       - path: Resources/Rime
         type: folder
@@ -109,8 +128,8 @@ targets:
         INFOPLIST_FILE: App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
-        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        CURRENT_PROJECT_VERSION: "5"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LIBRARY_SEARCH_PATHS:
           - "$(inherited)"
           - "$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64"
@@ -134,4 +153,6 @@ targets:
           set -e
           DEST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
           mkdir -p "$DEST"
-          rsync -a --delete "${BUILT_PRODUCTS_DIR}/MeifengWubiIME.app" "$DEST/"
+          # 非 .app 后缀可防止宿主中的安装载荷被系统重复识别为输入法
+          rm -rf "$DEST/MeifengWubiIME.app"
+          rsync -a --delete "${BUILT_PRODUCTS_DIR}/MeifengWubiIME.app/" "$DEST/MeifengWubiIME.payload/"

@@ -10,6 +10,8 @@ final class MeifengInputController: IMKInputController {
     private var asciiMode = false
     private var shiftIsSticky = false
     private var sawOtherKeyWithShift = false
+    // 强引用，避免设置窗口闪一下被释放
+    private var preferencesWindowController: MeifengPreferencesWindowController?
 
     private func log(_ msg: String) {
         let line = "\(ISO8601DateFormatter().string(from: Date())) \(msg)\n"
@@ -203,22 +205,43 @@ final class MeifengInputController: IMKInputController {
             panel.hide()
             return
         }
-        let origin = caretScreenOrigin()
-        panel.show(candidates: Array(texts.prefix(IMEAppearancePrefs.pageSize)), preedit: preedit, origin: origin) { [weak self] idx in
+        // 用整段编码的屏幕范围定位，让候选窗从编码左侧正下方开始
+        let caret = markedTextScreenRect(preedit: preedit)
+        panel.show(candidates: Array(texts.prefix(IMEAppearancePrefs.pageSize)), preedit: preedit, caretRect: caret) { [weak self] idx in
             _ = self?.selectCandidate(index: idx)
         }
     }
 
-    private func caretScreenOrigin() -> NSPoint {
+    /// 当前下划线编码（marked text）的屏幕矩形，供候选窗定位到编码下方
+    private func markedTextScreenRect(preedit: String) -> NSRect {
         guard let client = currentClient ?? (client() as? IMKTextInput) else {
-            return NSEvent.mouseLocation
+            let p = NSEvent.mouseLocation
+            return NSRect(x: p.x, y: p.y, width: 0, height: 16)
         }
-        var rect = NSRect.zero
-        client.attributes(forCharacterIndex: 0, lineHeightRectangle: &rect)
-        if rect.origin.x == 0, rect.origin.y == 0, rect.width == 0 {
-            return NSEvent.mouseLocation
+
+        var start = NSRect.zero
+        _ = client.attributes(forCharacterIndex: 0, lineHeightRectangle: &start)
+
+        // 无有效几何时退回鼠标
+        if start.origin.x == 0, start.origin.y == 0, start.width == 0, start.height == 0 {
+            let p = NSEvent.mouseLocation
+            return NSRect(x: p.x, y: p.y, width: 0, height: 16)
         }
-        return rect.origin
+
+        // 取编码末字符位置，拼出整段 preedit 宽度
+        let utf16Len = preedit.utf16.count
+        if utf16Len > 1 {
+            var end = NSRect.zero
+            _ = client.attributes(forCharacterIndex: utf16Len - 1, lineHeightRectangle: &end)
+            if end.width > 0 || end.height > 0 {
+                let minX = min(start.origin.x, end.origin.x)
+                let maxX = max(start.origin.x + max(start.width, 1), end.origin.x + max(end.width, 1))
+                let minY = min(start.origin.y, end.origin.y)
+                let maxY = max(start.origin.y + start.height, end.origin.y + end.height)
+                return NSRect(x: minX, y: minY, width: max(maxX - minX, 1), height: max(maxY - minY, 16))
+            }
+        }
+        return start
     }
 
     private func insertText(_ string: String) {
@@ -281,46 +304,29 @@ final class MeifengInputController: IMKInputController {
 
     override func menu() -> NSMenu! {
         let menu = NSMenu(title: "玫枫五笔")
-
-        let mode = NSMenuItem(
-            title: asciiMode ? "切换到中文" : "切换到英文",
-            action: #selector(toggleAscii),
-            keyEquivalent: ""
-        )
-        mode.target = self
-        menu.addItem(mode)
-        menu.addItem(.separator())
-
-        // 候选方向（对齐系统输入法菜单快捷项）
-        let orient = NSMenuItem(title: "候选方向", action: nil, keyEquivalent: "")
-        let orientMenu = NSMenu(title: "候选方向")
-        let hItem = NSMenuItem(title: "水平", action: #selector(setOrientationHorizontal), keyEquivalent: "")
-        hItem.target = self
-        hItem.state = IMEAppearancePrefs.orientation == .horizontal ? .on : .off
-        let vItem = NSMenuItem(title: "垂直", action: #selector(setOrientationVertical), keyEquivalent: "")
-        vItem.target = self
-        vItem.state = IMEAppearancePrefs.orientation == .vertical ? .on : .off
-        orientMenu.addItem(hItem)
-        orientMenu.addItem(vItem)
-        orient.submenu = orientMenu
-        menu.addItem(orient)
-
-        let larger = NSMenuItem(title: "增大字号", action: #selector(increaseFont), keyEquivalent: "")
-        larger.target = self
-        menu.addItem(larger)
-        let smaller = NSMenuItem(title: "减小字号", action: #selector(decreaseFont), keyEquivalent: "")
-        smaller.target = self
-        menu.addItem(smaller)
-        menu.addItem(.separator())
-
-        // showPreferences: 由 IMK 调用 PreferencesWindowController
+        // 菜单栏只保留设置入口；方向/字号等在设置窗口里改
         let prefs = NSMenuItem(
             title: "玫枫五笔设置…",
-            action: #selector(showPreferences(_:)),
+            action: #selector(openPreferences(_:)),
             keyEquivalent: ","
         )
+        prefs.target = self
         menu.addItem(prefs)
         return menu
+    }
+
+    /// 菜单栏「设置」入口（绕过仅依赖 nib / 空 window 的默认实现）
+    @objc func openPreferences(_ sender: Any?) {
+        log("openPreferences")
+        showPreferences(sender)
+    }
+
+    override func showPreferences(_ sender: Any!) {
+        log("showPreferences")
+        if preferencesWindowController == nil {
+            preferencesWindowController = MeifengPreferencesWindowController()
+        }
+        preferencesWindowController?.showWindow(sender)
     }
 
     @objc private func toggleAscii() {
@@ -331,21 +337,4 @@ final class MeifengInputController: IMKInputController {
             clearMarkedText()
         }
     }
-
-    @objc private func setOrientationHorizontal() {
-        IMEAppearancePrefs.orientation = .horizontal
-    }
-
-    @objc private func setOrientationVertical() {
-        IMEAppearancePrefs.orientation = .vertical
-    }
-
-    @objc private func increaseFont() {
-        IMEAppearancePrefs.fontSize = min(24, IMEAppearancePrefs.fontSize + 1)
-    }
-
-    @objc private func decreaseFont() {
-        IMEAppearancePrefs.fontSize = max(11, IMEAppearancePrefs.fontSize - 1)
-    }
-
 }

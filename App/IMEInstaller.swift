@@ -14,7 +14,7 @@ enum IMEInstaller {
 
     static func statusText() -> String {
         let exists = FileManager.default.fileExists(atPath: installedIMEURL.path)
-        let enabled = isEnabledInPrefs()
+        let enabled = isModeEnabled()
         if exists && enabled {
             return "已安装且已启用（系统设置 → 键盘 → 输入法 → 简体中文 → 玫枫五笔）"
         }
@@ -25,9 +25,9 @@ enum IMEInstaller {
     }
 
     static func copyEmbeddedIME() throws {
-        guard let embedded = Bundle.main.url(forResource: "MeifengWubiIME", withExtension: "app") else {
+        guard let embedded = Bundle.main.url(forResource: "MeifengWubiIME", withExtension: "payload") else {
             throw NSError(domain: "IMEInstaller", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "宿主包内找不到 MeifengWubiIME.app，请先完整编译 MeifengWubi 目标"
+                NSLocalizedDescriptionKey: "宿主包内找不到 MeifengWubiIME.payload，请先完整编译 MeifengWubi 目标"
             ])
         }
         let fm = FileManager.default
@@ -55,7 +55,6 @@ enum IMEInstaller {
     static func finishInstallOnMain() {
         precondition(Thread.isMainThread, "finishInstallOnMain 必须在主线程")
         registerInputSource(at: installedIMEURL)
-        enableInSystemPreferences()
         _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
         switch RimeConfigDeploy.deployNow() {
         case .success: NSLog("[MeifengWubi] pre-deploy ok")
@@ -66,7 +65,6 @@ enum IMEInstaller {
         killAgent.arguments = ["TextInputMenuAgent"]
         try? killAgent.run()
         killAgent.waitUntilExit()
-        NSWorkspace.shared.open(installedIMEURL)
     }
 
     static func installEmbeddedIME() throws {
@@ -80,11 +78,10 @@ enum IMEInstaller {
     }
 
     private static func unregisterBuildProductCopies() {
+        let fm = FileManager.default
         let candidates = [
             "build/DerivedDataRelease/Build/Products/Release/MeifengWubiIME.app",
-            "build/DerivedDataRelease/Build/Products/Release/MeifengWubi.app/Contents/Resources/MeifengWubiIME.app",
             "build/DerivedData/Build/Products/Debug/MeifengWubiIME.app",
-            "build/DerivedData/Build/Products/Debug/MeifengWubi.app/Contents/Resources/MeifengWubiIME.app"
         ]
         let roots = [
             FileManager.default.homeDirectoryForCurrentUser
@@ -94,12 +91,22 @@ enum IMEInstaller {
         for root in roots {
             for rel in candidates { paths.insert(root + "/" + rel) }
         }
-        if let embedded = Bundle.main.url(forResource: "MeifengWubiIME", withExtension: "app") {
-            paths.insert(embedded.path)
+        // Xcode 默认 DerivedData 中的副本也会被系统注册，需一并注销以免输入源重复
+        let derivedDataRoot = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Developer/Xcode/DerivedData")
+        if let enumerator = fm.enumerator(
+            at: derivedDataRoot,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) {
+            for case let url as URL in enumerator where url.lastPathComponent == "MeifengWubiIME.app" {
+                paths.insert(url.path)
+                enumerator.skipDescendants()
+            }
         }
         for path in paths {
             guard path != installedIMEURL.path,
-                  FileManager.default.fileExists(atPath: path) else { continue }
+                  fm.fileExists(atPath: path) else { continue }
             let task = Process()
             task.executableURL = URL(fileURLWithPath: lsregisterPath)
             task.arguments = ["-u", path]
@@ -110,75 +117,60 @@ enum IMEInstaller {
 
     private static func registerInputSource(at url: URL) {
         precondition(Thread.isMainThread, "TIS 必须在主线程")
+        removeLegacyPreferenceEntries()
         _ = TISRegisterInputSource(url as CFURL)
 
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: lsregisterPath)
-        task.arguments = ["-f", "-trusted", url.path]
-        try? task.run()
-        task.waitUntilExit()
-
-        // 只 Enable 五笔 mode 一次（供「简体中文」分类与菜单栏使用）
-        var didMode = false
-        if let list = TISCreateInputSourceList(nil, true)?.takeRetainedValue() as? [TISInputSource] {
-            for src in list {
-                guard let bp = TISGetInputSourceProperty(src, kTISPropertyBundleID) else { continue }
-                let bid = "\(Unmanaged<CFTypeRef>.fromOpaque(bp).takeUnretainedValue())"
-                guard bid == bundleId else { continue }
-                let iid: String = {
-                    guard let ip = TISGetInputSourceProperty(src, kTISPropertyInputSourceID) else { return "" }
-                    return "\(Unmanaged<CFTypeRef>.fromOpaque(ip).takeUnretainedValue())"
-                }()
-                if iid == modeId, !didMode {
-                    _ = TISEnableInputSource(src)
-                    didMode = true
-                    NSLog("[MeifengWubi] enabled mode %@", modeId)
-                }
-            }
+        // 注册后再次清理缓存，只启用一个可选择的五笔模式
+        let sources = registeredSources()
+        sources.forEach { _ = TISDisableInputSource($0) }
+        if let mode = sources.first(where: { inputSourceID($0) == modeId }) {
+            _ = TISEnableInputSource(mode)
+            NSLog("[MeifengWubi] enabled mode %@", modeId)
         }
     }
 
-    /// 写 Input Mode + Keyboard Input Method（与系统拼音一致，否则「+」列表可能看不到）
-    static func enableInSystemPreferences() {
-        let modeEntry: [String: Any] = [
-            "Bundle ID": bundleId,
-            "Input Mode": modeId,
-            "InputSourceKind": "Input Mode"
-        ]
-        let methodEntry: [String: Any] = [
-            "Bundle ID": bundleId,
-            "InputSourceKind": "Keyboard Input Method"
-        ]
-
-        var enabled = CFPreferencesCopyAppValue(
-            "AppleEnabledInputSources" as CFString, hiToolbox
-        ) as? [[String: Any]]
-        if enabled == nil {
-            let plistURL = FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent("Library/Preferences/com.apple.HIToolbox.plist")
-            if let dict = NSDictionary(contentsOf: plistURL) as? [String: Any],
-               let list = dict["AppleEnabledInputSources"] as? [[String: Any]] {
-                enabled = list
-            }
+    private static func removeLegacyPreferenceEntries() {
+        // 旧版本手工写入 HIToolbox，与 TISEnableInputSource 的第三方记录叠加后会显示重复项
+        for key in ["AppleEnabledInputSources", "AppleSelectedInputSources"] {
+            guard let entries = CFPreferencesCopyValue(
+                key as CFString,
+                hiToolbox,
+                kCFPreferencesCurrentUser,
+                kCFPreferencesAnyHost
+            ) as? [[String: Any]] else { continue }
+            let filtered = entries.filter { ($0["Bundle ID"] as? String) != bundleId }
+            CFPreferencesSetValue(
+                key as CFString,
+                filtered as CFArray,
+                hiToolbox,
+                kCFPreferencesCurrentUser,
+                kCFPreferencesAnyHost
+            )
         }
-        var list = (enabled ?? []).filter { ($0["Bundle ID"] as? String) != bundleId }
-        list.append(modeEntry)
-        list.append(methodEntry)
-
-        CFPreferencesSetAppValue(
-            "AppleEnabledInputSources" as CFString, list as CFArray, hiToolbox
-        )
-        CFPreferencesAppSynchronize(hiToolbox)
-        NSLog("[MeifengWubi] HIToolbox entries=%d", list.count)
+        CFPreferencesSynchronize(hiToolbox, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
     }
 
-    static func isEnabledInPrefs() -> Bool {
-        if let enabled = CFPreferencesCopyAppValue(
-            "AppleEnabledInputSources" as CFString, hiToolbox
-        ) as? [[String: Any]] {
-            return enabled.contains { ($0["Bundle ID"] as? String) == bundleId }
+    private static func registeredSources(includeAllInstalled: Bool = true) -> [TISInputSource] {
+        guard let list = TISCreateInputSourceList(nil, includeAllInstalled)?
+            .takeRetainedValue() as? [TISInputSource] else {
+            return []
         }
-        return false
+        return list.filter { inputSourceProperty($0, key: kTISPropertyBundleID) == bundleId }
+    }
+
+    private static func inputSourceID(_ source: TISInputSource) -> String {
+        inputSourceProperty(source, key: kTISPropertyInputSourceID)
+    }
+
+    private static func inputSourceProperty(_ source: TISInputSource, key: CFString) -> String {
+        guard let pointer = TISGetInputSourceProperty(source, key) else { return "" }
+        return "\(Unmanaged<CFTypeRef>.fromOpaque(pointer).takeUnretainedValue())"
+    }
+
+    static func isModeEnabled() -> Bool {
+        registeredSources(includeAllInstalled: false).contains {
+            inputSourceID($0) == modeId
+        }
     }
 
     static func openInputSourcesPrefs() {

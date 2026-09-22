@@ -19,7 +19,10 @@ struct MeifengWubiApp: App {
         // 系统「设置」菜单 / 标准偏好窗口
         Settings {
             CandidatePrefsView()
-                .frame(width: 440, height: 320)
+                .frame(
+                    width: IMESettingsControls.preferredWindowSize.width,
+                    height: IMESettingsControls.preferredWindowSize.height
+                )
         }
     }
 }

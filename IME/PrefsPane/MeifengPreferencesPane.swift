@@ -5,7 +5,7 @@ import AppKit
 @objc(MeifengPreferencesPane)
 final class MeifengPreferencesPane: NSPreferencePane {
     override func loadMainView() -> NSView {
-        let view = IMESettingsControls.makeFormView(width: 468)
+        let view = IMESettingsControls.makeFormView(size: IMESettingsControls.preferredWindowSize)
         mainView = view
         return view
     }

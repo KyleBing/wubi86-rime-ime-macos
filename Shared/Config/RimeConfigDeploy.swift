@@ -41,6 +41,10 @@ enum RimeConfigDeploy {
         do {
             _ = try RimeFileStore.clearAll()
             _ = try RimeResourceDeployer.forceSyncBundledResources(overwriteUserDict: true)
+            // 复位后按当前行为偏好重写 custom.yaml
+            if let err = RimeBehaviorPrefs.persist() {
+                return .failure(err)
+            }
             // 清完后必须全量部署，否则键盘无候选
             return deployNow()
         } catch {

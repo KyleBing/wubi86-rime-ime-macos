@@ -12,10 +12,21 @@ struct SetupView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 20) {
-            Text("玫枫五笔")
-                .font(.system(size: 28, weight: .bold))
-            Text("原生 macOS 输入法 · 无皮肤配置 · 系统朴素候选条")
-                .foregroundStyle(.secondary)
+            HStack(spacing: 14) {
+                // 圆角品牌图（桌面图标另用 1024 方图）
+                if let brand = BrandIcon.image() {
+                    Image(nsImage: brand)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 64, height: 64)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("玫枫五笔")
+                        .font(.system(size: 28, weight: .bold))
+                    Text("原生 macOS 输入法 · 无皮肤配置 · 系统朴素候选条")
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             GroupBox("输入法安装") {
                 VStack(alignment: .leading, spacing: 12) {
@@ -39,8 +50,9 @@ struct SetupView: View {
                     Text("方向、字号、序号等（类似系统中文输入法选项）")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    NavigationLink("打开候选栏设置") {
-                        CandidatePrefsView()
+                    // 完整设置页自带左侧栏，必须用独立大尺寸窗口承载。
+                    Button("打开输入法设置") {
+                        goCandidatePrefs = true
                     }
                 }
                 .padding(4)
@@ -77,15 +89,20 @@ struct SetupView: View {
         }
         .padding(24)
         .sheet(isPresented: $goCandidatePrefs) {
-            NavigationStack {
-                CandidatePrefsView()
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("完成") { goCandidatePrefs = false }
-                        }
+            CandidatePrefsView()
+                .frame(
+                    minWidth: IMESettingsControls.minWindowSize.width,
+                    minHeight: IMESettingsControls.minWindowSize.height
+                )
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("完成") { goCandidatePrefs = false }
                     }
-            }
-            .frame(width: 460, height: 340)
+                }
+                .frame(
+                    width: IMESettingsControls.preferredWindowSize.width,
+                    height: IMESettingsControls.preferredWindowSize.height
+                )
         }
         }
         .onAppear {

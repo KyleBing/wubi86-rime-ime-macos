@@ -16,22 +16,58 @@
 	<string>玫枫五笔</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- Finder「输入法」目录展示用（与主 App 同款） -->
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
-	<key>LSBackgroundOnly</key>
-	<true/>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>LSHasLocalizedDisplayName</key>
-	<true/>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>TICapsLockLanguageSwitchCapable</key>
-	<true/>
+	<key>ComponentInputModeDict</key>
+	<dict>
+		<key>tsInputModeListKey</key>
+		<dict>
+			<key>cn.kylebing.inputmethod.meifengwubi.wubi</key>
+			<dict>
+				<key>TISIconLabels</key>
+				<dict>
+					<!-- 无图标时的文字回退；正式名称走 InfoPlist.strings -->
+					<key>Primary</key>
+					<string>玫枫</string>
+				</dict>
+				<key>TISInputSourceID</key>
+				<string>cn.kylebing.inputmethod.meifengwubi.wubi</string>
+				<key>TISIntendedLanguage</key>
+				<string>zh-Hans</string>
+				<!-- 状态栏：桌面枫叶图的 16/32 px 模板 TIFF -->
+				<key>tsInputModeMenuIconFileKey</key>
+				<string>ime-menu.tiff</string>
+				<key>tsInputModeAlternateMenuIconFileKey</key>
+				<string>ime-menu.tiff</string>
+				<!-- Fn/地球键切换器通常读取模式的面板图标 -->
+				<key>tsInputModePaletteIconFileKey</key>
+				<string>ime-fn.tiff</string>
+				<key>tsInputModeCharacterRepertoireKey</key>
+				<array>
+					<string>Hans</string>
+					<string>Latn</string>
+				</array>
+				<key>tsInputModeDefaultStateKey</key>
+				<true/>
+				<key>tsInputModeIsVisibleKey</key>
+				<true/>
+				<!-- 与系统五笔一致：不抢简体中文主输入法位，避免切换异常 -->
+				<key>tsInputModePrimaryInScriptKey</key>
+				<false/>
+				<key>tsInputModeScriptKey</key>
+				<string>smSimpChinese</string>
+			</dict>
+		</dict>
+		<key>tsVisibleInputModeOrderedArrayKey</key>
+		<array>
+			<string>cn.kylebing.inputmethod.meifengwubi.wubi</string>
+		</array>
+	</dict>
 	<key>InputMethodConnectionName</key>
 	<string>MeifengWubi_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>
@@ -40,61 +76,43 @@
 	<string>MeifengInputController</string>
 	<key>InputMethodServerPreferencesWindowControllerClass</key>
 	<string>MeifengPreferencesWindowController</string>
+	<key>LSBackgroundOnly</key>
+	<false/>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>TICapsLockLanguageSwitchCapable</key>
+	<true/>
+	<!-- 桌面提供的图标是黑色透明模板，由系统按明暗背景自动着色 -->
+	<key>TISIconIsTemplate</key>
+	<true/>
+	<key>TISIconLabels</key>
+	<dict>
+		<key>Primary</key>
+		<string>玫枫</string>
+	</dict>
 	<key>TISInputSourceID</key>
 	<string>cn.kylebing.inputmethod.meifengwubi</string>
+	<key>TISIntendedLanguage</key>
+	<string>zh-Hans</string>
 	<key>tsInputMethodCharacterRepertoireKey</key>
 	<array>
 		<string>Hans</string>
 		<string>Latn</string>
 	</array>
+	<!-- Input Sources 列表使用方法级图标 -->
 	<key>tsInputMethodIconFileKey</key>
-	<string>ime.tiff</string>
-	<key>TISIconLabels</key>
-	<dict>
-		<key>Primary</key>
-		<string>五</string>
-	</dict>
-	<!-- 单模式挂到简体中文，才能在 Input Sources「+」里选到 -->
-	<key>ComponentInputModeDict</key>
-	<dict>
-		<key>tsInputModeListKey</key>
-		<dict>
-			<key>cn.kylebing.inputmethod.meifengwubi.wubi</key>
-			<dict>
-				<key>TISInputSourceID</key>
-				<string>cn.kylebing.inputmethod.meifengwubi.wubi</string>
-				<key>TISIntendedLanguage</key>
-				<string>zh-Hans</string>
-				<key>TISIconLabels</key>
-				<dict>
-					<key>Primary</key>
-					<string>五</string>
-				</dict>
-				<key>tsInputModeDefaultStateKey</key>
-				<true/>
-				<key>tsInputModeIsVisibleKey</key>
-				<true/>
-				<key>tsInputModeMenuIconFileKey</key>
-				<string>ime.tiff</string>
-				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>ime.tiff</string>
-				<key>tsInputModePaletteIconFileKey</key>
-				<string>ime.tiff</string>
-				<key>tsInputModePrimaryInScriptKey</key>
-				<true/>
-				<key>tsInputModeScriptKey</key>
-				<string>smSimpChinese</string>
-				<key>tsInputModeCharacterRepertoireKey</key>
-				<array>
-					<string>Hans</string>
-					<string>Latn</string>
-				</array>
-			</dict>
-		</dict>
-		<key>tsVisibleInputModeOrderedArrayKey</key>
-		<array>
-			<string>cn.kylebing.inputmethod.meifengwubi.wubi</string>
-		</array>
-	</dict>
+	<string>ime-input-source.tiff</string>
+	<key>tsInputMethodAlternateIconFileKey</key>
+	<string>ime-menu.tiff</string>
+	<key>tsInputMethodPaletteIconFileKey</key>
+	<string>ime-fn.tiff</string>
 </dict>
 </plist>

@@ -82,16 +82,10 @@ enum IMEAppearancePrefs {
         }
     }
 
-    // 每页候选数
+    // 每页候选数（写入 Rime menu/page_size，见 RimeBehaviorPrefs）
     static var pageSize: Int {
-        get {
-            let v = defaults.integer(forKey: Keys.pageSize)
-            return v > 0 ? min(9, max(3, v)) : 9
-        }
-        set {
-            defaults.set(min(9, max(3, newValue)), forKey: Keys.pageSize)
-            notify()
-        }
+        get { RimeBehaviorPrefs.pageSize }
+        set { RimeBehaviorPrefs.pageSize = newValue }
     }
 
     // 是否显示候选序号
@@ -119,7 +113,6 @@ enum IMEAppearancePrefs {
         static let fontSize = "candidate.fontSize"
         static let fontName = "candidate.fontName"
         static let showPreedit = "candidate.showPreedit"
-        static let pageSize = "candidate.pageSize"
         static let showIndex = "candidate.showIndex"
     }
 }

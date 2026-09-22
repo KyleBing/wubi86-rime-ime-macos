@@ -41,6 +41,12 @@ paging_with_brackets:
     - { when: paging, accept: bracketleft, send: Page_Up }
     - { when: has_menu, accept: bracketright, send: Page_Down }
 
+# 分号 / 引号快速选第 2、第 3 候选（send 数字键走 selector）
+select_2nd_3rd_with_semicolon_apostrophe:
+  __append:
+    - { when: has_menu, accept: semicolon, send: 2 }
+    - { when: has_menu, accept: apostrophe, send: 3 }
+
 numbered_mode_switch:
   __append:
     - { when: always, accept: Control+Shift+1, select: .next }

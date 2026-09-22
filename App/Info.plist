@@ -16,6 +16,9 @@
 	<string>玫枫五笔</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- 桌面 / Dock / Finder 使用 1024 源图生成的 icns -->
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>

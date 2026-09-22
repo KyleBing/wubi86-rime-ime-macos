@@ -6,7 +6,7 @@ enum RimeResourceDeployer {
     static let schemaFileName = "wubi86_jidian.schema.yaml"
     static let resourceVersionKey = "rime.resource.version"
     // 升版本以强制覆盖同步内置方案（修 charset / history_translator 等）
-    static let bundledResourceVersion = "4"
+    static let bundledResourceVersion = "6"
 
     /// 内置 Resources/Rime 目录
     static var bundledRimeURL: URL? {
@@ -74,7 +74,9 @@ enum RimeResourceDeployer {
             let isUserDict = name.hasPrefix("wubi86_jidian_user")
             // 扩展词库可能已从线上拉取，常规同步不要覆盖；复位时 overwriteUserDict=true 会恢复内置
             let isExtraDict = name == "wubi86_jidian_extra.dict.yaml"
-            if (isUserDict || isExtraDict), !overwriteUserDict, fm.fileExists(atPath: dest.path) {
+            // 用户通过设置改过的 default.custom.yaml 常规同步保留
+            let isUserCustom = name == "default.custom.yaml"
+            if (isUserDict || isExtraDict || isUserCustom), !overwriteUserDict, fm.fileExists(atPath: dest.path) {
                 continue
             }
             if fm.fileExists(atPath: dest.path) {

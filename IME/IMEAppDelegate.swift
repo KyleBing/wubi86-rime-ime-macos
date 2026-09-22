@@ -9,6 +9,8 @@ private let log = Logger(subsystem: "cn.kylebing.inputmethod.meifengwubi", categ
 enum MeifengIMEMain {
     static func main() {
         let app = NSApplication.shared
+        // accessory：无 Dock，但允许设置窗口置前（勿用 prohibited / LSBackgroundOnly）
+        app.setActivationPolicy(.accessory)
         let delegate = IMEAppDelegate()
         app.delegate = delegate
         // IMK 要求尽早建立连接名，不要等 run loop 空转
@@ -35,6 +37,14 @@ final class IMEAppDelegate: NSObject, NSApplicationDelegate {
         // 双保险：若 main 已建好则跳过
         if server == nil {
             startServer()
+            _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
+        }
+        // 设置页改了 page_size / 翻页键后立即 redeploy
+        DistributedNotificationCenter.default().addObserver(
+            forName: RimeBehaviorPrefs.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
             _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
         }
         Self.appendLaunchLog("applicationDidFinishLaunching")
