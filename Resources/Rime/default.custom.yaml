@@ -1,0 +1,7 @@
+patch:
+  schema_list:
+    - schema: wubi86_jidian
+    # 反查依赖，需一并部署
+    - schema: pinyin_simp
+  menu:
+    page_size: 9

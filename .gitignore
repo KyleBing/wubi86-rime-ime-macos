@@ -1,0 +1,16 @@
+# macOS / Xcode
+.DS_Store
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+.idea/
+
+# Build products
+build/
+DerivedData/
+
+# Misc
+*.log
+*.tmp
+.claude/

@@ -1,0 +1,139 @@
+name: MeifengWubi
+options:
+  bundleIdPrefix: cn.kylebing
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    CLANG_ENABLE_MODULES: YES
+    CLANG_ENABLE_OBJC_ARC: YES
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 4J6QFDHMK2
+
+targets:
+  MeifengWubiPrefs:
+    type: bundle
+    platform: macOS
+    sources:
+      - path: IME/PrefsPane
+      - path: Shared/Config/IMEAppearancePrefs.swift
+      - path: Shared/Prefs/IMESettingsControls.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cn.kylebing.inputmethod.meifengwubi.Preferences
+        PRODUCT_NAME: Preferences
+        WRAPPER_EXTENSION: prefPane
+        INFOPLIST_FILE: IME/PrefsPane/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SKIP_INSTALL: YES
+        DEFINES_MODULE: YES
+    dependencies:
+      - sdk: AppKit.framework
+      - sdk: PreferencePanes.framework
+
+  MeifengWubiIME:
+    type: application
+    platform: macOS
+    sources:
+      - path: IME
+        excludes:
+          - "*.iconset"
+          - "PrefsPane"
+      - path: Shared
+      - path: Resources/Rime
+        type: folder
+        buildPhase: resources
+      - path: IME/ime.pdf
+        buildPhase: resources
+      - path: IME/ime.png
+        buildPhase: resources
+      - path: IME/ime.tiff
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cn.kylebing.inputmethod.meifengwubi
+        PRODUCT_NAME: MeifengWubiIME
+        INFOPLIST_FILE: IME/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        LIBRARY_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64"
+        HEADER_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/Vendor/librime-headers"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-lrime"
+          - "-lc++"
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Engine/Meifeng-Bridging-Header.h
+    dependencies:
+      - target: MeifengWubiPrefs
+        embed: false
+        link: false
+      - sdk: InputMethodKit.framework
+      - sdk: AppKit.framework
+      - sdk: Carbon.framework
+    postBuildScripts:
+      - name: Embed Preferences.prefPane
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          DEST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+          mkdir -p "$DEST"
+          # 系统「输入法」设置页会加载 Resources/Preferences.prefPane
+          rsync -a --delete "${BUILT_PRODUCTS_DIR}/Preferences.prefPane" "$DEST/"
+
+  MeifengWubi:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Shared
+      - path: Resources/Rime
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cn.kylebing.wubi86rime.macos
+        PRODUCT_NAME: MeifengWubi
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        LIBRARY_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64"
+        HEADER_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/Vendor/librime-headers"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-lrime"
+          - "-lc++"
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Engine/Meifeng-Bridging-Header.h
+    dependencies:
+      - target: MeifengWubiIME
+        embed: false
+        link: false
+      - sdk: AppKit.framework
+    postBuildScripts:
+      - name: Embed IME into App Resources
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          DEST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+          mkdir -p "$DEST"
+          rsync -a --delete "${BUILT_PRODUCTS_DIR}/MeifengWubiIME.app" "$DEST/"
