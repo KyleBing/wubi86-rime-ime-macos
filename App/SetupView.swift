@@ -65,8 +65,8 @@ struct SetupView: View {
             GroupBox("使用说明") {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("1. 点「安装 / 更新输入法」后，到「系统设置 → 键盘 → 输入法」。")
-                    Text("2. 列表里找「玫枫五笔」或英文名「Meifeng Wubi」（不是鼠须管）。")
-                    Text("3. 菜单栏输入法图标 →「玫枫五笔设置…」；或 系统设置 → 键盘 → 输入法。")
+                    Text("2. 已启用则可直接切换；若没有：点「+」→ 简体中文 → 玫枫五笔。")
+                    Text("3. 菜单栏输入法图标 →「玫枫五笔设置…」。")
                     Text("4. 单独按 Shift 切换中/英；数字 1–9 选词。")
                 }
                 .font(.callout)

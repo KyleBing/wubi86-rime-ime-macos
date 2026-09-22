@@ -14,7 +14,6 @@
 		1B9755E1514A556D3B14334A /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D856B4925F0354EB314DFC1A /* SetupView.swift */; };
 		1DD2A2A4C1418DE05E3FB303 /* IMEInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56DF06354369309DB0A2AB6E /* IMEInstaller.swift */; };
 		2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
-		24CD668AEA6931F015764AAC /* ime.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E06A597222EB93BC6521761 /* ime.png */; };
 		25E2D63AB7A10A0B5D60C569 /* RimeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF649A4E4D7B4308E42C40A /* RimeSession.swift */; };
 		29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615469236E5D6367D75035EA /* MacKeyMapper.swift */; };
 		2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
@@ -106,14 +105,13 @@
 		45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateTimeCandidates.swift; sourceTree = "<group>"; };
 		4E39199AE59DB27F74EE4144 /* ime.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = ime.pdf; sourceTree = "<group>"; };
 		56DF06354369309DB0A2AB6E /* IMEInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEInstaller.swift; sourceTree = "<group>"; };
-		5E06A597222EB93BC6521761 /* ime.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ime.png; sourceTree = "<group>"; };
 		615469236E5D6367D75035EA /* MacKeyMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacKeyMapper.swift; sourceTree = "<group>"; };
 		6269A413234603D67F46D15D /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		69C92DB1F8633FEDE8CA0D22 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePanelController.swift; sourceTree = "<group>"; };
 		73273824288403B472874C04 /* MeifengPreferencesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengPreferencesPane.swift; sourceTree = "<group>"; };
-		7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MeifengWubiPrefs.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D6BE3001140B76FEA5ED3EF /* Preferences.prefPane */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Preferences.prefPane; sourceTree = BUILT_PRODUCTS_DIR; };
 		80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePrefsView.swift; sourceTree = "<group>"; };
 		81FE659C9C777569B0F90FF3 /* RimeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeEngine.swift; sourceTree = "<group>"; };
 		8A7D61DD46F9981DD7954F00 /* UserLexiconMacView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLexiconMacView.swift; sourceTree = "<group>"; };
@@ -191,7 +189,6 @@
 				46A2085C3B99ED28ED427D7B /* PrefsPane */,
 				6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */,
 				4E39199AE59DB27F74EE4144 /* ime.pdf */,
-				5E06A597222EB93BC6521761 /* ime.png */,
 				C213287E3888BC1DB294BE0D /* ime.tiff */,
 				B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */,
 				6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */,
@@ -279,7 +276,7 @@
 			children = (
 				929D457D120AA7CECBC4C0FC /* MeifengWubi.app */,
 				98C6A2B34E367C393E89B872 /* MeifengWubiIME.app */,
-				7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */,
+				7D6BE3001140B76FEA5ED3EF /* Preferences.prefPane */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -330,7 +327,7 @@
 			packageProductDependencies = (
 			);
 			productName = MeifengWubiPrefs;
-			productReference = 7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */;
+			productReference = 7D6BE3001140B76FEA5ED3EF /* Preferences.prefPane */;
 			productType = "com.apple.product-type.bundle";
 		};
 		D4B50365998BBD0C8073938B /* MeifengWubiIME */ = {
@@ -428,7 +425,6 @@
 				F62728C765CD0D5DC6650D47 /* InfoPlist.strings in Resources */,
 				7EBB5925C68CB60B2128A1FC /* Rime in Resources */,
 				E2153EA3D3C3CAD4962A4CE0 /* ime.pdf in Resources */,
-				24CD668AEA6931F015764AAC /* ime.png in Resources */,
 				B64C6084B96021DB2038E354 /* ime.tiff in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -657,6 +653,7 @@
 					"$(PROJECT_DIR)/Vendor/librime-headers",
 				);
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -690,6 +687,7 @@
 					"$(PROJECT_DIR)/Vendor/librime-headers",
 				);
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -719,6 +717,7 @@
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -744,6 +743,7 @@
 					"$(PROJECT_DIR)/Vendor/librime-headers",
 				);
 				INFOPLIST_FILE = IME/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -774,6 +774,7 @@
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -799,6 +800,7 @@
 					"$(PROJECT_DIR)/Vendor/librime-headers",
 				);
 				INFOPLIST_FILE = IME/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "玫枫五笔";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

@@ -47,15 +47,13 @@ targets:
         excludes:
           - "*.iconset"
           - "PrefsPane"
+          # 源 PNG 仅作制作素材；打包只用预合成的 ime.tiff，避免 Xcode TiffUtil 冲突
+          - "ime.png"
+          - "ime@1x.png"
+          - "ime@2x.png"
       - path: Shared
       - path: Resources/Rime
         type: folder
-        buildPhase: resources
-      - path: IME/ime.pdf
-        buildPhase: resources
-      - path: IME/ime.png
-        buildPhase: resources
-      - path: IME/ime.tiff
         buildPhase: resources
     settings:
       base:
