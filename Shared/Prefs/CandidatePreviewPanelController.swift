@@ -102,7 +102,7 @@ final class CandidatePreviewPanelController {
         let fontSize = CGFloat(IMEAppearancePrefs.fontSize)
         let vertical = IMEAppearancePrefs.orientation == .vertical
         let showPreedit = IMEAppearancePrefs.showPreeditInPanel
-        let showIndex = IMEAppearancePrefs.showIndex
+        let indexStyle = IMEAppearancePrefs.indexStyle
         let pageSize = RimeBehaviorPrefs.pageSize
         let rowHeight = ceil(fontSize * 1.35)
 
@@ -126,7 +126,12 @@ final class CandidatePreviewPanelController {
 
         let items = Array(Self.sampleCandidates.prefix(pageSize))
         for (i, text) in items.enumerated() {
-            let title = showIndex ? "\(i + 1). \(text)" : text
+            let title: String
+            if let indexLabel = indexStyle.label(forOneBased: i + 1) {
+                title = "\(indexLabel) \(text)"
+            } else {
+                title = text
+            }
             stack.addArrangedSubview(makeLabel(title, bold: false, fontSize: fontSize, rowHeight: rowHeight))
         }
 

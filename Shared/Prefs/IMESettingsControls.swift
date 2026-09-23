@@ -5,6 +5,16 @@ enum IMESettingsControls {
     static let preferredWindowSize = NSSize(width: 900, height: 560)
     static let minWindowSize = NSSize(width: 720, height: 460)
 
+    /// App / IME 注入：词库目录切换、全量部署与复位（Prefs 面板未注入则相关按钮会提示）。
+    struct LexiconActions {
+        var deploy: () -> (ok: Bool, message: String)
+        var reset: () -> (ok: Bool, message: String)
+        var changeDataDirectory: (URL?) -> (ok: Bool, message: String)
+        var restartIME: () -> Void
+    }
+
+    static var lexiconActions: LexiconActions?
+
     static let preferredFonts: [(name: String, title: String)] = [
         ("", "系统默认"),
         ("PingFang SC", "苹方"),
@@ -27,35 +37,49 @@ enum IMESettingsControls {
 /// 左侧栏目保持稳定，后续可直接增加登录、同步等设置页。
 private final class SettingsRootView: NSView {
     private enum Section: Int, CaseIterable {
-        case candidate
+        case appearance
         case keyboard
+        case userLexicon
+        case lexiconDirectory
+        case inputTest
+        case help
         case account
 
         var title: String {
             switch self {
-            case .candidate: return "候选栏"
+            case .appearance: return "外观配置"
             case .keyboard: return "按键"
+            case .userLexicon: return "用户词管理"
+            case .lexiconDirectory: return "词库目录"
+            case .inputTest: return "输入测试"
+            case .help: return "帮助"
             case .account: return "账户"
             }
         }
 
         var symbolName: String {
             switch self {
-            case .candidate: return "text.bubble"
+            case .appearance: return "paintpalette"
             case .keyboard: return "keyboard"
+            case .userLexicon: return "book"
+            case .lexiconDirectory: return "folder"
+            case .inputTest: return "character.cursor.ibeam"
+            case .help: return "questionmark.circle"
             case .account: return "person.crop.circle"
             }
         }
     }
 
     private let content = NSView()
-    private var sectionButtons: [NSButton] = []
-    private var currentSection = Section.candidate
+    private var sectionButtons: [SidebarSectionButton] = []
+    private var currentSection = Section.appearance
+    // 缓存各页，避免每次点侧栏都重建整页导致卡顿。
+    private var pageCache: [Section: NSView] = [:]
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         build()
-        show(.candidate)
+        show(.appearance)
     }
 
     required init?(coder: NSCoder) {
@@ -118,18 +142,13 @@ private final class SettingsRootView: NSView {
         navigation.spacing = 4
 
         for section in Section.allCases {
-            let button = NSButton(
+            let button = SidebarSectionButton(
                 title: section.title,
                 image: NSImage(systemSymbolName: section.symbolName, accessibilityDescription: section.title) ?? NSImage(),
                 target: self,
                 action: #selector(selectSection(_:))
             )
             button.tag = section.rawValue
-            button.imagePosition = .imageLeading
-            button.alignment = .left
-            button.bezelStyle = .recessed
-            button.setButtonType(.toggle)
-            button.font = .systemFont(ofSize: 13, weight: .medium)
             button.translatesAutoresizingMaskIntoConstraints = false
             button.widthAnchor.constraint(equalToConstant: 152).isActive = true
             button.heightAnchor.constraint(equalToConstant: 32).isActive = true
@@ -165,36 +184,147 @@ private final class SettingsRootView: NSView {
     }
 
     private func show(_ section: Section) {
+        guard section != currentSection || pageCache[section] == nil else {
+            updateSidebarSelection(section)
+            return
+        }
         currentSection = section
-        for button in sectionButtons {
-            button.state = button.tag == section.rawValue ? .on : .off
+        updateSidebarSelection(section)
+
+        if pageCache[section] == nil {
+            let page: NSView
+            switch section {
+            case .appearance:
+                page = makeAppearancePage()
+            case .keyboard:
+                page = makeKeyboardPage()
+            case .userLexicon:
+                page = makeUserLexiconPage()
+            case .lexiconDirectory:
+                page = makeLexiconDirectoryPage()
+            case .inputTest:
+                page = makeInputTestPage()
+            case .help:
+                page = makeHelpPage()
+            case .account:
+                page = makeAccountPage()
+            }
+            page.translatesAutoresizingMaskIntoConstraints = false
+            content.addSubview(page)
+            NSLayoutConstraint.activate([
+                page.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+                page.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+                page.topAnchor.constraint(equalTo: content.topAnchor),
+                page.bottomAnchor.constraint(equalTo: content.bottomAnchor)
+            ])
+            pageCache[section] = page
         }
 
-        content.subviews.forEach { $0.removeFromSuperview() }
-        let page: NSView
-        switch section {
-        case .candidate:
-            page = makeCandidatePage()
-        case .keyboard:
-            page = makeKeyboardPage()
-        case .account:
-            page = makeAccountPage()
+        for (cached, view) in pageCache {
+            view.isHidden = cached != section
         }
-        page.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(page)
-        NSLayoutConstraint.activate([
-            page.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            page.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            page.topAnchor.constraint(equalTo: content.topAnchor),
-            page.bottomAnchor.constraint(equalTo: content.bottomAnchor)
-        ])
     }
 
-    private func makeCandidatePage() -> NSView {
+    private func updateSidebarSelection(_ section: Section) {
+        for button in sectionButtons {
+            let selected = button.tag == section.rawValue
+            button.state = selected ? .on : .off
+            // 使用明确的系统强调色表示当前页面，避免与键盘焦点状态混淆。
+            button.layer?.backgroundColor = selected
+                ? NSColor.controlAccentColor.withAlphaComponent(0.18).cgColor
+                : NSColor.clear.cgColor
+            button.setSelectedAppearance(selected)
+        }
+    }
+
+    private func makeAppearancePage() -> NSView {
+        // 顶部固定预览；滚动时底部分隔线提示内容已离开。
+        let previewHost = AppearancePreviewHost()
+        previewHost.translatesAutoresizingMaskIntoConstraints = false
+
+        let regular = makeRegularAppearanceSettings()
+        let advanced = CandidateSkinSettingsView()
+
+        let form = NSStackView(views: [regular, advanced])
+        form.orientation = .vertical
+        form.alignment = .leading
+        form.spacing = 10
+        form.setContentHuggingPriority(.required, for: .vertical)
+        form.setContentCompressionResistancePriority(.required, for: .vertical)
+        form.translatesAutoresizingMaskIntoConstraints = false
+
+        let scroll = NSScrollView()
+        scroll.drawsBackground = false
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.contentView.postsBoundsChangedNotifications = true
+
+        let document = TopAlignedDocumentView()
+        document.translatesAutoresizingMaskIntoConstraints = false
+        document.addSubview(form)
+        scroll.documentView = document
+
+        let root = NSView()
+        root.addSubview(previewHost)
+        root.addSubview(scroll)
+        NSLayoutConstraint.activate([
+            previewHost.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
+            previewHost.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -24),
+            previewHost.topAnchor.constraint(equalTo: root.topAnchor, constant: 14),
+            scroll.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: previewHost.bottomAnchor),
+            scroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            document.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
+            document.heightAnchor.constraint(greaterThanOrEqualTo: scroll.contentView.heightAnchor),
+            form.leadingAnchor.constraint(equalTo: document.leadingAnchor, constant: 20),
+            form.trailingAnchor.constraint(equalTo: document.trailingAnchor, constant: -24),
+            form.topAnchor.constraint(equalTo: document.topAnchor, constant: 10),
+            form.bottomAnchor.constraint(equalTo: document.bottomAnchor, constant: -20),
+            regular.widthAnchor.constraint(equalTo: form.widthAnchor),
+            advanced.widthAnchor.constraint(equalTo: form.widthAnchor)
+        ])
+        return root
+    }
+
+    private func makeRegularAppearanceSettings() -> NSView {
         let settings = NSStackView()
         settings.orientation = .vertical
         settings.alignment = .leading
-        settings.spacing = 14
+        settings.spacing = 10
+
+        // 候选数放第一位，最常用；候选字体放同一行第二列。
+        let pageValue = NSTextField(labelWithString: "\(RimeBehaviorPrefs.pageSize)")
+        pageValue.widthAnchor.constraint(equalToConstant: 20).isActive = true
+        let stepper = NSStepper()
+        stepper.minValue = 3
+        stepper.maxValue = 9
+        // 到 3 / 9 即停，不从最大值绕回最小值。
+        stepper.valueWraps = false
+        stepper.integerValue = RimeBehaviorPrefs.pageSize
+        stepper.target = PageTarget.shared
+        stepper.action = #selector(PageTarget.changed(_:))
+        PageTarget.shared.valueLabel = pageValue
+
+        let font = NSPopUpButton(frame: .zero, pullsDown: false)
+        for item in IMESettingsControls.preferredFonts {
+            font.addItem(withTitle: item.title)
+            font.lastItem?.representedObject = item.name
+        }
+        font.selectItem(at: IMESettingsControls.preferredFonts.firstIndex {
+            $0.name == IMEAppearancePrefs.fontName
+        } ?? 0)
+        font.target = FontTarget.shared
+        font.action = #selector(FontTarget.changed(_:))
+        font.widthAnchor.constraint(greaterThanOrEqualToConstant: 140).isActive = true
+
+        let pageFontRow = equalTwoColumns(
+            formRow("每页候选数", pageValue, stepper),
+            formRow("候选字体", font)
+        )
+        settings.addArrangedSubview(pageFontRow)
+        pageFontRow.widthAnchor.constraint(equalTo: settings.widthAnchor).isActive = true
 
         let orientation = NSSegmentedControl(
             labels: IMEAppearancePrefs.Orientation.allCases.map(\.title),
@@ -203,89 +333,82 @@ private final class SettingsRootView: NSView {
             action: #selector(OrientationTarget.changed(_:))
         )
         orientation.selectedSegment = IMEAppearancePrefs.orientation == .horizontal ? 0 : 1
-        settings.addArrangedSubview(formRow("排列方向", orientation))
 
-        let font = NSPopUpButton(frame: .zero, pullsDown: false)
-        for item in IMESettingsControls.preferredFonts {
-            font.addItem(withTitle: item.title)
-            font.lastItem?.representedObject = item.name
-        }
-        font.selectItem(at: IMESettingsControls.preferredFonts.firstIndex(where: {
-            $0.name == IMEAppearancePrefs.fontName
-        }) ?? 0)
-        font.target = FontTarget.shared
-        font.action = #selector(FontTarget.changed(_:))
-        font.widthAnchor.constraint(greaterThanOrEqualToConstant: 170).isActive = true
-        settings.addArrangedSubview(formRow("候选字体", font))
-
-        let slider = NSSlider(
-            value: IMEAppearancePrefs.fontSize,
-            minValue: 11,
-            maxValue: 24,
-            target: FontSizeTarget.shared,
-            action: #selector(FontSizeTarget.changed(_:))
+        let verticalAlignment = NSSegmentedControl(
+            labels: CandidateSkin.VerticalAlignment.allCases.map(\.title),
+            trackingMode: .selectOne,
+            target: VerticalAlignmentTarget.shared,
+            action: #selector(VerticalAlignmentTarget.changed(_:))
         )
-        slider.isContinuous = true
-        slider.widthAnchor.constraint(equalToConstant: 150).isActive = true
-        let sizeValue = NSTextField(labelWithString: "\(Int(IMEAppearancePrefs.fontSize))")
-        sizeValue.alignment = .right
-        sizeValue.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        sizeValue.widthAnchor.constraint(equalToConstant: 26).isActive = true
-        FontSizeTarget.shared.valueLabel = sizeValue
-        settings.addArrangedSubview(formRow("字体大小", slider, sizeValue))
+        verticalAlignment.selectedSegment = CandidateSkin.VerticalAlignment.allCases.firstIndex(
+            of: IMEAppearancePrefs.skin.verticalAlignment
+        ) ?? 1
 
+        let layoutRow = equalTwoColumns(
+            formRow("排列方向", orientation),
+            formRow("纵向对齐", verticalAlignment)
+        )
+        settings.addArrangedSubview(layoutRow)
+        layoutRow.widthAnchor.constraint(equalTo: settings.widthAnchor).isActive = true
+
+        // 序号样式：无 / 1. / 1
+        let indexStyle = NSSegmentedControl(
+            labels: IMEAppearancePrefs.IndexStyle.allCases.map(\.title),
+            trackingMode: .selectOne,
+            target: IndexStyleTarget.shared,
+            action: #selector(IndexStyleTarget.changed(_:))
+        )
+        indexStyle.selectedSegment = IMEAppearancePrefs.IndexStyle.allCases.firstIndex(
+            of: IMEAppearancePrefs.indexStyle
+        ) ?? 1
+        indexStyle.toolTip = "无：不显示序号；1.：带点；1：不带点"
+
+        // 候选显示方式三选一：候选框 / 仅数量圆点 / 完全不显示。
+        let displayMode = NSSegmentedControl(
+            labels: IMEAppearancePrefs.DisplayMode.allCases.map(\.title),
+            trackingMode: .selectOne,
+            target: DisplayModeTarget.shared,
+            action: #selector(DisplayModeTarget.changed(_:))
+        )
+        displayMode.selectedSegment = IMEAppearancePrefs.displayMode.rawValue
+        displayMode.toolTip = "仅圆点：只按候选数量显示小圆点；不显示：只保留编码，数字键等照常选词"
+
+        let displayRow = equalTwoColumns(
+            formRow("候选显示", displayMode),
+            formRow("序号", indexStyle)
+        )
+        settings.addArrangedSubview(displayRow)
+        displayRow.widthAnchor.constraint(equalTo: settings.widthAnchor).isActive = true
+
+        // 显示编码单独占左列，右列留空，保持两列对齐。
         let preedit = NSButton(
-            checkboxWithTitle: "在候选条内显示编码",
+            checkboxWithTitle: "",
             target: ToggleTarget.shared,
             action: #selector(ToggleTarget.preeditChanged(_:))
         )
         preedit.state = IMEAppearancePrefs.showPreeditInPanel ? .on : .off
-        settings.addArrangedSubview(preedit)
-
-        let index = NSButton(
-            checkboxWithTitle: "显示候选序号",
-            target: ToggleTarget.shared,
-            action: #selector(ToggleTarget.indexChanged(_:))
+        let preeditRow = equalTwoColumns(
+            formRow("显示编码", preedit),
+            NSView()
         )
-        index.state = IMEAppearancePrefs.showIndex ? .on : .off
-        settings.addArrangedSubview(index)
+        settings.addArrangedSubview(preeditRow)
+        preeditRow.widthAnchor.constraint(equalTo: settings.widthAnchor).isActive = true
 
-        let pageValue = NSTextField(labelWithString: "\(RimeBehaviorPrefs.pageSize)")
-        pageValue.widthAnchor.constraint(equalToConstant: 20).isActive = true
-        let stepper = NSStepper()
-        stepper.minValue = 3
-        stepper.maxValue = 9
-        stepper.integerValue = RimeBehaviorPrefs.pageSize
-        stepper.target = PageTarget.shared
-        stepper.action = #selector(PageTarget.changed(_:))
-        PageTarget.shared.valueLabel = pageValue
-        settings.addArrangedSubview(formRow("每页候选数", pageValue, stepper))
-
-        let settingsCard = card(title: "显示", subtitle: "调整候选窗口的布局和文字", content: settings)
-        // 预览尺寸变化时，左侧设置列保持固定，不参与横向挤压。
-        settingsCard.widthAnchor.constraint(equalToConstant: 330).isActive = true
-        settingsCard.setContentHuggingPriority(.required, for: .horizontal)
-        settingsCard.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        let preview = CandidateInlinePreviewView()
-        let previewCard = card(
-            title: "实时预览",
-            subtitle: "效果会同步应用到实际候选窗口",
-            content: preview
+        return card(
+            title: "常规",
+            subtitle: nil,
+            content: settings
         )
-        previewCard.widthAnchor.constraint(greaterThanOrEqualToConstant: 260).isActive = true
-        previewCard.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    }
 
-        let columns = NSStackView(views: [settingsCard, previewCard])
-        columns.orientation = .horizontal
-        columns.alignment = .top
-        columns.distribution = .fill
-        columns.spacing = 18
-        return page(
-            title: "候选栏",
-            subtitle: "使用系统控件调整候选栏外观，修改会立即保存。",
-            content: columns
-        )
+    // 常规区统一两列均分，避免某一行挤出第三列。
+    private func equalTwoColumns(_ left: NSView, _ right: NSView) -> NSView {
+        let row = NSStackView(views: [left, right])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 24
+        row.distribution = .fillEqually
+        return row
     }
 
     private func makeKeyboardPage() -> NSView {
@@ -333,6 +456,192 @@ private final class SettingsRootView: NSView {
         )
     }
 
+    // 用户词：分组展示 / 按组保存（对齐 iOS 词库管理）。
+    private func makeUserLexiconPage() -> NSView {
+        let lexicon = UserLexiconSettingsView(frame: .zero)
+        lexicon.translatesAutoresizingMaskIntoConstraints = false
+        return page(
+            title: "用户词管理",
+            subtitle: "左侧分组，右侧词条；添加写入当前选中分组。",
+            content: card(title: nil, subtitle: nil, content: lexicon)
+        )
+    }
+
+    // 词库目录：路径切换、部署与复位。
+    private func makeLexiconDirectoryPage() -> NSView {
+        let directory = LexiconDirectorySettingsView(frame: .zero)
+        directory.translatesAutoresizingMaskIntoConstraints = false
+        return page(
+            title: "词库目录",
+            subtitle: "管理 Rime 用户数据目录，并部署或复位配置。",
+            content: card(title: nil, subtitle: nil, content: directory)
+        )
+    }
+
+    // 输入测试页：一个可自由输入的多行文本区，用于检验候选窗与上屏效果。
+    private func makeInputTestPage() -> NSView {
+        let heading = NSTextField(labelWithString: "输入测试")
+        heading.font = .systemFont(ofSize: 24, weight: .bold)
+        let detail = NSTextField(wrappingLabelWithString: "切换到玫枫五笔后在下方输入，可试打 date、time 等预置编码。")
+        detail.font = .systemFont(ofSize: 12)
+        detail.textColor = .secondaryLabelColor
+
+        let textView = NSTextView()
+        textView.font = .systemFont(ofSize: 16)
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+
+        let textScroll = NSScrollView()
+        textScroll.documentView = textView
+        textScroll.hasVerticalScroller = true
+        textScroll.autohidesScrollers = true
+        textScroll.borderType = .noBorder
+        textScroll.wantsLayer = true
+        textScroll.layer?.cornerRadius = 8
+        textScroll.layer?.borderWidth = 1
+        textScroll.layer?.borderColor = NSColor.separatorColor.cgColor
+
+        InputTestTarget.shared.textView = textView
+        let clear = NSButton(title: "清空", target: InputTestTarget.shared, action: #selector(InputTestTarget.clear(_:)))
+
+        let root = NSView()
+        for view in [heading, detail, textScroll, clear] as [NSView] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            root.addSubview(view)
+        }
+        // 文本区填满剩余空间，窗口放大时一起变大。
+        NSLayoutConstraint.activate([
+            heading.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 23),
+            heading.topAnchor.constraint(equalTo: root.topAnchor, constant: 26),
+            detail.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
+            detail.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -28),
+            detail.topAnchor.constraint(equalTo: heading.bottomAnchor, constant: 8),
+            textScroll.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
+            textScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
+            textScroll.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: 16),
+            textScroll.bottomAnchor.constraint(equalTo: clear.topAnchor, constant: -10),
+            clear.trailingAnchor.constraint(equalTo: textScroll.trailingAnchor),
+            clear.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -20)
+        ])
+        return root
+    }
+
+    // 帮助页：预置编码与特殊功能说明。
+    private func makeHelpPage() -> NSView {
+        let presets = helpList([
+            ("date", "当前日期：2026-09-23、2026年9月23日、星期三，翻页可见日期加时间"),
+            ("time", "当前时间：11:22:05、11:22、秒级时间戳、11时22分，翻页可见毫秒时间戳"),
+            ("week", "星期与周数：星期三、周三、第39周、2026年第39周、Wednesday 等"),
+            ("选词与翻页", "与普通候选相同：数字键、空格、; ' 选词，翻页键按「按键」页设置")
+        ])
+        let lookup = helpList([
+            ("z + 拼音", "拼音反查：不会五笔拆字时，以 z 开头输入拼音，候选中选字上屏"),
+            ("'", "反查结束符，拼音输完可按 ' 结束反查")
+        ])
+        let keys = helpList([
+            ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
+            ("空格", "上屏第一个候选"),
+            ("1 – 9", "选择对应序号的候选（仅数量圆点模式下同样有效）"),
+            ("; '", "选第二、第三候选（需在「按键」页开启）"),
+            ("- = / , .", "候选翻页，方式在「按键」页设置"),
+            ("Esc", "清空当前编码"),
+            ("回车", "直接上屏已输入的编码字母"),
+            ("四码唯一", "输入满四码且只有一个候选时自动上屏")
+        ])
+        let switches = helpList([
+            ("Ctrl+Shift+1", "切换输入方案（五笔 / 拼音）"),
+            ("Ctrl+Shift+2", "中 / 英文切换"),
+            ("Ctrl+Shift+3", "全角 / 半角切换"),
+            ("Ctrl+Shift+5", "常用 / 扩展字符集切换"),
+            ("Ctrl+A / E / B / F", "编码中移动光标：行首、行尾、左移、右移"),
+            ("Ctrl+H / Ctrl+G", "编码中删除一个字母 / 取消输入")
+        ])
+        let appearance = helpList([
+            ("仅圆点", "不展开候选词，只用小圆点表示当前页候选数量，适合熟练盲打"),
+            ("不显示", "完全隐藏候选框，只保留编码下划线，数字键、空格等选词照常"),
+            ("距光标上 / 左", "在「外观配置 › 布局细节」中调整候选窗与光标的距离"),
+            ("皮肤分享", "外观可导出为文件或复制到剪贴板，在其他设备导入")
+        ])
+
+        let stack = NSStackView(views: [
+            card(title: "预置编码", subtitle: "输入以下编码，候选中会出现基于系统时间的内容。", content: presets),
+            card(title: "拼音反查", subtitle: nil, content: lookup),
+            card(title: "常用按键", subtitle: nil, content: keys),
+            card(title: "快捷开关", subtitle: nil, content: switches),
+            card(title: "特殊显示", subtitle: nil, content: appearance),
+            card(title: "反馈与联系", subtitle: "使用问题、建议或词库错误，欢迎联系作者。", content: contactHelp())
+        ])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        for view in stack.arrangedSubviews {
+            view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        }
+        return page(
+            title: "帮助",
+            subtitle: "预置输入功能与特殊按键说明。",
+            content: stack
+        )
+    }
+
+    // 帮助页联系方式：邮箱 / QQ 群均可一键复制。
+    private func contactHelp() -> NSView {
+        let list = NSStackView()
+        list.orientation = .vertical
+        list.alignment = .leading
+        list.spacing = 8
+        list.addArrangedSubview(contactRow(label: "邮箱", value: "kylebing@163.com"))
+        list.addArrangedSubview(contactRow(label: "QQ 群", value: "878750538"))
+        return list
+    }
+
+    private func contactRow(label: String, value: String) -> NSView {
+        let key = NSTextField(labelWithString: label)
+        key.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
+        key.textColor = .controlAccentColor
+        key.widthAnchor.constraint(equalToConstant: 140).isActive = true
+        let text = NSTextField(labelWithString: value)
+        text.font = .systemFont(ofSize: 12)
+        text.isSelectable = true
+        let copy = NSButton(title: "复制", target: ContactCopyTarget.shared, action: #selector(ContactCopyTarget.copyValue(_:)))
+        copy.controlSize = .small
+        copy.identifier = NSUserInterfaceItemIdentifier(value)
+        let row = NSStackView(views: [key, text, copy])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 12
+        return row
+    }
+
+    // 两列说明列表：左列按键 / 编码（等宽字体），右列说明文字。
+    private func helpList(_ items: [(key: String, text: String)]) -> NSView {
+        let list = NSStackView()
+        list.orientation = .vertical
+        list.alignment = .leading
+        list.spacing = 8
+        for item in items {
+            let key = NSTextField(labelWithString: item.key)
+            key.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
+            key.textColor = .controlAccentColor
+            key.widthAnchor.constraint(equalToConstant: 140).isActive = true
+            let text = NSTextField(wrappingLabelWithString: item.text)
+            text.font = .systemFont(ofSize: 12)
+            text.preferredMaxLayoutWidth = 420
+            // 允许选中复制（如邮箱、群号）。
+            text.isSelectable = true
+            let row = NSStackView(views: [key, text])
+            row.orientation = .horizontal
+            row.alignment = .firstBaseline
+            row.spacing = 12
+            list.addArrangedSubview(row)
+        }
+        return list
+    }
+
     private func makeAccountPage() -> NSView {
         let symbol = NSImageView()
         symbol.image = NSImage(systemSymbolName: "person.crop.circle.badge.clock", accessibilityDescription: nil)
@@ -358,21 +667,30 @@ private final class SettingsRootView: NSView {
     }
 
     private func page(title: String, subtitle: String, content body: NSView) -> NSView {
+        // 长表单必须保持自身高度，让外层 ScrollView 滚动，不能压缩所有控件。
+        body.setContentHuggingPriority(.required, for: .vertical)
+        body.setContentCompressionResistancePriority(.required, for: .vertical)
         let heading = NSTextField(labelWithString: title)
         heading.font = .systemFont(ofSize: 24, weight: .bold)
         let detail = NSTextField(wrappingLabelWithString: subtitle)
         detail.font = .systemFont(ofSize: 12)
         detail.textColor = .secondaryLabelColor
 
-        let stack = NSStackView(views: [heading, detail, body])
+        // 内容较短时由底部弹性区域吸收剩余高度，表单始终贴在右侧面板顶部。
+        let bottomSpacer = NSView()
+        bottomSpacer.setContentHuggingPriority(.defaultLow, for: .vertical)
+        bottomSpacer.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        let stack = NSStackView(views: [heading, detail, body, bottomSpacer])
         stack.orientation = .vertical
         stack.alignment = .leading
+        stack.distribution = .fill
         stack.spacing = 8
         stack.setCustomSpacing(24, after: detail)
-        stack.edgeInsets = NSEdgeInsets(top: 26, left: 28, bottom: 26, right: 28)
+        stack.edgeInsets = NSEdgeInsets(top: 26, left: 23, bottom: 26, right: 28)
         stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.setContentCompressionResistancePriority(.required, for: .vertical)
         // 内容填满可用宽度，同时保留左右各 28 pt 的窗口边距。
-        body.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -56).isActive = true
+        body.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -51).isActive = true
 
         let scroll = NSScrollView()
         scroll.drawsBackground = false
@@ -386,6 +704,7 @@ private final class SettingsRootView: NSView {
         scroll.documentView = document
         NSLayoutConstraint.activate([
             document.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
+            document.heightAnchor.constraint(greaterThanOrEqualTo: scroll.contentView.heightAnchor),
             stack.leadingAnchor.constraint(equalTo: document.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: document.trailingAnchor),
             stack.topAnchor.constraint(equalTo: document.topAnchor),
@@ -401,15 +720,15 @@ private final class SettingsRootView: NSView {
         box.borderWidth = 1
         box.borderColor = .separatorColor
         box.fillColor = .controlBackgroundColor
-        box.contentViewMargins = NSSize(width: 18, height: 16)
+        box.contentViewMargins = NSSize(width: 14, height: 12)
 
         let stack = NSStackView()
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 5
+        stack.spacing = 4
         if let title {
             let label = NSTextField(labelWithString: title)
-            label.font = .systemFont(ofSize: 14, weight: .semibold)
+            label.font = .systemFont(ofSize: 13, weight: .semibold)
             stack.addArrangedSubview(label)
         }
         if let subtitle {
@@ -417,7 +736,9 @@ private final class SettingsRootView: NSView {
             label.font = .systemFont(ofSize: 11)
             label.textColor = .secondaryLabelColor
             stack.addArrangedSubview(label)
-            stack.setCustomSpacing(16, after: label)
+            stack.setCustomSpacing(10, after: label)
+        } else if title != nil {
+            stack.setCustomSpacing(10, after: stack.arrangedSubviews[0])
         }
         stack.addArrangedSubview(body)
         box.contentView = stack
@@ -436,38 +757,195 @@ private final class SettingsRootView: NSView {
     }
 }
 
+/// 侧栏按钮使用原生图标和文字，并固定 10pt 左右内边距及 4pt 图文间距。
+private final class SidebarSectionButton: NSButton {
+    private let itemIcon = NSImageView()
+    private let itemTitle = NSTextField(labelWithString: "")
+
+    init(title: String, image: NSImage, target: AnyObject?, action: Selector?) {
+        super.init(frame: .zero)
+        self.title = ""
+        self.image = nil
+        self.target = target
+        self.action = action
+        isBordered = false
+        setButtonType(.momentaryChange)
+        // 按下即响应，避免等 mouseUp 才切换带来的迟滞感。
+        sendAction(on: .leftMouseDown)
+        focusRingType = .none
+        wantsLayer = true
+        layer?.cornerRadius = 6
+
+        itemIcon.image = image
+        itemIcon.imageScaling = .scaleProportionallyDown
+        itemIcon.translatesAutoresizingMaskIntoConstraints = false
+        itemTitle.stringValue = title
+        itemTitle.font = .systemFont(ofSize: 13, weight: .medium)
+        itemTitle.translatesAutoresizingMaskIntoConstraints = false
+
+        let content = NSStackView(views: [itemIcon, itemTitle])
+        content.orientation = .horizontal
+        content.alignment = .centerY
+        content.spacing = 4
+        content.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(content)
+        NSLayoutConstraint.activate([
+            itemIcon.widthAnchor.constraint(equalToConstant: 16),
+            itemIcon.heightAnchor.constraint(equalToConstant: 16),
+            content.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+            content.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -10),
+            content.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+        setSelectedAppearance(false)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        // point 位于父视图坐标系；命中子视图时也交由按钮处理点击。
+        guard let hit = super.hitTest(point), hit === self || hit.isDescendant(of: self) else {
+            return nil
+        }
+        return self
+    }
+
+    func setSelectedAppearance(_ selected: Bool) {
+        let color: NSColor = selected ? .controlAccentColor : .labelColor
+        itemIcon.contentTintColor = color
+        itemTitle.textColor = color
+    }
+}
+
 /// 滚动区域采用从上向下的坐标系，避免短内容垂直居中或贴底。
 private final class TopAlignedDocumentView: NSView {
     override var isFlipped: Bool { true }
 }
 
+/// 固定在外观页顶部的预览容器：左侧候选预览，右侧输入框可直接打字查看实际候选窗；底部常驻分隔线。
+private final class AppearancePreviewHost: NSView {
+    private let preview = CandidateInlinePreviewView()
+    private let testField = NSTextField()
+    private let bottomBorder = NSBox()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        preview.translatesAutoresizingMaskIntoConstraints = false
+        testField.placeholderString = "在此打字，查看实际候选窗"
+        testField.font = .systemFont(ofSize: 14)
+        testField.bezelStyle = .roundedBezel
+        testField.translatesAutoresizingMaskIntoConstraints = false
+        testField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        bottomBorder.boxType = .separator
+        bottomBorder.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(preview)
+        addSubview(testField)
+        addSubview(bottomBorder)
+        NSLayoutConstraint.activate([
+            preview.leadingAnchor.constraint(equalTo: leadingAnchor),
+            preview.trailingAnchor.constraint(equalTo: testField.leadingAnchor, constant: -12),
+            preview.topAnchor.constraint(equalTo: topAnchor),
+            preview.bottomAnchor.constraint(equalTo: bottomBorder.topAnchor, constant: -10),
+            // 输入框固定宽度，垂直居中于预览区。
+            testField.trailingAnchor.constraint(equalTo: trailingAnchor),
+            testField.centerYAnchor.constraint(equalTo: preview.centerYAnchor),
+            testField.widthAnchor.constraint(equalToConstant: 190),
+            bottomBorder.leadingAnchor.constraint(equalTo: leadingAnchor, constant: -20),
+            bottomBorder.trailingAnchor.constraint(equalTo: trailingAnchor, constant: 24),
+            bottomBorder.bottomAnchor.constraint(equalTo: bottomAnchor),
+            bottomBorder.heightAnchor.constraint(equalToConstant: 1)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
 /// 嵌入设置页右侧的候选栏预览。
-private final class CandidateInlinePreviewView: NSView {
+/// 布局等同 ZStack：底层候选条完全居中，上层亮暗切换贴左上角。
+final class CandidateInlinePreviewView: NSView {
     private let chrome = RoundedChromeView(frame: .zero)
     private let candidates = NSStackView()
+    private let hiddenHint = NSTextField(labelWithString: "候选框已隐藏，仅显示编码")
+    private let appearanceSwitchHost = NSView()
+    private let appearanceSwitch = NSSegmentedControl(
+        labels: ["亮色", "暗色"],
+        trackingMode: .selectOne,
+        target: nil,
+        action: nil
+    )
+    private var heightConstraint: NSLayoutConstraint!
+    // 相对 chrome 背景的内边距约束，避免 edgeInsets 只撑开外层容器。
+    private var paddingConstraints: (top: NSLayoutConstraint, bottom: NSLayoutConstraint, leading: NSLayoutConstraint, trailing: NSLayoutConstraint)!
     private var observers: [NSObjectProtocol] = []
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
+        // 预览区不裁切，避免候选条阴影被切掉。
+        clipsToBounds = false
+        layer?.masksToBounds = false
         layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
         layer?.cornerRadius = 8
 
+        // 亮暗切换：小尺寸控件外包一层内边距，避免上下显得挤。
+        appearanceSwitch.controlSize = .small
+        appearanceSwitch.target = self
+        appearanceSwitch.action = #selector(previewAppearanceChanged(_:))
+        appearanceSwitch.selectedSegment = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? 1 : 0
+        appearanceSwitch.translatesAutoresizingMaskIntoConstraints = false
+        appearanceSwitchHost.wantsLayer = true
+        appearanceSwitchHost.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.92).cgColor
+        appearanceSwitchHost.layer?.cornerRadius = 7
+        appearanceSwitchHost.translatesAutoresizingMaskIntoConstraints = false
+        appearanceSwitchHost.addSubview(appearanceSwitch)
+
+        // 预览也预留阴影外扩，与真实候选窗一致，才能看见阴影。
+        chrome.reservesShadowSpace = true
+        chrome.clipsToBounds = false
         chrome.translatesAutoresizingMaskIntoConstraints = false
-        candidates.translatesAutoresizingMaskIntoConstraints = false
-        chrome.effectView.addSubview(candidates)
+        chrome.setContentHuggingPriority(.required, for: .horizontal)
+        chrome.setContentHuggingPriority(.required, for: .vertical)
+        chrome.setContentCompressionResistancePriority(.required, for: .horizontal)
+        chrome.setContentCompressionResistancePriority(.required, for: .vertical)
+
+        // 与实际候选窗共用同一套内边距约束。
+        paddingConstraints = CandidateBarLayout.pin(candidates, in: chrome)
+
+        // ZStack：先加候选条（底层居中），再加按钮（上层左上角）。
         addSubview(chrome)
+        addSubview(appearanceSwitchHost)
+
+        // 「不显示」模式下替代候选条的提示文字。
+        hiddenHint.font = .systemFont(ofSize: 12)
+        hiddenHint.textColor = .secondaryLabelColor
+        hiddenHint.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(hiddenHint)
+
+        heightConstraint = heightAnchor.constraint(equalToConstant: 88)
         NSLayoutConstraint.activate([
             widthAnchor.constraint(greaterThanOrEqualToConstant: 264),
-            heightAnchor.constraint(greaterThanOrEqualToConstant: 210),
+            heightConstraint,
+            hiddenHint.centerXAnchor.constraint(equalTo: centerXAnchor),
+            hiddenHint.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            // 底层：候选预览按内容尺寸（含阴影外扩），水平垂直完全居中。
             chrome.centerXAnchor.constraint(equalTo: centerXAnchor),
             chrome.centerYAnchor.constraint(equalTo: centerYAnchor),
-            chrome.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 12),
-            chrome.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12),
-            candidates.leadingAnchor.constraint(equalTo: chrome.effectView.leadingAnchor, constant: 10),
-            candidates.trailingAnchor.constraint(equalTo: chrome.effectView.trailingAnchor, constant: -10),
-            candidates.topAnchor.constraint(equalTo: chrome.effectView.topAnchor, constant: 5),
-            candidates.bottomAnchor.constraint(equalTo: chrome.effectView.bottomAnchor, constant: -5)
+            chrome.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 8),
+            chrome.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
+            chrome.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 8),
+            chrome.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8),
+
+            // 亮暗切换容器内边距，让分段控件上下留白更协调。
+            appearanceSwitch.leadingAnchor.constraint(equalTo: appearanceSwitchHost.leadingAnchor, constant: 5),
+            appearanceSwitch.trailingAnchor.constraint(equalTo: appearanceSwitchHost.trailingAnchor, constant: -5),
+            appearanceSwitch.topAnchor.constraint(equalTo: appearanceSwitchHost.topAnchor, constant: 5),
+            appearanceSwitch.bottomAnchor.constraint(equalTo: appearanceSwitchHost.bottomAnchor, constant: -5),
+            appearanceSwitchHost.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            appearanceSwitchHost.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8)
         ])
 
         let center = DistributedNotificationCenter.default()
@@ -476,6 +954,7 @@ private final class CandidateInlinePreviewView: NSView {
                 [weak self] _ in self?.reload()
             })
         }
+        applyPreviewAppearance()
         reload()
     }
 
@@ -491,56 +970,58 @@ private final class CandidateInlinePreviewView: NSView {
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        appearanceSwitchHost.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.92).cgColor
+    }
+
+    @objc private func previewAppearanceChanged(_ sender: NSSegmentedControl) {
+        applyPreviewAppearance()
+        reload()
+    }
+
+    private func applyPreviewAppearance() {
+        let name: NSAppearance.Name = appearanceSwitch.selectedSegment == 1 ? .darkAqua : .aqua
+        chrome.appearance = NSAppearance(named: name)
     }
 
     private func reload() {
-        candidates.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let fontSize = CGFloat(IMEAppearancePrefs.fontSize)
-        let vertical = IMEAppearancePrefs.orientation == .vertical
-        let rowHeight = ceil(fontSize * 1.35)
-        candidates.orientation = vertical ? .vertical : .horizontal
-        candidates.alignment = vertical ? .leading : .centerY
-        candidates.spacing = 6
-
-        if IMEAppearancePrefs.showPreeditInPanel {
-            candidates.addArrangedSubview(label("ww", bold: true, size: fontSize, height: rowHeight))
-            let separator = NSBox()
-            separator.boxType = .separator
-            if vertical {
-                separator.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
-            } else {
-                separator.heightAnchor.constraint(equalToConstant: max(12, rowHeight - 4)).isActive = true
-            }
-            candidates.addArrangedSubview(separator)
-        }
-
+        let skin = IMEAppearancePrefs.skin
+        let colors = skin.colors(for: chrome.effectiveAppearance)
         let sample = ["五", "吾", "伍", "捂", "梧", "妩", "坞", "晤", "勿"]
-        for (index, word) in sample.prefix(RimeBehaviorPrefs.pageSize).enumerated() {
-            let text = IMEAppearancePrefs.showIndex ? "\(index + 1). \(word)" : word
-            candidates.addArrangedSubview(label(text, bold: false, size: fontSize, height: rowHeight))
-        }
+        let hidden = IMEAppearancePrefs.hideCandidatePanel
+        chrome.isHidden = hidden
+        hiddenHint.isHidden = !hidden
+        chrome.applySkin()
+        // 与实际候选窗走同一套排版，保证所见即所得。
+        CandidateBarLayout.populate(
+            candidates,
+            padding: paddingConstraints,
+            candidates: Array(sample.prefix(RimeBehaviorPrefs.pageSize)),
+            preedit: "ww",
+            colors: colors,
+            onSelect: nil
+        )
+        // fittingSize 已含阴影外扩；再留一点余量避免贴边。
+        chrome.layoutSubtreeIfNeeded()
+        heightConstraint.constant = max(72, ceil(chrome.fittingSize.height + 16))
+        invalidateIntrinsicContentSize()
+        needsLayout = true
     }
 
-    private func label(_ text: String, bold: Bool, size: CGFloat, height: CGFloat) -> NSView {
-        let field = NSTextField(labelWithString: text)
-        field.font = IMEAppearancePrefs.candidateFont(size: size, bold: bold)
-        field.lineBreakMode = .byClipping
-        field.setContentHuggingPriority(.required, for: .horizontal)
-
-        let holder = NSView()
-        holder.addSubview(field)
-        field.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            field.leadingAnchor.constraint(equalTo: holder.leadingAnchor, constant: 2),
-            field.trailingAnchor.constraint(equalTo: holder.trailingAnchor, constant: -2),
-            field.centerYAnchor.constraint(equalTo: holder.centerYAnchor),
-            holder.heightAnchor.constraint(equalToConstant: height)
-        ])
-        return holder
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: NSView.noIntrinsicMetric, height: heightConstraint.constant)
     }
 }
 
 // MARK: - Control targets
+
+private final class VerticalAlignmentTarget: NSObject {
+    static let shared = VerticalAlignmentTarget()
+    @objc func changed(_ sender: NSSegmentedControl) {
+        let choices = CandidateSkin.VerticalAlignment.allCases
+        let index = min(max(sender.selectedSegment, 0), choices.count - 1)
+        IMEAppearancePrefs.updateSkin { $0.verticalAlignment = choices[index] }
+    }
+}
 
 private final class OrientationTarget: NSObject {
     static let shared = OrientationTarget()
@@ -552,7 +1033,18 @@ private final class OrientationTarget: NSObject {
 private final class FontTarget: NSObject {
     static let shared = FontTarget()
     @objc func changed(_ sender: NSPopUpButton) {
-        IMEAppearancePrefs.fontName = (sender.selectedItem?.representedObject as? String) ?? ""
+        let value = (sender.selectedItem?.representedObject as? String) ?? ""
+        // 换字体后收敛粗细选项，避免高级区仍指向当前字体不支持的字重。
+        IMEAppearancePrefs.updateSkin { skin in
+            skin.fontName = value
+            let choices = CandidateSkin.FontWeight.available(forFontName: value)
+            if !choices.contains(skin.candidateWeight) {
+                skin.candidateWeight = choices.first ?? .regular
+            }
+            if !choices.contains(skin.indexWeight) {
+                skin.indexWeight = choices.first ?? .regular
+            }
+        }
     }
 }
 
@@ -571,8 +1063,31 @@ private final class ToggleTarget: NSObject {
     @objc func preeditChanged(_ sender: NSButton) {
         IMEAppearancePrefs.showPreeditInPanel = sender.state == .on
     }
-    @objc func indexChanged(_ sender: NSButton) {
-        IMEAppearancePrefs.showIndex = sender.state == .on
+}
+
+private final class IndexStyleTarget: NSObject {
+    static let shared = IndexStyleTarget()
+    @objc func changed(_ sender: NSSegmentedControl) {
+        let choices = IMEAppearancePrefs.IndexStyle.allCases
+        guard choices.indices.contains(sender.selectedSegment) else { return }
+        IMEAppearancePrefs.indexStyle = choices[sender.selectedSegment]
+    }
+}
+
+private final class DisplayModeTarget: NSObject {
+    static let shared = DisplayModeTarget()
+    @objc func changed(_ sender: NSSegmentedControl) {
+        IMEAppearancePrefs.displayMode = IMEAppearancePrefs.DisplayMode(rawValue: sender.selectedSegment) ?? .panel
+    }
+}
+
+private final class InputTestTarget: NSObject {
+    static let shared = InputTestTarget()
+    weak var textView: NSTextView?
+    // 清空测试文本并把焦点放回文本区，便于继续输入。
+    @objc func clear(_ sender: NSButton) {
+        textView?.string = ""
+        textView?.window?.makeFirstResponder(textView)
     }
 }
 
@@ -602,5 +1117,14 @@ private final class SecondThirdTarget: NSObject {
         if let keys = RimeBehaviorPrefs.SecondThirdKeys(rawValue: rawValue) {
             RimeBehaviorPrefs.secondThirdKeys = keys
         }
+    }
+}
+
+private final class ContactCopyTarget: NSObject {
+    static let shared = ContactCopyTarget()
+    @objc func copyValue(_ sender: NSButton) {
+        guard let value = sender.identifier?.rawValue, !value.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(value, forType: .string)
     }
 }

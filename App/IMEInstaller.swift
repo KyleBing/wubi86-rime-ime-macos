@@ -67,6 +67,15 @@ enum IMEInstaller {
         killAgent.waitUntilExit()
     }
 
+    // 结束正在运行的输入法进程，系统下次需要时会自动拉起，从而读到新的词库目录
+    static func restartRunningIME() {
+        let kill = Process()
+        kill.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        kill.arguments = ["MeifengWubiIME"]
+        try? kill.run()
+        kill.waitUntilExit()
+    }
+
     static func installEmbeddedIME() throws {
         precondition(Thread.isMainThread, "installEmbeddedIME 必须在主线程")
         try copyEmbeddedIME()

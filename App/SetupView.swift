@@ -6,25 +6,40 @@ struct SetupView: View {
     @State private var status = IMEInstaller.statusText()
     @State private var message = ""
     @State private var isBusy = false
-    @State private var lexiconRefresh = 0
-    @State private var goCandidatePrefs = false
 
+    // 版本号取自 Info.plist：营销版本 + 构建号
+    private static var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "-"
+        let build = info?["CFBundleVersion"] as? String ?? "-"
+        return "v\(version) (\(build))"
+    }
     var body: some View {
         NavigationStack {
+            // 内容高于屏幕时可滚动，避免顶部被裁掉
+            ScrollView {
             VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 14) {
-                // 圆角品牌图（桌面图标另用 1024 方图）
-                if let brand = BrandIcon.image() {
+                // 主页用透明枫叶 Logo，不用 AppIcon / 圆角图标。
+                if let brand = BrandIcon.settingsImage() {
                     Image(nsImage: brand)
                         .resizable()
                         .interpolation(.high)
                         .frame(width: 64, height: 64)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("玫枫五笔")
-                        .font(.system(size: 28, weight: .bold))
-                    Text("原生 macOS 输入法 · 无皮肤配置 · 系统朴素候选条")
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("玫枫五笔")
+                            .font(.system(size: 28, weight: .bold))
+                        Text(Self.versionText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    Text("原生 macOS 输入法 · 明暗皮肤 · 可分享配置")
+                        .font(.callout)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -32,43 +47,34 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(status)
                         .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
                     HStack {
                         Button("安装 / 更新输入法") { install() }
                             .disabled(isBusy)
                         Button("打开系统设置·输入法") { IMEInstaller.openInputSourcesPrefs() }
+                        // 重新读取是否已安装 / 已在系统输入法列表中启用（安装后或去系统设置改完再点）。
                         Button("刷新状态") { status = IMEInstaller.statusText() }
+                            .help("重新检查输入法是否已安装并在系统中启用")
                     }
                     if !message.isEmpty {
-                        Text(message).font(.caption).foregroundStyle(.secondary)
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
             }
 
-            GroupBox("候选栏") {
+            GroupBox("输入法设置") {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("方向、字号、序号等（类似系统中文输入法选项）")
+                    Text("外观、按键、用户词与词库目录等，在设置窗口中统一管理。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     // 完整设置页自带左侧栏，必须用独立大尺寸窗口承载。
                     Button("打开输入法设置") {
-                        goCandidatePrefs = true
-                    }
-                }
-                .padding(4)
-            }
-
-            GroupBox("词库") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("用户词库：\(UserDictWriter.activeURL.path)")
-                        .font(.caption)
-                        .lineLimit(2)
-                    HStack {
-                        Button("部署当前配置") { deploy() }
-                        Button("复位原始配置") { reset() }
-                        NavigationLink("管理用户词") {
-                            UserLexiconMacView()
-                        }
+                        CandidateSettingsWindow.show()
                     }
                 }
                 .padding(4)
@@ -82,44 +88,84 @@ struct SetupView: View {
                     Text("4. 单独按 Shift 切换中/英；数字 1–9 选词。")
                 }
                 .font(.callout)
+                // 说明文字按窗口宽度换行，完整显示
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(4)
+            }
+
+            // 反馈渠道：邮箱可直接唤起邮件，QQ 群号提供一键复制。
+            GroupBox("反馈与联系") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 4) {
+                        Text("邮箱：")
+                        Link("kylebing@163.com", destination: URL(string: "mailto:kylebing@163.com")!)
+                        Button("复制") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString("kylebing@163.com", forType: .string)
+                            message = "已复制邮箱"
+                        }
+                        .controlSize(.small)
+                    }
+                    HStack(spacing: 4) {
+                        Text("QQ 群：")
+                        Text("878750538").textSelection(.enabled)
+                        Button("复制") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString("878750538", forType: .string)
+                            message = "已复制 QQ 群号"
+                        }
+                        .controlSize(.small)
+                    }
+                }
+                .font(.callout)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(4)
+            }
+
+            // 开源引用说明：librime 为 BSD 3-Clause 许可，需保留版权声明。
+            GroupBox("开源致谢") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 4) {
+                        Text("输入引擎：")
+                        Link("librime", destination: URL(string: "https://github.com/rime/librime")!)
+                        Text("· 中州韵输入法引擎")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Copyright © RIME Developers，基于 BSD 3-Clause License 发布。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Text("五笔码表：")
+                        Link("rime-wubi86-jidian", destination: URL(string: "https://github.com/KyleBing/rime-wubi86-jidian")!)
+                        Text("· 86 极点码表")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .font(.callout)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
             }
 
             Spacer(minLength: 0)
         }
         .padding(24)
-        .sheet(isPresented: $goCandidatePrefs) {
-            CandidatePrefsView()
-                .frame(
-                    minWidth: IMESettingsControls.minWindowSize.width,
-                    minHeight: IMESettingsControls.minWindowSize.height
-                )
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("完成") { goCandidatePrefs = false }
-                    }
-                }
-                .frame(
-                    width: IMESettingsControls.preferredWindowSize.width,
-                    height: IMESettingsControls.preferredWindowSize.height
-                )
-        }
+            }
         }
         .onAppear {
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
             status = IMEInstaller.statusText()
             if preferOpenCandidatePrefs {
-                goCandidatePrefs = true
+                CandidateSettingsWindow.show()
                 preferOpenCandidatePrefs = false
             }
         }
         .onChange(of: preferOpenCandidatePrefs) { new in
             if new {
-                goCandidatePrefs = true
+                CandidateSettingsWindow.show()
                 preferOpenCandidatePrefs = false
             }
         }
-        .id(lexiconRefresh)
     }
 
     private func install() {
@@ -141,28 +187,6 @@ struct SetupView: View {
                     isBusy = false
                 }
             }
-        }
-    }
-
-    private func deploy() {
-        let result = RimeConfigDeploy.deployNow()
-        switch result {
-        case .success:
-            message = "部署成功"
-            lexiconRefresh += 1
-        case .failure(let err):
-            message = err
-        }
-    }
-
-    private func reset() {
-        let result = RimeConfigDeploy.resetToFactory()
-        switch result {
-        case .success:
-            message = "已复位并部署"
-            lexiconRefresh += 1
-        case .failure(let err):
-            message = err
         }
     }
 }

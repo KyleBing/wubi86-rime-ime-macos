@@ -10,6 +10,9 @@ final class MeifengInputController: IMKInputController {
     private var asciiMode = false
     private var shiftIsSticky = false
     private var sawOtherKeyWithShift = false
+    // 预置候选（date / time）由输入法自行分页，记录当前页与所属编码。
+    private var specialPage = 0
+    private var specialPreedit = ""
     // 强引用，避免设置窗口闪一下被释放
     private var preferencesWindowController: MeifengPreferencesWindowController?
 
@@ -101,6 +104,11 @@ final class MeifengInputController: IMKInputController {
             return false
         }
 
+        // 预置候选不在 Rime 菜单里，选词 / 翻页键需自行处理。
+        if !asciiMode, let handled = handleSpecialCandidateKey(event) {
+            return handled
+        }
+
         // 数字选词
         if let snap = RimeSession.shared.bridgeEngine.snapshot(),
            snap.isComposing,
@@ -133,6 +141,91 @@ final class MeifengInputController: IMKInputController {
     }
 
     // MARK: - Private
+
+    // 当前编码命中预置候选时，按设置里的选词 / 翻页键操作；返回 nil 表示交给 Rime 继续处理。
+    private func handleSpecialCandidateKey(_ event: NSEvent) -> Bool? {
+        guard let snap = RimeSession.shared.bridgeEngine.snapshot(),
+              snap.isComposing,
+              let preedit = snap.preedit,
+              let special = DateTimeCandidates.candidates(for: preedit),
+              !special.isEmpty,
+              event.modifierFlags.intersection([.control, .option]).isEmpty,
+              let ch = event.charactersIgnoringModifiers?.first else {
+            return nil
+        }
+        let pageSize = IMEAppearancePrefs.pageSize
+        let pageCount = (special.count + pageSize - 1) / pageSize
+        syncSpecialPage(preedit: preedit)
+
+        // 选中当前页第 n 个（0 起）。
+        func pick(_ n: Int) -> Bool {
+            let index = specialPage * pageSize + n
+            guard n < pageSize, special.indices.contains(index) else { return true }
+            commitSpecial(special[index])
+            return true
+        }
+
+        // 翻页到头 / 到尾即停，不循环。
+        func turn(_ delta: Int) -> Bool {
+            let target = min(max(specialPage + delta, 0), pageCount - 1)
+            if target != specialPage {
+                specialPage = target
+                showCandidates(special, preedit: preedit)
+            }
+            return true
+        }
+
+        if let digit = ch.wholeNumberValue, (1...9).contains(digit) {
+            return pick(digit - 1)
+        }
+        if ch == " " {
+            return pick(0)
+        }
+        if RimeBehaviorPrefs.secondThirdKeys == .semicolonApostrophe {
+            if ch == ";" { return pick(1) }
+            if ch == "'" { return pick(2) }
+        }
+
+        let paging = RimeBehaviorPrefs.pagingKeys
+        let minusEqual = paging == .minusEqual || paging == .minusAndComma
+        let commaPeriod = paging == .commaPeriod || paging == .minusAndComma
+        let brackets = paging == .brackets
+        switch ch {
+        case "-" where minusEqual, "," where commaPeriod, "[" where brackets:
+            return turn(-1)
+        case "=" where minusEqual, "." where commaPeriod, "]" where brackets:
+            return turn(1)
+        default:
+            break
+        }
+        // PageUp / PageDown 也可翻页。
+        switch Int(event.keyCode) {
+        case kVK_PageUp:
+            return turn(-1)
+        case kVK_PageDown:
+            return turn(1)
+        default:
+            return nil
+        }
+    }
+
+    // 编码变化时回到预置候选第一页。
+    private func syncSpecialPage(preedit: String) {
+        if preedit != specialPreedit {
+            specialPreedit = preedit
+            specialPage = 0
+        }
+    }
+
+    // 预置候选上屏并清空 Rime 编码。
+    private func commitSpecial(_ text: String) {
+        insertText(text)
+        RimeSession.shared.bridgeEngine.clearComposition()
+        panel.hide()
+        clearMarkedText()
+        specialPreedit = ""
+        specialPage = 0
+    }
 
     private func handleFlagsChanged(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -188,12 +281,13 @@ final class MeifengInputController: IMKInputController {
     private func selectCandidate(index: Int) -> Bool {
         let engine = RimeSession.shared.bridgeEngine
         let preedit = engine.snapshot()?.preedit ?? ""
-        if let special = DateTimeCandidates.candidates(for: preedit),
-           special.indices.contains(index) {
-            insertText(special[index])
-            engine.clearComposition()
-            panel.hide()
-            clearMarkedText()
+        if let special = DateTimeCandidates.candidates(for: preedit) {
+            // index 为当前页内序号，换算到整张预置列表。
+            syncSpecialPage(preedit: preedit)
+            let absolute = specialPage * IMEAppearancePrefs.pageSize + index
+            if special.indices.contains(absolute) {
+                commitSpecial(special[absolute])
+            }
             return true
         }
         guard engine.selectCandidate(index: index) else { return true }
@@ -201,13 +295,22 @@ final class MeifengInputController: IMKInputController {
     }
 
     private func showCandidates(_ texts: [String], preedit: String) {
-        guard !texts.isEmpty || !preedit.isEmpty else {
+        // 没有候选时只保留编码下划线，不弹出空候选窗。
+        guard !texts.isEmpty else {
             panel.hide()
             return
         }
         // 用整段编码的屏幕范围定位，让候选窗从编码左侧正下方开始
         let caret = markedTextScreenRect(preedit: preedit)
-        panel.show(candidates: Array(texts.prefix(IMEAppearancePrefs.pageSize)), preedit: preedit, caretRect: caret) { [weak self] idx in
+        let pageSize = IMEAppearancePrefs.pageSize
+        var page = Array(texts.prefix(pageSize))
+        if DateTimeCandidates.candidates(for: preedit) != nil {
+            // 预置候选按当前页切片；Rime 候选本身已是当前页。
+            syncSpecialPage(preedit: preedit)
+            let start = min(specialPage * pageSize, max(texts.count - 1, 0))
+            page = Array(texts[start..<min(start + pageSize, texts.count)])
+        }
+        panel.show(candidates: page, preedit: preedit, caretRect: caret) { [weak self] idx in
             _ = self?.selectCandidate(index: idx)
         }
     }

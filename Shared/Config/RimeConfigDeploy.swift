@@ -36,6 +36,42 @@ enum RimeConfigDeploy {
         }
     }
 
+    /// 改选 Rime 目录：把当前目录里新目录没有的文件拷过去（不覆盖已有），再切换并部署。
+    /// - Parameter newURL: nil 表示恢复默认目录
+    static func changeUserDataDirectory(to newURL: URL?) -> Result {
+        let fm = FileManager.default
+        let oldURL = RimeResourceDeployer.resolveUserDataURL().standardizedFileURL
+        guard let target = (newURL ?? AppGroupPaths.defaultRimeUserDataURL)?.standardizedFileURL else {
+            return .failure("无法确定目标目录")
+        }
+        if target == oldURL {
+            return .success
+        }
+        // 选到当前目录的子目录会把自己拷进自己
+        if target.path.hasPrefix(oldURL.path + "/") {
+            return .failure("不能选择当前词库目录内的子目录")
+        }
+        do {
+            try fm.createDirectory(at: target, withIntermediateDirectories: true)
+            guard fm.isWritableFile(atPath: target.path) else {
+                return .failure("目录不可写：\(target.path)")
+            }
+            // build 为编译产物，切换后重新部署生成，不必拷贝
+            let items = try fm.contentsOfDirectory(at: oldURL, includingPropertiesForKeys: nil)
+            for item in items where item.lastPathComponent != "build" {
+                let dest = target.appendingPathComponent(item.lastPathComponent)
+                if !fm.fileExists(atPath: dest.path) {
+                    try fm.copyItem(at: item, to: dest)
+                }
+            }
+            try AppGroupPaths.setCustomRimeUserDataURL(newURL)
+        } catch {
+            return .failure(error.localizedDescription)
+        }
+        _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
+        return deployNow()
+    }
+
     /// 清空目录 → 恢复内置全部文件 → 立即部署（真正复位）
     static func resetToFactory() -> Result {
         do {

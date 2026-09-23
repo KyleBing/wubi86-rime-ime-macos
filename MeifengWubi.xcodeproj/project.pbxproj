@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0157F0C33449E6F5A2DC241A /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		0211C3B73662C73A882F6158 /* MeifengInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBEA840D939669F718FD4AD4 /* MeifengInputController.swift */; };
 		029C183DFA7038E4CD9F6773 /* UserLexiconMacView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7D61DD46F9981DD7954F00 /* UserLexiconMacView.swift */; };
 		06F9F1DE3C028705EDA3F6F9 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
 		09AD775E38D5D0F83109FC5E /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
 		0A3BFE457920CEC20A8B7E89 /* ime-menu.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 65C4AFC0B13717FEC1CC6B2B /* ime-menu.tiff */; };
+		0B4757D660C0445A0FDE98E2 /* WubiDictEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447582A005152D7C6FA2A9E1 /* WubiDictEncoder.swift */; };
 		0C2D08E8E8729C07352E374A /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		15385DC5714BB1F08FB63ED2 /* RimeEngineLibrime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E6EFCDF4269B3F115466FF /* RimeEngineLibrime.swift */; };
 		15F6F6711F1448C36B76EE9C /* CandidatePrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */; };
@@ -23,6 +25,7 @@
 		2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
 		25E2D63AB7A10A0B5D60C569 /* RimeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF649A4E4D7B4308E42C40A /* RimeSession.swift */; };
 		262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
+		269ADB51357707561C741F56 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
 		29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615469236E5D6367D75035EA /* MacKeyMapper.swift */; };
 		2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
@@ -35,30 +38,37 @@
 		4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		43BC4B6339364043898203E7 /* RimeEngineLibrime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E6EFCDF4269B3F115466FF /* RimeEngineLibrime.swift */; };
 		482CA56946512CC0BBE06A4A /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
+		4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		4AF6153B59DBF8D237670255 /* RimeMaintenanceDeployer.mm in Sources */ = {isa = PBXBuildFile; fileRef = F57DFE5123783D71073CC374 /* RimeMaintenanceDeployer.mm */; };
 		4B8B61E5F2A190D6763ADCF9 /* RimeBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 064C42D5A8170877BEAB35CD /* RimeBridge.mm */; };
 		4DAC73FDBF2F9B72CFD055AA /* RimeConfigDeploy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */; };
 		4F116F28B0E702850A4EC6B2 /* WubiDictEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447582A005152D7C6FA2A9E1 /* WubiDictEncoder.swift */; };
 		510DDC435CA3407BF57DD1C4 /* InputMethodKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C3378BFBAFBF24C858DA3A90 /* InputMethodKit.framework */; };
 		5215267692DC64293A749132 /* AppIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = B9A8254A0CEAC5801EC4BD36 /* AppIcon.png */; };
+		524BECCB61835EF647986BE0 /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		52ADE330850DB9B73307459D /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
 		5589CD94ECF6441A859E484E /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
 		565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
+		587585789D18AC65610E3599 /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		59565BD9469DE3D4EE08E1BD /* RimeFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */; };
 		63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
 		6800E705D80583B26DC5522C /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
+		696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		6A69BD3E62000FC3DC50CE8E /* RimeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FE659C9C777569B0F90FF3 /* RimeEngine.swift */; };
 		6E115D99602A9D0A76DBFEF5 /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
 		6F1D51FFE9B5354D3D61ABB1 /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		718DA2F8CA7BC0E9146B203D /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
+		7284B5B5222BE96CB648D890 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		72F94FFBA6C4B75C2D8F4209 /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
 		75B2021DD3BFA72A096F28B2 /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
+		76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
 		7B51FE9EF536A7D947180C8A /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		7EBB5925C68CB60B2128A1FC /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		7F074AAC5692FF21475E7E8E /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */; };
 		84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
+		88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		8E86DF6AF5BAA615BD33AF11 /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */; };
 		976EDE71DD4F10047249C22B /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
@@ -66,17 +76,25 @@
 		9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73273824288403B472874C04 /* MeifengPreferencesPane.swift */; };
 		A25A48831BEDCD51C10831E5 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
 		A4CACD8E37D11B0C87216456 /* RimeMaintenanceDeployer.mm in Sources */ = {isa = PBXBuildFile; fileRef = F57DFE5123783D71073CC374 /* RimeMaintenanceDeployer.mm */; };
+		A7C6B98A78BE51213D8EA750 /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		A8493B9A06D5E12C793F9790 /* WubiDictEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447582A005152D7C6FA2A9E1 /* WubiDictEncoder.swift */; };
+		AA16E4AD145ED38E511A0BD2 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		AAB261BF7949C35E0D5E172B /* ime-input-source.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 1F94FF2F1C3DDE276748915E /* ime-input-source.tiff */; };
 		B07BBA34828868BC5631267A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0E1E8383EB913ACD399FD6F8 /* Assets.xcassets */; };
 		B1C7A82E390423DE7DE32AD4 /* IMEAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */; };
 		B22E4FDA10C39DFB2FF4060B /* CandidatePanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */; };
+		B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
+		C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		C786E1C3C70A4BD6C17C698B /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		C858DFB0B9FA9466611D701F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
+		CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
+		CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		DDAE8E5A0B37C9C0372B824D /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
+		E08C588D6900B0980DED3F58 /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		E45D89ECD09C4AF33347119A /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
+		E49047D036A919C64779C4FB /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
 		E50B5B7A463BCDD4EFEF7B2C /* DateTimeCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */; };
 		E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		E7C0D46C471910A67A1020C0 /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
@@ -87,6 +105,7 @@
 		EE92862EE797901BAD408C43 /* DateTimeCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */; };
 		F0ADB441F0E1138DBC4B7F46 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		F62728C765CD0D5DC6650D47 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F0CF3F6662273519E251BADF /* InfoPlist.strings */; };
+		FBFCA3165B7780044C96E1AE /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -120,6 +139,7 @@
 		1F94FF2F1C3DDE276748915E /* ime-input-source.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "ime-input-source.tiff"; sourceTree = "<group>"; };
 		2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeResourceDeployer.swift; sourceTree = "<group>"; };
 		23837C5F463DCA00A7AA16C3 /* PreferencePanes.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PreferencePanes.framework; path = System/Library/Frameworks/PreferencePanes.framework; sourceTree = SDKROOT; };
+		242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLexiconSettingsView.swift; sourceTree = "<group>"; };
 		25B4BCCAB83533C47D12EE70 /* Meifeng-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Meifeng-Bridging-Header.h"; sourceTree = "<group>"; };
 		2C18D3685813FDF25FAD2454 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDictWriter.swift; sourceTree = "<group>"; };
@@ -141,6 +161,7 @@
 		6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePanelController.swift; sourceTree = "<group>"; };
 		73273824288403B472874C04 /* MeifengPreferencesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengPreferencesPane.swift; sourceTree = "<group>"; };
+		739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkin.swift; sourceTree = "<group>"; };
 		7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MeifengWubiPrefs.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePrefsView.swift; sourceTree = "<group>"; };
 		81FE659C9C777569B0F90FF3 /* RimeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeEngine.swift; sourceTree = "<group>"; };
@@ -154,10 +175,13 @@
 		B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppDelegate.swift; sourceTree = "<group>"; };
 		B9A8254A0CEAC5801EC4BD36 /* AppIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AppIcon.png; sourceTree = "<group>"; };
 		BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeBehaviorPrefs.swift; sourceTree = "<group>"; };
+		C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiconDirectorySettingsView.swift; sourceTree = "<group>"; };
 		C3378BFBAFBF24C858DA3A90 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = System/Library/Frameworks/InputMethodKit.framework; sourceTree = SDKROOT; };
+		C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkinSettingsView.swift; sourceTree = "<group>"; };
 		CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeFileStore.swift; sourceTree = "<group>"; };
 		D856B4925F0354EB314DFC1A /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		EBEA840D939669F718FD4AD4 /* MeifengInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengInputController.swift; sourceTree = "<group>"; };
+		EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateBarLayout.swift; sourceTree = "<group>"; };
 		EF68B9218FC255AC341E959B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupPaths.swift; sourceTree = "<group>"; };
 		F35C1942992FCC9EB78784C5 /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
@@ -198,9 +222,13 @@
 		25B26C185274D2E1B8DDE821 /* Prefs */ = {
 			isa = PBXGroup;
 			children = (
+				EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */,
 				1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */,
+				C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */,
 				3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */,
+				C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */,
 				61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */,
+				242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */,
 			);
 			path = Prefs;
 			sourceTree = "<group>";
@@ -332,6 +360,7 @@
 			isa = PBXGroup;
 			children = (
 				F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */,
+				739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */,
 				0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */,
 				BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */,
 				134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */,
@@ -556,13 +585,17 @@
 			files = (
 				F0ADB441F0E1138DBC4B7F46 /* AppGroupPaths.swift in Sources */,
 				4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */,
+				88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */,
 				15F6F6711F1448C36B76EE9C /* CandidatePrefsView.swift in Sources */,
 				32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */,
+				B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */,
+				FBFCA3165B7780044C96E1AE /* CandidateSkinSettingsView.swift in Sources */,
 				EE92862EE797901BAD408C43 /* DateTimeCandidates.swift in Sources */,
 				482CA56946512CC0BBE06A4A /* DictModels.swift in Sources */,
 				3A035315DF59B0F6572E4C5B /* IMEAppearancePrefs.swift in Sources */,
 				1DD2A2A4C1418DE05E3FB303 /* IMEInstaller.swift in Sources */,
 				2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */,
+				7284B5B5222BE96CB648D890 /* LexiconDirectorySettingsView.swift in Sources */,
 				7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */,
 				63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */,
 				4B8B61E5F2A190D6763ADCF9 /* RimeBridge.mm in Sources */,
@@ -577,6 +610,7 @@
 				E7C0D46C471910A67A1020C0 /* UserDictWriter+Active.swift in Sources */,
 				E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */,
 				029C183DFA7038E4CD9F6773 /* UserLexiconMacView.swift in Sources */,
+				0157F0C33449E6F5A2DC241A /* UserLexiconSettingsView.swift in Sources */,
 				4F116F28B0E702850A4EC6B2 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -587,13 +621,22 @@
 			files = (
 				7B51FE9EF536A7D947180C8A /* AppGroupPaths.swift in Sources */,
 				262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */,
+				587585789D18AC65610E3599 /* CandidateBarLayout.swift in Sources */,
 				09AD775E38D5D0F83109FC5E /* CandidatePreviewPanelController.swift in Sources */,
+				E08C588D6900B0980DED3F58 /* CandidateSkin.swift in Sources */,
+				C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */,
+				269ADB51357707561C741F56 /* DictModels.swift in Sources */,
 				2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */,
 				34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */,
+				76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */,
 				9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */,
 				78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */,
 				0C2D08E8E8729C07352E374A /* RimeResourceDeployer.swift in Sources */,
 				84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */,
+				E49047D036A919C64779C4FB /* UserDictWriter+Active.swift in Sources */,
+				A7C6B98A78BE51213D8EA750 /* UserDictWriter.swift in Sources */,
+				CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */,
+				0B4757D660C0445A0FDE98E2 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -603,13 +646,17 @@
 			files = (
 				D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */,
 				565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */,
+				4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */,
 				B22E4FDA10C39DFB2FF4060B /* CandidatePanelController.swift in Sources */,
 				1DEAABE28CECE6AEDDBFC240 /* CandidatePreviewPanelController.swift in Sources */,
+				524BECCB61835EF647986BE0 /* CandidateSkin.swift in Sources */,
+				696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */,
 				E50B5B7A463BCDD4EFEF7B2C /* DateTimeCandidates.swift in Sources */,
 				35662FCD45096FD9C12C5706 /* DictModels.swift in Sources */,
 				B1C7A82E390423DE7DE32AD4 /* IMEAppDelegate.swift in Sources */,
 				5589CD94ECF6441A859E484E /* IMEAppearancePrefs.swift in Sources */,
 				BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */,
+				AA16E4AD145ED38E511A0BD2 /* LexiconDirectorySettingsView.swift in Sources */,
 				29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */,
 				0211C3B73662C73A882F6158 /* MeifengInputController.swift in Sources */,
 				9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */,
@@ -625,6 +672,7 @@
 				1DB78EC17209EA333B2C4BCB /* RoundedChromeView.swift in Sources */,
 				75B2021DD3BFA72A096F28B2 /* UserDictWriter+Active.swift in Sources */,
 				ED8FFFD2F39943D4FBE17B71 /* UserDictWriter.swift in Sources */,
+				CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */,
 				A8493B9A06D5E12C793F9790 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

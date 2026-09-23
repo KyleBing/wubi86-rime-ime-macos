@@ -19,6 +19,11 @@ enum RimeResourceDeployer {
         if AppGroupPaths.ensureDirectories(), let url = AppGroupPaths.rimeUserDataURL {
             return url
         }
+        // 自定义目录不可用（如外置盘未挂载）时退回默认目录
+        if let fallback = AppGroupPaths.defaultRimeUserDataURL,
+           (try? FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)) != nil {
+            return fallback
+        }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("rime", isDirectory: true)
         try? FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)

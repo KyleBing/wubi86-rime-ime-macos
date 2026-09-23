@@ -1,15 +1,16 @@
 import AppKit
 
-/// 圆角品牌图：App 主界面 / 输入法设置面板共用
+/// 品牌图：App 主界面与设置侧栏共用透明 Logo；圆角图仅作兼容保留。
 enum BrandIcon {
     static let resourceName = "BrandIconRounded"
     static let settingsResourceName = "SettingsLogo"
 
+    /// 兼容旧调用；新界面请用 settingsImage。
     static func image() -> NSImage? {
-        load(resourceName)
+        settingsImage()
     }
 
-    /// 设置侧边栏使用独立的透明枫叶 Logo，不影响 App 和输入法图标。
+    /// 透明枫叶 Logo（App 主页 / 设置侧栏），与 AppIcon 无关。
     static func settingsImage() -> NSImage? {
         load(settingsResourceName)
     }

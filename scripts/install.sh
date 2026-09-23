@@ -18,6 +18,8 @@ xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi \
   -configuration Release -derivedDataPath "$DD" build
 
 killall MeifengWubiIME 2>/dev/null || true
+# 旧的主 App 进程仍在运行时，末尾 open 只会激活旧进程，界面看不到新改动
+killall MeifengWubi 2>/dev/null || true
 
 # 注销工程目录里误注册的构建产物，避免列表出现多个同名输入法
 for p in \

@@ -25,6 +25,37 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
     }
 
     private static func makeWindow() -> NSWindow {
+        // IME 进程注入词库部署 / 目录切换；换目录后重启自身以便读新路径。
+        IMESettingsControls.lexiconActions = IMESettingsControls.LexiconActions(
+            deploy: {
+                switch RimeConfigDeploy.deployNow() {
+                case .success: return (true, "部署成功")
+                case .failure(let err): return (false, err)
+                }
+            },
+            reset: {
+                switch RimeConfigDeploy.resetToFactory() {
+                case .success: return (true, "已复位并部署")
+                case .failure(let err): return (false, err)
+                }
+            },
+            changeDataDirectory: { url in
+                switch RimeConfigDeploy.changeUserDataDirectory(to: url) {
+                case .success:
+                    let message = url == nil ? "已恢复默认词库目录并部署" : "已切换词库目录并部署"
+                    return (true, message)
+                case .failure(let err):
+                    return (false, err)
+                }
+            },
+            restartIME: {
+                let kill = Process()
+                kill.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+                kill.arguments = ["MeifengWubiIME"]
+                try? kill.run()
+                kill.waitUntilExit()
+            }
+        )
         let size = IMESettingsControls.preferredWindowSize
         let form = IMESettingsControls.makeFormView(size: size)
         let win = NSWindow(

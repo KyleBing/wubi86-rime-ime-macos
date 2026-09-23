@@ -1,6 +1,6 @@
 # 玫枫五笔（macOS）
 
-原生 InputMethodKit 五笔输入法，复用 iOS 版同一套 `wubi86_jidian` + librime（无 Lua、无皮肤配置）。
+原生 InputMethodKit 五笔输入法，复用 iOS 版同一套 `wubi86_jidian` + librime（无 Lua，支持可分享的明暗候选栏皮肤）。
 
 ## 结构
 
@@ -38,4 +38,4 @@ xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi -configuration Deb
 
 - 单独 Shift：中/英切换
 - 数字 1–9：选词
-- `date` / `time` / `dt` / `ts`：时间日期候选
+- `date` / `time` / `week`：时间日期候选
