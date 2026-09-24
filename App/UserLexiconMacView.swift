@@ -24,6 +24,14 @@ struct UserLexiconMacView: View {
                     HStack {
                         Text(e.code).frame(width: 72, alignment: .leading).font(.system(.body, design: .monospaced))
                         Text(e.text)
+                        Text(e.weight.map(String.init) ?? "")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 64, alignment: .trailing)
+                        Text(e.note.isEmpty ? "—" : e.note)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         Spacer()
                         Button("删") {
                             try? UserDictWriter.removeEntry(e)

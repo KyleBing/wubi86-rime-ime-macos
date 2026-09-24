@@ -407,7 +407,13 @@ final class MeifengInputController: IMKInputController {
 
     override func menu() -> NSMenu! {
         let menu = NSMenu(title: "玫枫五笔")
-        // 菜单栏只保留设置入口；方向/字号等在设置窗口里改
+        let deploy = NSMenuItem(
+            title: "部署",
+            action: #selector(deployFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        deploy.target = self
+        menu.addItem(deploy)
         let prefs = NSMenuItem(
             title: "玫枫五笔设置…",
             action: #selector(openPreferences(_:)),
@@ -416,6 +422,24 @@ final class MeifengInputController: IMKInputController {
         prefs.target = self
         menu.addItem(prefs)
         return menu
+    }
+
+    // 菜单栏手动全量部署，并让当前输入法进程立刻重载
+    @objc func deployFromMenu(_ sender: Any?) {
+        let result = RimeConfigDeploy.deployNow()
+        _ = RimeSession.shared.ensureStarted()
+        let alert = NSAlert()
+        switch result {
+        case .success:
+            alert.messageText = "部署完成"
+            alert.informativeText = "当前词库配置已重新部署。"
+        case .failure(let message):
+            alert.messageText = "部署失败"
+            alert.informativeText = message
+            alert.alertStyle = .warning
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     /// 菜单栏「设置」入口（绕过仅依赖 nib / 空 window 的默认实现）

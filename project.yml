@@ -33,11 +33,20 @@ targets:
       - path: Shared/Prefs/RoundedChromeView.swift
       - path: Shared/Prefs/CandidateBarLayout.swift
       - path: Shared/Prefs/UserLexiconSettingsView.swift
+      - path: Shared/Prefs/DictEditorIcons.swift
       - path: Shared/Prefs/LexiconDirectorySettingsView.swift
       - path: Shared/Lexicon/DictModels.swift
       - path: Shared/Lexicon/UserDictWriter.swift
       - path: Shared/Lexicon/UserDictWriter+Active.swift
       - path: Shared/Lexicon/WubiDictEncoder.swift
+      - path: Shared/Config/QuickAddPrefs.swift
+      - path: Shared/Sync/WubiCloudConfig.swift
+      - path: Shared/Sync/WubiCloudAPI.swift
+      - path: Shared/Sync/DictSyncDiff.swift
+      - path: Shared/Sync/ExtraDictUpdater.swift
+      - path: Shared/Sync/CloudDictSync.swift
+      - path: Shared/Prefs/AccountSyncSettingsView.swift
+      - path: Shared/Prefs/QuickAddHotkeySettingsView.swift
       # 设置面板标题旁圆角品牌图
       - path: Shared/Brand/BrandIconRounded.png
         buildPhase: resources

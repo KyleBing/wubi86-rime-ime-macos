@@ -5,12 +5,16 @@ struct UserDictEntry: Codable, Equatable, Identifiable {
     var id: String { "\(code)|\(text)" }
     var code: String
     var text: String
-    var weight: Int
+    /// 空表示码表里没有权重列
+    var weight: Int?
+    /// 码表第四列，对应码表助手的备注
+    var note: String
 
-    init(code: String, text: String, weight: Int = 1000) {
+    init(code: String, text: String, weight: Int? = nil, note: String = "") {
         self.code = code
         self.text = text
         self.weight = weight
+        self.note = note
     }
 }
 

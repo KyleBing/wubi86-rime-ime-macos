@@ -29,7 +29,9 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
         IMESettingsControls.lexiconActions = IMESettingsControls.LexiconActions(
             deploy: {
                 switch RimeConfigDeploy.deployNow() {
-                case .success: return (true, "部署成功")
+                case .success:
+                    _ = RimeSession.shared.ensureStarted()
+                    return (true, "部署成功")
                 case .failure(let err): return (false, err)
                 }
             },

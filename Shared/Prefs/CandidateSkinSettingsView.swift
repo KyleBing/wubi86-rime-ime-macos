@@ -298,12 +298,8 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         stack.setContentCompressionResistancePriority(.required, for: .vertical)
         content.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
 
-        let container = NSView()
-        container.wantsLayer = true
-        container.layer?.cornerRadius = 10
-        container.layer?.borderWidth = 1
-        container.layer?.borderColor = NSColor.separatorColor.cgColor
-        container.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        // 背景和描边跟系统亮暗走，避免暗色下浅底配浅字。
+        let container = AppearanceCardView()
         container.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
@@ -584,7 +580,6 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         let exportFile = NSButton(title: "导出到文件", target: self, action: #selector(exportToFile))
         let importFile = NSButton(title: "从文件导入", target: self, action: #selector(importFromFile))
         let reset = NSButton(title: "恢复默认", target: self, action: #selector(resetConfig))
-        reset.bezelColor = .systemRed
         let clipboardRow = NSStackView(views: [copy, paste])
         clipboardRow.orientation = .horizontal
         clipboardRow.spacing = 8
@@ -890,6 +885,39 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
     }
 }
 
+/// 外观页卡片：图层颜色在创建时会按当时的外观固化，亮暗切换后必须重绘。
+private final class AppearanceCardView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 10
+        layer?.borderWidth = 1
+        refreshChrome()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        refreshChrome()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        refreshChrome()
+    }
+
+    // 在当前外观下解析动态色，再写进图层。
+    private func refreshChrome() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            layer?.borderColor = NSColor.separatorColor.cgColor
+            layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        }
+    }
+}
+
 /// 边距示意图：左上角为光标，箭头标出候选条相对光标的偏移；
 /// 候选条内侧着色区域为内边距，四个数值控件分别摆在对应的边上。
 private final class CandidateSpacingDiagramView: NSView {
@@ -963,6 +991,11 @@ private final class CandidateSpacingDiagramView: NSView {
 
     override func layout() {
         super.layout()
+        needsDisplay = true
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
         needsDisplay = true
     }
 
@@ -1119,6 +1152,11 @@ private final class HighlightPaddingDiagramView: NSView {
 
     override func layout() {
         super.layout()
+        needsDisplay = true
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
         needsDisplay = true
     }
 

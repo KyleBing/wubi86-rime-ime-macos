@@ -43,7 +43,7 @@
 				<key>tsInputModeMenuIconFileKey</key>
 				<string>ime-menu.tiff</string>
 				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>ime-menu.tiff</string>
+				<string>ime-selected.tiff</string>
 				<!-- Fn/地球键切换器通常读取模式的面板图标 -->
 				<key>tsInputModePaletteIconFileKey</key>
 				<string>ime-fn.tiff</string>
@@ -90,9 +90,9 @@
 	<string>NSApplication</string>
 	<key>TICapsLockLanguageSwitchCapable</key>
 	<true/>
-	<!-- 桌面提供的图标是黑色透明模板，由系统按明暗背景自动着色 -->
+	<!-- 图标自带浅色描边，选中态不再当成模板反色，避免浅底上变成看不见的白图 -->
 	<key>TISIconIsTemplate</key>
-	<true/>
+	<false/>
 	<key>TISIconLabels</key>
 	<dict>
 		<key>Primary</key>
@@ -111,7 +111,7 @@
 	<key>tsInputMethodIconFileKey</key>
 	<string>ime-input-source.tiff</string>
 	<key>tsInputMethodAlternateIconFileKey</key>
-	<string>ime-menu.tiff</string>
+	<string>ime-selected.tiff</string>
 	<key>tsInputMethodPaletteIconFileKey</key>
 	<string>ime-fn.tiff</string>
 </dict>

@@ -16,6 +16,7 @@ enum MeifengIMEMain {
         // IMK 要求尽早建立连接名，不要等 run loop 空转
         delegate.startServer()
         _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
+        QuickAddHotKey.install()
         IMEAppDelegate.appendLaunchLog("main entered, server+rime ready")
         app.run()
     }

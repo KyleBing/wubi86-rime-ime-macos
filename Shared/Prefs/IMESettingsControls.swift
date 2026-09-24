@@ -26,7 +26,10 @@ enum IMESettingsControls {
     ]
 
     static func makeFormView(size: NSSize = preferredWindowSize) -> NSView {
-        SettingsRootView(frame: NSRect(origin: .zero, size: size))
+        let view = SettingsRootView(frame: NSRect(origin: .zero, size: size))
+        // 作为窗口 contentView 时要跟着窗口变高，否则用户词表格不会被拉高。
+        view.autoresizingMask = [.width, .height]
+        return view
     }
 
     static func makeFormView(width: CGFloat) -> NSView {
@@ -41,7 +44,6 @@ private final class SettingsRootView: NSView {
         case keyboard
         case userLexicon
         case lexiconDirectory
-        case inputTest
         case help
         case account
 
@@ -49,9 +51,8 @@ private final class SettingsRootView: NSView {
             switch self {
             case .appearance: return "外观配置"
             case .keyboard: return "按键"
-            case .userLexicon: return "用户词管理"
+            case .userLexicon: return "用户词"
             case .lexiconDirectory: return "词库目录"
-            case .inputTest: return "输入测试"
             case .help: return "帮助"
             case .account: return "账户"
             }
@@ -63,7 +64,6 @@ private final class SettingsRootView: NSView {
             case .keyboard: return "keyboard"
             case .userLexicon: return "book"
             case .lexiconDirectory: return "folder"
-            case .inputTest: return "character.cursor.ibeam"
             case .help: return "questionmark.circle"
             case .account: return "person.crop.circle"
             }
@@ -86,6 +86,12 @@ private final class SettingsRootView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        // 选中底色是创建时固化的，亮暗切换后按当前强调色重画。
+        updateSidebarSelection(currentSection)
+    }
+
     private func build() {
         let split = NSSplitView()
         split.isVertical = true
@@ -95,6 +101,8 @@ private final class SettingsRootView: NSView {
         let sidebar = makeSidebar()
         sidebar.widthAnchor.constraint(equalToConstant: 184).isActive = true
         split.addArrangedSubview(sidebar)
+        content.setContentHuggingPriority(.defaultLow, for: .vertical)
+        content.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         split.addArrangedSubview(content)
 
         addSubview(split)
@@ -202,8 +210,6 @@ private final class SettingsRootView: NSView {
                 page = makeUserLexiconPage()
             case .lexiconDirectory:
                 page = makeLexiconDirectoryPage()
-            case .inputTest:
-                page = makeInputTestPage()
             case .help:
                 page = makeHelpPage()
             case .account:
@@ -230,9 +236,12 @@ private final class SettingsRootView: NSView {
             let selected = button.tag == section.rawValue
             button.state = selected ? .on : .off
             // 使用明确的系统强调色表示当前页面，避免与键盘焦点状态混淆。
-            button.layer?.backgroundColor = selected
-                ? NSColor.controlAccentColor.withAlphaComponent(0.18).cgColor
-                : NSColor.clear.cgColor
+            // 在当前外观下取色，避免暗色侧栏仍用浅色强调色底。
+            button.effectiveAppearance.performAsCurrentDrawingAppearance {
+                button.layer?.backgroundColor = selected
+                    ? NSColor.controlAccentColor.withAlphaComponent(0.18).cgColor
+                    : NSColor.clear.cgColor
+            }
             button.setSelectedAppearance(selected)
         }
     }
@@ -443,7 +452,10 @@ private final class SettingsRootView: NSView {
         secondThird.widthAnchor.constraint(greaterThanOrEqualToConstant: 210).isActive = true
         settings.addArrangedSubview(formRow("二三候选", secondThird))
 
-        let note = NSTextField(wrappingLabelWithString: "按键设置会写入 Rime 配置，并在输入法下次处理按键时自动生效。")
+        let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
+        settings.addArrangedSubview(formRow("造词", quickAdd))
+
+        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。")
         note.textColor = .secondaryLabelColor
         note.font = .systemFont(ofSize: 11)
         note.preferredMaxLayoutWidth = 420
@@ -451,83 +463,67 @@ private final class SettingsRootView: NSView {
 
         return page(
             title: "按键",
-            subtitle: "设置翻页方式与快捷选词。",
+            subtitle: "设置翻页、快捷选词和全局造词快捷键。",
             content: card(title: "候选按键", subtitle: nil, content: settings)
         )
     }
 
-    // 用户词：分组展示 / 按组保存（对齐 iOS 词库管理）。
+    // 用户词铺满右侧，表格自己滚动，避免再套一层页面滚动把左右栏挤歪。
     private func makeUserLexiconPage() -> NSView {
-        let lexicon = UserLexiconSettingsView(frame: .zero)
-        lexicon.translatesAutoresizingMaskIntoConstraints = false
-        return page(
-            title: "用户词管理",
-            subtitle: "左侧分组，右侧词条；添加写入当前选中分组。",
-            content: card(title: nil, subtitle: nil, content: lexicon)
-        )
-    }
-
-    // 词库目录：路径切换、部署与复位。
-    private func makeLexiconDirectoryPage() -> NSView {
-        let directory = LexiconDirectorySettingsView(frame: .zero)
-        directory.translatesAutoresizingMaskIntoConstraints = false
-        return page(
-            title: "词库目录",
-            subtitle: "管理 Rime 用户数据目录，并部署或复位配置。",
-            content: card(title: nil, subtitle: nil, content: directory)
-        )
-    }
-
-    // 输入测试页：一个可自由输入的多行文本区，用于检验候选窗与上屏效果。
-    private func makeInputTestPage() -> NSView {
-        let heading = NSTextField(labelWithString: "输入测试")
+        let heading = NSTextField(labelWithString: "用户词")
         heading.font = .systemFont(ofSize: 24, weight: .bold)
-        let detail = NSTextField(wrappingLabelWithString: "切换到玫枫五笔后在下方输入，可试打 date、time 等预置编码。")
+        let detail = NSTextField(wrappingLabelWithString: "左侧分组，右侧词条；添加写入当前选中分组。")
         detail.font = .systemFont(ofSize: 12)
         detail.textColor = .secondaryLabelColor
-
-        let textView = NSTextView()
-        textView.font = .systemFont(ofSize: 16)
-        textView.isRichText = false
-        textView.allowsUndo = true
-        textView.textContainerInset = NSSize(width: 8, height: 8)
-        textView.isVerticallyResizable = true
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.widthTracksTextView = true
-
-        let textScroll = NSScrollView()
-        textScroll.documentView = textView
-        textScroll.hasVerticalScroller = true
-        textScroll.autohidesScrollers = true
-        textScroll.borderType = .noBorder
-        textScroll.wantsLayer = true
-        textScroll.layer?.cornerRadius = 8
-        textScroll.layer?.borderWidth = 1
-        textScroll.layer?.borderColor = NSColor.separatorColor.cgColor
-
-        InputTestTarget.shared.textView = textView
-        let clear = NSButton(title: "清空", target: InputTestTarget.shared, action: #selector(InputTestTarget.clear(_:)))
-
+        let lexicon = UserLexiconSettingsView(frame: .zero)
+        lexicon.setContentHuggingPriority(.defaultLow, for: .vertical)
+        lexicon.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         let root = NSView()
-        for view in [heading, detail, textScroll, clear] as [NSView] {
+        for view in [heading, detail, lexicon] {
             view.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(view)
         }
-        // 文本区填满剩余空间，窗口放大时一起变大。
         NSLayoutConstraint.activate([
             heading.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 23),
             heading.topAnchor.constraint(equalTo: root.topAnchor, constant: 26),
             detail.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
             detail.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -28),
             detail.topAnchor.constraint(equalTo: heading.bottomAnchor, constant: 8),
-            textScroll.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
-            textScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
-            textScroll.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: 16),
-            textScroll.bottomAnchor.constraint(equalTo: clear.topAnchor, constant: -10),
-            clear.trailingAnchor.constraint(equalTo: textScroll.trailingAnchor),
-            clear.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -20)
+            lexicon.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
+            lexicon.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
+            lexicon.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: 16),
+            lexicon.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -20)
         ])
         return root
+    }
+
+    // 词库目录：路径切换、部署与复位。单字字典单独一块。
+    private func makeLexiconDirectoryPage() -> NSView {
+        let directory = LexiconDirectorySettingsView(frame: .zero)
+        directory.translatesAutoresizingMaskIntoConstraints = false
+        let charMap = CharMapSettingsView(frame: .zero)
+        charMap.translatesAutoresizingMaskIntoConstraints = false
+        let directoryCard = card(title: "目录与部署", subtitle: nil, content: directory)
+        let charMapCard = card(
+            title: "单字字典",
+            subtitle: "从参考码表提取单字编码，添加词条和快捷造词时用来自动生成词组编码。",
+            content: charMap
+        )
+        for box in [directoryCard, charMapCard] {
+            box.translatesAutoresizingMaskIntoConstraints = false
+        }
+        let column = NSStackView(views: [directoryCard, charMapCard])
+        column.orientation = .vertical
+        column.alignment = .leading
+        column.spacing = 16
+        column.translatesAutoresizingMaskIntoConstraints = false
+        directoryCard.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
+        charMapCard.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
+        return page(
+            title: "词库目录",
+            subtitle: "管理 Rime 用户数据目录，并维护自动编码用的单字字典。",
+            content: column
+        )
     }
 
     // 帮助页：预置编码与特殊功能说明。
@@ -543,6 +539,7 @@ private final class SettingsRootView: NSView {
             ("'", "反查结束符，拼音输完可按 ' 结束反查")
         ])
         let keys = helpList([
+            ("造词快捷键", "默认 ⌃⌥W，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组"),
             ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
             ("空格", "上屏第一个候选"),
             ("1 – 9", "选择对应序号的候选（仅数量圆点模式下同样有效）"),
@@ -643,26 +640,12 @@ private final class SettingsRootView: NSView {
     }
 
     private func makeAccountPage() -> NSView {
-        let symbol = NSImageView()
-        symbol.image = NSImage(systemSymbolName: "person.crop.circle.badge.clock", accessibilityDescription: nil)
-        symbol.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 36, weight: .regular)
-
-        let title = NSTextField(labelWithString: "登录与同步")
-        title.font = .systemFont(ofSize: 15, weight: .semibold)
-        let detail = NSTextField(wrappingLabelWithString: "账户功能正在准备中。这里将用于登录、词库同步和设备管理。")
-        detail.alignment = .center
-        detail.textColor = .secondaryLabelColor
-        detail.preferredMaxLayoutWidth = 320
-
-        let stack = NSStackView(views: [symbol, title, detail])
-        stack.orientation = .vertical
-        stack.alignment = .centerX
-        stack.spacing = 10
-        stack.edgeInsets = NSEdgeInsets(top: 48, left: 40, bottom: 48, right: 40)
+        let account = AccountSyncSettingsView(frame: .zero)
+        account.translatesAutoresizingMaskIntoConstraints = false
         return page(
             title: "账户",
-            subtitle: "为后续的登录与云同步预留。",
-            content: card(title: nil, subtitle: nil, content: stack)
+            subtitle: "登录后同步用户词库，并拉取线上扩展词库。",
+            content: card(title: nil, subtitle: nil, content: account)
         )
     }
 
@@ -1078,16 +1061,6 @@ private final class DisplayModeTarget: NSObject {
     static let shared = DisplayModeTarget()
     @objc func changed(_ sender: NSSegmentedControl) {
         IMEAppearancePrefs.displayMode = IMEAppearancePrefs.DisplayMode(rawValue: sender.selectedSegment) ?? .panel
-    }
-}
-
-private final class InputTestTarget: NSObject {
-    static let shared = InputTestTarget()
-    weak var textView: NSTextView?
-    // 清空测试文本并把焦点放回文本区，便于继续输入。
-    @objc func clear(_ sender: NSButton) {
-        textView?.string = ""
-        textView?.window?.makeFirstResponder(textView)
     }
 }
 

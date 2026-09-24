@@ -248,12 +248,68 @@ struct CandidateSkin: Codable, Equatable {
         [coralPreset, monochromePreset]
     }
 
-    // 珊瑚红：纯白 / 纯黑底，首选珊瑚红高亮；尺寸与简约黑白共用。
+    // 珊瑚红：浅色白底、深色近黑底，首选珊瑚红高亮。
     private static var coralPreset: CandidateSkin {
         let coral = RGBAColor(red: 0.96, green: 0.377, blue: 0.377)
         return CandidateSkin(
             version: currentVersion,
             name: "珊瑚红",
+            author: "玫枫五笔",
+            fontName: "",
+            paddingTop: 4,
+            paddingBottom: 4,
+            paddingLeft: 5,
+            paddingRight: 5,
+            offsetTop: 4,
+            offsetLeft: 0,
+            cornerRadius: 7,
+            verticalAlignment: .center,
+            itemSpacing: 3,
+            indexSpacing: 6,
+            candidateFontSize: 18,
+            candidateWeight: .regular,
+            indexFontSize: 11,
+            indexWeight: .light,
+            borderWidth: 0.5,
+            shadowEnabled: true,
+            shadowRadius: 4,
+            shadowOffsetX: 2,
+            shadowOffsetY: -2,
+            highlightEnabled: true,
+            highlightCornerRadius: 5,
+            highlightPaddingTop: 1,
+            highlightPaddingBottom: 1,
+            highlightPaddingLeft: 3,
+            highlightPaddingRight: 3,
+            highlightWeight: .regular,
+            light: Colors(
+                background: .init(red: 1, green: 1, blue: 1),
+                candidateText: .init(red: 0.283, green: 0.283, blue: 0.318),
+                indexText: .init(red: 0.38, green: 0.38, blue: 0.42),
+                border: .init(red: 0, green: 0, blue: 0, alpha: 0.16),
+                shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.28),
+                highlightBackground: coral,
+                highlightText: .init(red: 1, green: 1, blue: 1),
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+            ),
+            dark: Colors(
+                background: .init(red: 0.1355506262357012, green: 0.1355506262357012, blue: 0.138404323630137, alpha: 0.94),
+                candidateText: .init(red: 0.95, green: 0.95, blue: 0.97),
+                indexText: .init(red: 0.68, green: 0.68, blue: 0.72),
+                border: .init(red: 1, green: 1, blue: 1, alpha: 0.18),
+                shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.58),
+                highlightBackground: coral,
+                highlightText: .init(red: 1, green: 1, blue: 1),
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+            )
+        )
+    }
+
+    // 简约黑白：白底 / 深灰底，首选与背景同色，靠文字颜色区分。
+    private static var monochromePreset: CandidateSkin {
+        CandidateSkin(
+            version: currentVersion,
+            name: "简约黑白",
             author: "玫枫五笔",
             fontName: "",
             paddingTop: 3,
@@ -281,40 +337,28 @@ struct CandidateSkin: Codable, Equatable {
             highlightPaddingBottom: 1,
             highlightPaddingLeft: 3,
             highlightPaddingRight: 3,
-            highlightWeight: .medium,
+            highlightWeight: .regular,
             light: Colors(
                 background: .init(red: 1, green: 1, blue: 1),
                 candidateText: .init(red: 0.283, green: 0.283, blue: 0.318),
                 indexText: .init(red: 0.38, green: 0.38, blue: 0.42),
                 border: .init(red: 0, green: 0, blue: 0, alpha: 0.16),
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.28),
-                highlightBackground: coral,
-                highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightBackground: .init(red: 1, green: 1, blue: 1),
+                highlightText: .init(red: 0, green: 0, blue: 0),
+                highlightIndexText: .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695)
             ),
             dark: Colors(
-                background: .init(red: 0, green: 0, blue: 0, alpha: 0.94),
-                candidateText: .init(red: 0.95, green: 0.95, blue: 0.97),
+                background: .init(red: 0.13736087328767124, green: 0.13736087328767124, blue: 0.13736087328767124, alpha: 0.94),
+                candidateText: .init(red: 0.8973309957986161, green: 0.8973309957986161, blue: 0.9162221746575343),
                 indexText: .init(red: 0.68, green: 0.68, blue: 0.72),
                 border: .init(red: 1, green: 1, blue: 1, alpha: 0.18),
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.58),
-                highlightBackground: coral,
+                highlightBackground: .init(red: 0.1409193065068493, green: 0.1409193065068493, blue: 0.1409193065068493),
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.68)
             )
         )
-    }
-
-    // 简约黑白：沿用珊瑚红尺寸，去掉彩色高亮，首选仅靠加粗与同底色区分。
-    private static var monochromePreset: CandidateSkin {
-        var skin = coralPreset
-        skin.name = "简约黑白"
-        skin.light.highlightBackground = .init(red: 1, green: 1, blue: 1)
-        skin.light.highlightText = .init(red: 0, green: 0, blue: 0)
-        skin.light.highlightIndexText = .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695)
-        skin.dark.highlightBackground = .init(red: 0, green: 0, blue: 0)
-        skin.dark.highlightIndexText = .init(red: 1, green: 1, blue: 1, alpha: 0.68)
-        return skin
     }
 
     /// 比较外观是否一致（忽略字体，内置主题应用时会沿用当前字体）。

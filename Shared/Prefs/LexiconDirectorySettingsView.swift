@@ -186,3 +186,105 @@ final class LexiconDirectorySettingsView: NSView {
         isBusy = false
     }
 }
+
+/// 词库目录页里的单字字典：选择参考码表并生成，供自动编码使用。
+final class CharMapSettingsView: NSView {
+    private let dictPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let statusLabel = NSTextField(wrappingLabelWithString: "")
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        dictPopup.controlSize = .small
+        dictPopup.target = self
+        dictPopup.action = #selector(dictSelectionChanged)
+        dictPopup.widthAnchor.constraint(equalToConstant: 280).isActive = true
+        let generate = NSButton(title: "生成单字字典", target: self, action: #selector(generateCharMap))
+        generate.controlSize = .small
+        statusLabel.font = .systemFont(ofSize: 11)
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.preferredMaxLayoutWidth = 480
+        let row = NSStackView(views: [dictPopup, generate])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 8
+        let root = NSStackView(views: [row, statusLabel])
+        root.orientation = .vertical
+        root.alignment = .leading
+        root.spacing = 8
+        root.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(root)
+        NSLayoutConstraint.activate([
+            root.leadingAnchor.constraint(equalTo: leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: trailingAnchor),
+            root.topAnchor.constraint(equalTo: topAnchor),
+            root.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        reloadDictPopup()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func reloadDictPopup() {
+        let names = WubiDictEncoder.availableDictFileNames()
+        dictPopup.removeAllItems()
+        if names.isEmpty {
+            dictPopup.addItem(withTitle: "未找到码表")
+            dictPopup.isEnabled = false
+            statusLabel.stringValue = "词库目录里没有可用的 .dict.yaml"
+            statusLabel.textColor = .systemOrange
+            return
+        }
+        dictPopup.isEnabled = true
+        for name in names {
+            dictPopup.addItem(withTitle: name)
+        }
+        let selected = WubiDictEncoder.selectedMainDictName
+        if names.contains(selected) {
+            dictPopup.selectItem(withTitle: selected)
+        } else if let first = names.first {
+            dictPopup.selectItem(withTitle: first)
+            WubiDictEncoder.selectedMainDictName = first
+            WubiDictEncoder.clearCache()
+        }
+        if WubiDictEncoder.charMapStatus().exists {
+            refreshStatus()
+        } else {
+            statusLabel.stringValue = "正在从参考码表生成…"
+            generateCharMap()
+        }
+    }
+
+    @objc private func dictSelectionChanged() {
+        guard let title = dictPopup.titleOfSelectedItem, title.hasSuffix(".dict.yaml") else { return }
+        WubiDictEncoder.selectedMainDictName = title
+        WubiDictEncoder.clearCache()
+        generateCharMap()
+    }
+
+    @objc private func generateCharMap() {
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.stringValue = "正在生成…"
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let count = try WubiDictEncoder.rebuildCharMap()
+                DispatchQueue.main.async {
+                    self.statusLabel.textColor = .secondaryLabelColor
+                    self.statusLabel.stringValue = "已生成 \(count) 个单字"
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.statusLabel.textColor = .systemRed
+                    self.statusLabel.stringValue = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func refreshStatus() {
+        let status = WubiDictEncoder.charMapStatus()
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.stringValue = status.exists ? "已生成 \(status.count) 个单字" : "尚未生成"
+    }
+}

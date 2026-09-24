@@ -50,7 +50,7 @@ enum UserDictWriter {
             let body = groups.map { group -> String in
                 var block = "## \(group.name)\n"
                 for entry in group.entries {
-                    block += "\(entry.text)\t\(entry.code)\t\(entry.weight)\n"
+                    block += yamlLine(for: entry) + "\n"
                 }
                 if block.hasSuffix("\n") { block.removeLast() }
                 return block
@@ -74,7 +74,7 @@ enum UserDictWriter {
 
             """
             for entry in document.allEntries {
-                yaml += "\(entry.text)\t\(entry.code)\t\(entry.weight)\n"
+                yaml += yamlLine(for: entry) + "\n"
             }
             try yaml.write(to: url, atomically: true, encoding: .utf8)
         }
@@ -181,7 +181,20 @@ enum UserDictWriter {
         guard parts.count >= 2 else { return nil }
         var text = parts[0]
         var code = parts[1].replacingOccurrences(of: "\r", with: "")
-        let weight = parts.count >= 3 ? Int(parts[2]) ?? 1000 : 1000
+        // 第三列是权重；缺列或空列表示没有权重，不补默认值
+        let weight: Int?
+        if parts.count >= 3 {
+            let raw = parts[2].trimmingCharacters(in: .whitespacesAndNewlines)
+            weight = Int(raw)
+        } else {
+            weight = nil
+        }
+        // 第四列及之后是备注（对齐码表助手 word.note）
+        let note = parts.count >= 4
+            ? parts[3...].joined(separator: "\t")
+                .replacingOccurrences(of: "\r", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            : ""
         let firstLooksLikeCode = text.unicodeScalars.allSatisfy {
             CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0)
         }
@@ -189,7 +202,23 @@ enum UserDictWriter {
         if firstLooksLikeCode && secondHasCJK {
             swap(&text, &code)
         }
-        return UserDictEntry(code: code.lowercased(), text: text, weight: weight)
+        return UserDictEntry(code: code.lowercased(), text: text, weight: weight, note: note)
+    }
+
+    // 有备注时写出四列，避免备注被当成权重
+    private static func yamlLine(for entry: UserDictEntry) -> String {
+        let note = entry.note
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if note.isEmpty {
+            if let weight = entry.weight {
+                return "\(entry.text)\t\(entry.code)\t\(weight)"
+            }
+            return "\(entry.text)\t\(entry.code)"
+        }
+        let weight = entry.weight.map(String.init) ?? ""
+        return "\(entry.text)\t\(entry.code)\t\(weight)\t\(note)"
     }
 
     static func markNeedsDeploy() {

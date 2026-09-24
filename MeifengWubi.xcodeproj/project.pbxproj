@@ -17,22 +17,32 @@
 		0C2D08E8E8729C07352E374A /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		15385DC5714BB1F08FB63ED2 /* RimeEngineLibrime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E6EFCDF4269B3F115466FF /* RimeEngineLibrime.swift */; };
 		15F6F6711F1448C36B76EE9C /* CandidatePrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */; };
+		179B4B2F64F4F21E6605C608 /* QuickAddWordPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */; };
+		17D7FE2D86019E5D9E661B6C /* WubiCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */; };
 		18120E1FCFA44B7ABAA36407 /* ime-fn.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */; };
+		1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		1B9755E1514A556D3B14334A /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D856B4925F0354EB314DFC1A /* SetupView.swift */; };
 		1DB78EC17209EA333B2C4BCB /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
 		1DD2A2A4C1418DE05E3FB303 /* IMEInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56DF06354369309DB0A2AB6E /* IMEInstaller.swift */; };
 		1DEAABE28CECE6AEDDBFC240 /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
+		1F1E1635DA501A9AE230D46E /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
+		2102BC84409D7D8C7BD15705 /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
 		2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
 		25E2D63AB7A10A0B5D60C569 /* RimeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF649A4E4D7B4308E42C40A /* RimeSession.swift */; };
 		262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		269ADB51357707561C741F56 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
+		27A609918F3948AC141B711E /* WubiCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */; };
 		29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615469236E5D6367D75035EA /* MacKeyMapper.swift */; };
+		2CA04F2ED254A7880B0C164C /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
+		2EBB459ED60911BFA9C2AFE1 /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
 		2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
+		34065D5CC126FD400B22845E /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
 		34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		35662FCD45096FD9C12C5706 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
 		395CF399073BC362344F9142 /* RimeConfigDeploy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */; };
 		3A035315DF59B0F6572E4C5B /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
+		3B2AAE9EE84EA94EE1BEA2B9 /* ExtraDictUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */; };
 		3C9AADD04FDC6E138A9C27DD /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2C18D3685813FDF25FAD2454 /* Carbon.framework */; };
 		3DC3B9FF3092869D82E41440 /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
@@ -51,31 +61,44 @@
 		565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		587585789D18AC65610E3599 /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		59565BD9469DE3D4EE08E1BD /* RimeFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */; };
+		5B02FC2C813959CA06B89555 /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
 		63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
+		6536193F51DA7EA36C22B448 /* AccountSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */; };
 		6800E705D80583B26DC5522C /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
 		696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		6A69BD3E62000FC3DC50CE8E /* RimeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FE659C9C777569B0F90FF3 /* RimeEngine.swift */; };
+		6E0D3528F201CA260B99B7F1 /* DictSyncDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */; };
 		6E115D99602A9D0A76DBFEF5 /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
 		6F1D51FFE9B5354D3D61ABB1 /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		718DA2F8CA7BC0E9146B203D /* BrandIconRounded.png in Resources */ = {isa = PBXBuildFile; fileRef = 43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */; };
 		7284B5B5222BE96CB648D890 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		72F94FFBA6C4B75C2D8F4209 /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
+		7562E8EA0A89890BC17C4FCD /* AccountSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */; };
 		75B2021DD3BFA72A096F28B2 /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
+		763F95DF29A320C6FE512AC2 /* DictSyncDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */; };
 		76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
 		7B51FE9EF536A7D947180C8A /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
+		7CD4A212701F4C99DCE7915B /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
 		7EBB5925C68CB60B2128A1FC /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		7F074AAC5692FF21475E7E8E /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */; };
 		84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
+		84D3D97B8CF81544E6E1BFDD /* QuickAddHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810632C05167B29784D226C2 /* QuickAddHotKey.swift */; };
 		88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		8E86DF6AF5BAA615BD33AF11 /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
+		8F0284E5F3D67C633B23B6F7 /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
+		9055E4A82FF5D9319DBE6173 /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
+		92BD783033B1BEDE471A869A /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
 		9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */; };
+		96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		976EDE71DD4F10047249C22B /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
 		99864FF33F01F9D8115B9FE1 /* RimeFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */; };
 		9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73273824288403B472874C04 /* MeifengPreferencesPane.swift */; };
 		A25A48831BEDCD51C10831E5 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
+		A2FB2BFA30305E6282D47EBC /* ime-selected.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5D2B5A7624587C393E7F4458 /* ime-selected.tiff */; };
 		A4CACD8E37D11B0C87216456 /* RimeMaintenanceDeployer.mm in Sources */ = {isa = PBXBuildFile; fileRef = F57DFE5123783D71073CC374 /* RimeMaintenanceDeployer.mm */; };
+		A7C54D3B530DCCAD2EE78A60 /* DictSyncDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */; };
 		A7C6B98A78BE51213D8EA750 /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		A8493B9A06D5E12C793F9790 /* WubiDictEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447582A005152D7C6FA2A9E1 /* WubiDictEncoder.swift */; };
 		AA16E4AD145ED38E511A0BD2 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
@@ -86,11 +109,13 @@
 		B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
+		C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
 		C786E1C3C70A4BD6C17C698B /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		C858DFB0B9FA9466611D701F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
 		CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
+		D242DD8FDF78FAD0E78EBAB6 /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		DDAE8E5A0B37C9C0372B824D /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		E08C588D6900B0980DED3F58 /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		E45D89ECD09C4AF33347119A /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
@@ -98,14 +123,19 @@
 		E50B5B7A463BCDD4EFEF7B2C /* DateTimeCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */; };
 		E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		E7C0D46C471910A67A1020C0 /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
+		E80B78AA57E48C60908CE3AB /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
 		E8A2B080224DB4601546C730 /* PreferencePanes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23837C5F463DCA00A7AA16C3 /* PreferencePanes.framework */; };
 		E95376FACDA911D591856DDD /* RimeBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 064C42D5A8170877BEAB35CD /* RimeBridge.mm */; };
+		EB95A3E21ADD7E01C0A69643 /* ExtraDictUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */; };
 		ED8FFFD2F39943D4FBE17B71 /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		EE76C814E1E800EAF27AC58F /* RimeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FE659C9C777569B0F90FF3 /* RimeEngine.swift */; };
 		EE92862EE797901BAD408C43 /* DateTimeCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */; };
 		F0ADB441F0E1138DBC4B7F46 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		F62728C765CD0D5DC6650D47 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F0CF3F6662273519E251BADF /* InfoPlist.strings */; };
+		F6F3AAE9527F2D2E40A44219 /* AccountSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */; };
 		FBFCA3165B7780044C96E1AE /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
+		FD6096F799E560A9D3352AED /* WubiCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */; };
+		FDFDBB77C441EBAD407CB43B /* ExtraDictUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,14 +158,18 @@
 /* Begin PBXFileReference section */
 		0248BAC0C5FC7CF5DC533132 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		036632193DB85E22A8599BC8 /* DictModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictModels.swift; sourceTree = "<group>"; };
+		042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddWordPanel.swift; sourceTree = "<group>"; };
 		064C42D5A8170877BEAB35CD /* RimeBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RimeBridge.mm; sourceTree = "<group>"; };
 		0A138AABE28E2DC1350C0063 /* RimeMaintenanceDeployer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RimeMaintenanceDeployer.h; sourceTree = "<group>"; };
 		0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppearancePrefs.swift; sourceTree = "<group>"; };
 		0E1E8383EB913ACD399FD6F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0F7AB148116CEA6F22CB446A /* Rime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Rime; path = Resources/Rime; sourceTree = SOURCE_ROOT; };
+		107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddHotkeySettingsView.swift; sourceTree = "<group>"; };
 		109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserDictWriter+Active.swift"; sourceTree = "<group>"; };
 		134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeConfigDeploy.swift; sourceTree = "<group>"; };
+		1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddPrefs.swift; sourceTree = "<group>"; };
 		1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePreviewPanelController.swift; sourceTree = "<group>"; };
+		1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WubiCloudConfig.swift; sourceTree = "<group>"; };
 		1F94FF2F1C3DDE276748915E /* ime-input-source.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "ime-input-source.tiff"; sourceTree = "<group>"; };
 		2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeResourceDeployer.swift; sourceTree = "<group>"; };
 		23837C5F463DCA00A7AA16C3 /* PreferencePanes.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PreferencePanes.framework; path = System/Library/Frameworks/PreferencePanes.framework; sourceTree = SDKROOT; };
@@ -146,6 +180,7 @@
 		2CF649A4E4D7B4308E42C40A /* RimeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeSession.swift; sourceTree = "<group>"; };
 		307B5E4A6A5E95118D6F9B08 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		31E1D0191E43B851502D4CD2 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDictSync.swift; sourceTree = "<group>"; };
 		3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMESettingsControls.swift; sourceTree = "<group>"; };
 		42E6EFCDF4269B3F115466FF /* RimeEngineLibrime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeEngineLibrime.swift; sourceTree = "<group>"; };
 		43A727AF0291DB42B1351BD1 /* BrandIconRounded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = BrandIconRounded.png; sourceTree = "<group>"; };
@@ -153,9 +188,11 @@
 		447582A005152D7C6FA2A9E1 /* WubiDictEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WubiDictEncoder.swift; sourceTree = "<group>"; };
 		45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateTimeCandidates.swift; sourceTree = "<group>"; };
 		56DF06354369309DB0A2AB6E /* IMEInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEInstaller.swift; sourceTree = "<group>"; };
+		5D2B5A7624587C393E7F4458 /* ime-selected.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "ime-selected.tiff"; sourceTree = "<group>"; };
 		615469236E5D6367D75035EA /* MacKeyMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacKeyMapper.swift; sourceTree = "<group>"; };
 		61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundedChromeView.swift; sourceTree = "<group>"; };
 		6269A413234603D67F46D15D /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtraDictUpdater.swift; sourceTree = "<group>"; };
 		65C4AFC0B13717FEC1CC6B2B /* ime-menu.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "ime-menu.tiff"; sourceTree = "<group>"; };
 		69C92DB1F8633FEDE8CA0D22 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -164,10 +201,14 @@
 		739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkin.swift; sourceTree = "<group>"; };
 		7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MeifengWubiPrefs.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePrefsView.swift; sourceTree = "<group>"; };
+		80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictEditorIcons.swift; sourceTree = "<group>"; };
+		810632C05167B29784D226C2 /* QuickAddHotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddHotKey.swift; sourceTree = "<group>"; };
+		81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictSyncDiff.swift; sourceTree = "<group>"; };
 		81FE659C9C777569B0F90FF3 /* RimeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeEngine.swift; sourceTree = "<group>"; };
 		8A7D61DD46F9981DD7954F00 /* UserLexiconMacView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLexiconMacView.swift; sourceTree = "<group>"; };
 		8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "ime-fn.tiff"; sourceTree = "<group>"; };
 		929D457D120AA7CECBC4C0FC /* MeifengWubi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeifengWubi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSyncSettingsView.swift; sourceTree = "<group>"; };
 		98C6A2B34E367C393E89B872 /* MeifengWubiIME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeifengWubiIME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0FD460C13C268F780AD30C2 /* SettingsLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SettingsLogo.png; sourceTree = "<group>"; };
 		AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengWubiApp.swift; sourceTree = "<group>"; };
@@ -180,6 +221,7 @@
 		C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkinSettingsView.swift; sourceTree = "<group>"; };
 		CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeFileStore.swift; sourceTree = "<group>"; };
 		D856B4925F0354EB314DFC1A /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WubiCloudAPI.swift; sourceTree = "<group>"; };
 		EBEA840D939669F718FD4AD4 /* MeifengInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengInputController.swift; sourceTree = "<group>"; };
 		EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateBarLayout.swift; sourceTree = "<group>"; };
 		EF68B9218FC255AC341E959B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -222,11 +264,14 @@
 		25B26C185274D2E1B8DDE821 /* Prefs */ = {
 			isa = PBXGroup;
 			children = (
+				9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */,
 				EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */,
 				1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */,
 				C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */,
+				80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */,
 				3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */,
 				C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */,
+				107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */,
 				61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */,
 				242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */,
 			);
@@ -254,11 +299,14 @@
 				8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */,
 				1F94FF2F1C3DDE276748915E /* ime-input-source.tiff */,
 				65C4AFC0B13717FEC1CC6B2B /* ime-menu.tiff */,
+				5D2B5A7624587C393E7F4458 /* ime-selected.tiff */,
 				B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */,
 				6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */,
 				615469236E5D6367D75035EA /* MacKeyMapper.swift */,
 				EBEA840D939669F718FD4AD4 /* MeifengInputController.swift */,
 				AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */,
+				810632C05167B29784D226C2 /* QuickAddHotKey.swift */,
+				042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */,
 				2CF649A4E4D7B4308E42C40A /* RimeSession.swift */,
 			);
 			path = IME;
@@ -315,6 +363,18 @@
 			);
 			sourceTree = "<group>";
 		};
+		7C1A2084B2060266EF441B85 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */,
+				81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */,
+				641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */,
+				EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */,
+				1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */,
+			);
+			path = Sync;
+			sourceTree = "<group>";
+		};
 		8F3329284379822CC3797961 /* Input */ = {
 			isa = PBXGroup;
 			children = (
@@ -342,6 +402,7 @@
 				8F3329284379822CC3797961 /* Input */,
 				6DA27794F082308A4A82F4A1 /* Lexicon */,
 				25B26C185274D2E1B8DDE821 /* Prefs */,
+				7C1A2084B2060266EF441B85 /* Sync */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -362,6 +423,7 @@
 				F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */,
 				739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */,
 				0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */,
+				1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */,
 				BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */,
 				134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */,
 				CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */,
@@ -510,6 +572,7 @@
 				18120E1FCFA44B7ABAA36407 /* ime-fn.tiff in Resources */,
 				AAB261BF7949C35E0D5E172B /* ime-input-source.tiff in Resources */,
 				0A3BFE457920CEC20A8B7E89 /* ime-menu.tiff in Resources */,
+				A2FB2BFA30305E6282D47EBC /* ime-selected.tiff in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -583,6 +646,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7562E8EA0A89890BC17C4FCD /* AccountSyncSettingsView.swift in Sources */,
 				F0ADB441F0E1138DBC4B7F46 /* AppGroupPaths.swift in Sources */,
 				4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */,
 				88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */,
@@ -590,13 +654,19 @@
 				32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */,
 				B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */,
 				FBFCA3165B7780044C96E1AE /* CandidateSkinSettingsView.swift in Sources */,
+				2EBB459ED60911BFA9C2AFE1 /* CloudDictSync.swift in Sources */,
 				EE92862EE797901BAD408C43 /* DateTimeCandidates.swift in Sources */,
+				2102BC84409D7D8C7BD15705 /* DictEditorIcons.swift in Sources */,
 				482CA56946512CC0BBE06A4A /* DictModels.swift in Sources */,
+				6E0D3528F201CA260B99B7F1 /* DictSyncDiff.swift in Sources */,
+				EB95A3E21ADD7E01C0A69643 /* ExtraDictUpdater.swift in Sources */,
 				3A035315DF59B0F6572E4C5B /* IMEAppearancePrefs.swift in Sources */,
 				1DD2A2A4C1418DE05E3FB303 /* IMEInstaller.swift in Sources */,
 				2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */,
 				7284B5B5222BE96CB648D890 /* LexiconDirectorySettingsView.swift in Sources */,
 				7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */,
+				92BD783033B1BEDE471A869A /* QuickAddHotkeySettingsView.swift in Sources */,
+				D242DD8FDF78FAD0E78EBAB6 /* QuickAddPrefs.swift in Sources */,
 				63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */,
 				4B8B61E5F2A190D6763ADCF9 /* RimeBridge.mm in Sources */,
 				4DAC73FDBF2F9B72CFD055AA /* RimeConfigDeploy.swift in Sources */,
@@ -611,6 +681,8 @@
 				E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */,
 				029C183DFA7038E4CD9F6773 /* UserLexiconMacView.swift in Sources */,
 				0157F0C33449E6F5A2DC241A /* UserLexiconSettingsView.swift in Sources */,
+				34065D5CC126FD400B22845E /* WubiCloudAPI.swift in Sources */,
+				27A609918F3948AC141B711E /* WubiCloudConfig.swift in Sources */,
 				4F116F28B0E702850A4EC6B2 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -619,23 +691,32 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6536193F51DA7EA36C22B448 /* AccountSyncSettingsView.swift in Sources */,
 				7B51FE9EF536A7D947180C8A /* AppGroupPaths.swift in Sources */,
 				262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */,
 				587585789D18AC65610E3599 /* CandidateBarLayout.swift in Sources */,
 				09AD775E38D5D0F83109FC5E /* CandidatePreviewPanelController.swift in Sources */,
 				E08C588D6900B0980DED3F58 /* CandidateSkin.swift in Sources */,
 				C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */,
+				5B02FC2C813959CA06B89555 /* CloudDictSync.swift in Sources */,
+				8F0284E5F3D67C633B23B6F7 /* DictEditorIcons.swift in Sources */,
 				269ADB51357707561C741F56 /* DictModels.swift in Sources */,
+				A7C54D3B530DCCAD2EE78A60 /* DictSyncDiff.swift in Sources */,
+				3B2AAE9EE84EA94EE1BEA2B9 /* ExtraDictUpdater.swift in Sources */,
 				2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */,
 				34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */,
 				76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */,
 				9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */,
+				9055E4A82FF5D9319DBE6173 /* QuickAddHotkeySettingsView.swift in Sources */,
+				96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */,
 				78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */,
 				0C2D08E8E8729C07352E374A /* RimeResourceDeployer.swift in Sources */,
 				84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */,
 				E49047D036A919C64779C4FB /* UserDictWriter+Active.swift in Sources */,
 				A7C6B98A78BE51213D8EA750 /* UserDictWriter.swift in Sources */,
 				CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */,
+				E80B78AA57E48C60908CE3AB /* WubiCloudAPI.swift in Sources */,
+				17D7FE2D86019E5D9E661B6C /* WubiCloudConfig.swift in Sources */,
 				0B4757D660C0445A0FDE98E2 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -644,6 +725,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6F3AAE9527F2D2E40A44219 /* AccountSyncSettingsView.swift in Sources */,
 				D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */,
 				565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */,
 				4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */,
@@ -651,8 +733,12 @@
 				1DEAABE28CECE6AEDDBFC240 /* CandidatePreviewPanelController.swift in Sources */,
 				524BECCB61835EF647986BE0 /* CandidateSkin.swift in Sources */,
 				696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */,
+				1F1E1635DA501A9AE230D46E /* CloudDictSync.swift in Sources */,
 				E50B5B7A463BCDD4EFEF7B2C /* DateTimeCandidates.swift in Sources */,
+				2CA04F2ED254A7880B0C164C /* DictEditorIcons.swift in Sources */,
 				35662FCD45096FD9C12C5706 /* DictModels.swift in Sources */,
+				763F95DF29A320C6FE512AC2 /* DictSyncDiff.swift in Sources */,
+				FDFDBB77C441EBAD407CB43B /* ExtraDictUpdater.swift in Sources */,
 				B1C7A82E390423DE7DE32AD4 /* IMEAppDelegate.swift in Sources */,
 				5589CD94ECF6441A859E484E /* IMEAppearancePrefs.swift in Sources */,
 				BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */,
@@ -660,6 +746,10 @@
 				29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */,
 				0211C3B73662C73A882F6158 /* MeifengInputController.swift in Sources */,
 				9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */,
+				84D3D97B8CF81544E6E1BFDD /* QuickAddHotKey.swift in Sources */,
+				C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */,
+				1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */,
+				179B4B2F64F4F21E6605C608 /* QuickAddWordPanel.swift in Sources */,
 				06F9F1DE3C028705EDA3F6F9 /* RimeBehaviorPrefs.swift in Sources */,
 				E95376FACDA911D591856DDD /* RimeBridge.mm in Sources */,
 				395CF399073BC362344F9142 /* RimeConfigDeploy.swift in Sources */,
@@ -673,6 +763,8 @@
 				75B2021DD3BFA72A096F28B2 /* UserDictWriter+Active.swift in Sources */,
 				ED8FFFD2F39943D4FBE17B71 /* UserDictWriter.swift in Sources */,
 				CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */,
+				7CD4A212701F4C99DCE7915B /* WubiCloudAPI.swift in Sources */,
+				FD6096F799E560A9D3352AED /* WubiCloudConfig.swift in Sources */,
 				A8493B9A06D5E12C793F9790 /* WubiDictEncoder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

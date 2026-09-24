@@ -110,6 +110,11 @@ enum WubiDictEncoder {
 
     private static func loadCharMap() -> [String: String] {
         if let cachedMap { return cachedMap }
+        // 还没有单字字典时，用当前选中的主码表生成一次
+        if !FileManager.default.fileExists(atPath: charMapURL.path) {
+            _ = try? rebuildCharMap()
+            if let cachedMap { return cachedMap }
+        }
         guard let text = try? String(contentsOf: charMapURL, encoding: .utf8) else { return [:] }
         var map: [String: String] = [:]
         for line in text.split(whereSeparator: \.isNewline) {

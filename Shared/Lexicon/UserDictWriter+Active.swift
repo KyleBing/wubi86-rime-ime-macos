@@ -29,25 +29,25 @@ extension UserDictWriter {
         if doc.groups.isEmpty {
             doc.groups = [UserDictGroup(name: "", entries: [])]
         }
-        try addEntry(entry, toGroupId: doc.groups[0].id, document: &doc)
+        try addEntry(entry, toGroupId: doc.groups[0].id, document: &doc, boostWeight: true)
         try saveActiveDocument(doc)
     }
 
     static func addEntry(_ entry: UserDictEntry, toGroupId groupId: UUID) throws {
         var doc = loadActiveDocument()
-        try addEntry(entry, toGroupId: groupId, document: &doc)
+        try addEntry(entry, toGroupId: groupId, document: &doc, boostWeight: true)
         try saveActiveDocument(doc)
     }
 
     /// 按分组下标添加（详情页用，避免 UUID 重载后失效）
-    static func addEntry(_ entry: UserDictEntry, toGroupIndex index: Int) throws {
+    static func addEntry(_ entry: UserDictEntry, toGroupIndex index: Int, boostWeight: Bool = true) throws {
         var doc = loadActiveDocument()
         guard doc.groups.indices.contains(index) else {
             throw NSError(domain: "UserDictWriter", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "找不到目标分组"
             ])
         }
-        try addEntry(entry, toGroupId: doc.groups[index].id, document: &doc)
+        try addEntry(entry, toGroupId: doc.groups[index].id, document: &doc, boostWeight: boostWeight)
         try saveActiveDocument(doc)
     }
 
@@ -55,7 +55,7 @@ extension UserDictWriter {
     static func addEntryInNewUnnamedGroup(_ entry: UserDictEntry) throws -> UUID {
         var doc = loadActiveDocument()
         var stored = entry
-        if stored.weight < 100_000 { stored.weight = 100_000 }
+        stored.weight = boostedWeight(stored.weight)
         // 全库去重
         doc.removeEntries { $0.code == stored.code && $0.text == stored.text }
         let group = UserDictGroup(name: "- 未命名 -", entries: [stored])
@@ -64,7 +64,12 @@ extension UserDictWriter {
         return group.id
     }
 
-    private static func addEntry(_ entry: UserDictEntry, toGroupId groupId: UUID, document: inout UserDictDocument) throws {
+    private static func addEntry(
+        _ entry: UserDictEntry,
+        toGroupId groupId: UUID,
+        document: inout UserDictDocument,
+        boostWeight: Bool
+    ) throws {
         guard let idx = document.groups.firstIndex(where: { $0.id == groupId }) else {
             throw NSError(domain: "UserDictWriter", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "找不到目标分组"
@@ -72,8 +77,9 @@ extension UserDictWriter {
         }
         document.removeEntries { $0.code == entry.code && $0.text == entry.text }
         var stored = entry
-        if stored.weight < 100_000 {
-            stored.weight = 100_000
+        // 造词把权重抬高，保证能排到前面；词库管理可以保持空权重
+        if boostWeight {
+            stored.weight = boostedWeight(stored.weight)
         }
         // 组内按编码序插入（对齐 addWordToDictInOrderWithGroup）
         let list = document.groups[idx].entries
@@ -92,6 +98,12 @@ extension UserDictWriter {
             insertAt = list.count
         }
         document.groups[idx].entries.insert(stored, at: insertAt)
+    }
+
+    // 未写权重或低于造词门槛时，用 100000
+    private static func boostedWeight(_ weight: Int?) -> Int {
+        let value = weight ?? 0
+        return value < 100_000 ? 100_000 : value
     }
 
     static func removeEntry(_ entry: UserDictEntry) throws {
