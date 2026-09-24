@@ -33,9 +33,12 @@ final class RoundedChromeView: NSView {
         shadowView.clipsToBounds = false
         shadowView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(shadowView)
+        // 阴影半径、圆角默认会做 0.25s 隐式动画，出现时像整块在变糊。
+        disableLayerActions(shadowView)
 
         effectView.wantsLayer = true
         effectView.layer?.masksToBounds = true
+        disableLayerActions(effectView)
         effectView.translatesAutoresizingMaskIntoConstraints = false
         shadowView.addSubview(effectView)
         NSLayoutConstraint.activate([
@@ -77,6 +80,11 @@ final class RoundedChromeView: NSView {
         ]
         NSLayoutConstraint.activate(edgeConstraints)
 
+        // 关掉这一轮图层隐式动画，避免阴影模糊半径从 0 缓入。
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
+
         // shadowView 同色铺底，保证阴影投影形状与面板一致。
         shadowView.layer?.cornerRadius = radius
         shadowView.layer?.backgroundColor = background
@@ -103,5 +111,23 @@ final class RoundedChromeView: NSView {
             shadowView.layer?.cornerCurve = .continuous
             effectView.layer?.cornerCurve = .continuous
         }
+    }
+
+    // 几何和阴影属性不参与隐式动画，候选窗出现时直接是最终样子。
+    private func disableLayerActions(_ view: NSView) {
+        view.layer?.actions = [
+            "bounds": NSNull(),
+            "position": NSNull(),
+            "frame": NSNull(),
+            "cornerRadius": NSNull(),
+            "backgroundColor": NSNull(),
+            "borderColor": NSNull(),
+            "borderWidth": NSNull(),
+            "shadowRadius": NSNull(),
+            "shadowOpacity": NSNull(),
+            "shadowOffset": NSNull(),
+            "shadowColor": NSNull(),
+            "shadowPath": NSNull()
+        ]
     }
 }

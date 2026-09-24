@@ -32,6 +32,8 @@ final class CandidatePanelController {
         // 关键：不成为 key window，避免 Finder sheet 后焦点丢失
         panel.becomesKeyOnlyIfNeeded = true
         panel.isReleasedWhenClosed = false
+        // 默认进出场会把窗口缩放淡入，缩放过程中文字被拉糊。
+        panel.animationBehavior = .none
 
         chrome = RoundedChromeView(frame: panel.contentView?.bounds ?? .zero)
         chrome.autoresizingMask = [.width, .height]
@@ -69,7 +71,11 @@ final class CandidatePanelController {
             return
         }
         render()
-        panel.orderFrontRegardless()
+        // 已在屏幕上时重复 orderFront 会再播一次出现动画。
+        if !panel.isVisible {
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+        }
     }
 
     func hide() {
@@ -106,12 +112,17 @@ final class CandidatePanelController {
         chrome.layoutSubtreeIfNeeded()
         let fitted = chrome.fittingSize
         let size = NSSize(width: ceil(fitted.width), height: ceil(fitted.height))
-        panel.setContentSize(size)
-        positionPanel(width: size.width, height: size.height, below: lastCaretRect)
+        // 一次设好尺寸和位置，并关掉帧动画，避免改大小时整窗被插值缩放。
+        let origin = panelOrigin(width: size.width, height: size.height, below: lastCaretRect)
+        NSAnimationContext.beginGrouping()
+        NSAnimationContext.current.duration = 0
+        NSAnimationContext.current.allowsImplicitAnimation = false
+        panel.setFrame(NSRect(origin: origin, size: size), display: true, animate: false)
+        NSAnimationContext.endGrouping()
     }
 
     /// 按可见圆角条（不含阴影占位）贴齐光标；offsetTop / offsetLeft 可调。
-    private func positionPanel(width: CGFloat, height: CGFloat, below anchor: NSRect) {
+    private func panelOrigin(width: CGFloat, height: CGFloat, below anchor: NSRect) -> NSPoint {
         let skin = IMEAppearancePrefs.skin
         let shadow = chrome.shadowOutset
         let gapY = CGFloat(skin.offsetTop)
@@ -130,6 +141,6 @@ final class CandidatePanelController {
             x = min(max(x, visible.minX - shadow), visible.maxX - width + shadow)
             y = max(y, visible.minY - shadow)
         }
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        return NSPoint(x: x, y: y)
     }
 }
