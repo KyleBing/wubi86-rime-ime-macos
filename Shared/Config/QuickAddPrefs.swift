@@ -4,9 +4,11 @@ import AppKit
 enum QuickAddPrefs {
     static let changedNotification = Notification.Name("cn.kylebing.inputmethod.meifengwubi.quickAddHotkeyChanged")
 
-    // Carbon：kVK_ANSI_W = 13，controlKey | optionKey = 6144
-    static let defaultKeyCode: UInt32 = 13
+    // Carbon：kVK_ANSI_N = 45，controlKey | optionKey = 6144
+    static let defaultKeyCode: UInt32 = 45
     static let defaultModifiers: UInt32 = 6144
+    // 上一版默认是 ⌃⌥W，已保存的默认值迁到 ⌃⌥N
+    private static let legacyKeyCode: UInt32 = 13
 
     private static let fileName = "quickadd.json"
     private static let lock = NSLock()
@@ -14,7 +16,7 @@ enum QuickAddPrefs {
     private struct Store: Codable {
         var keyCode: UInt32 = QuickAddPrefs.defaultKeyCode
         var modifiers: UInt32 = QuickAddPrefs.defaultModifiers
-        var display: String = "⌃⌥W"
+        var display: String = "⌃⌥N"
         var selectedGroupIndex: Int = 0
     }
 
@@ -86,8 +88,16 @@ enum QuickAddPrefs {
     private static func readUnlocked() -> Store {
         guard let url = fileURL,
               let data = try? Data(contentsOf: url),
-              let store = try? JSONDecoder().decode(Store.self, from: data) else {
+              var store = try? JSONDecoder().decode(Store.self, from: data) else {
             return Store()
+        }
+        // 只改仍停在旧默认键上的配置，用户自己设过的组合不动。
+        if store.keyCode == legacyKeyCode,
+           store.modifiers == defaultModifiers,
+           store.display == "⌃⌥W" || store.display == "⌃⌥w" {
+            store.keyCode = defaultKeyCode
+            store.display = "⌃⌥N"
+            writeUnlocked(store)
         }
         return store
     }

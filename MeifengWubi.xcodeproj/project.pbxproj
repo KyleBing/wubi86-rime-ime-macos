@@ -167,6 +167,7 @@
 		1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddPrefs.swift; sourceTree = "<group>"; };
 		1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePreviewPanelController.swift; sourceTree = "<group>"; };
 		1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WubiCloudConfig.swift; sourceTree = "<group>"; };
+		1F582A650A8F1F24EC7591F2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeResourceDeployer.swift; sourceTree = "<group>"; };
 		23837C5F463DCA00A7AA16C3 /* PreferencePanes.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PreferencePanes.framework; path = System/Library/Frameworks/PreferencePanes.framework; sourceTree = SDKROOT; };
 		242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLexiconSettingsView.swift; sourceTree = "<group>"; };
@@ -776,6 +777,7 @@
 		F0CF3F6662273519E251BADF /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				1F582A650A8F1F24EC7591F2 /* Base */,
 				307B5E4A6A5E95118D6F9B08 /* en */,
 				69C92DB1F8633FEDE8CA0D22 /* zh-Hans */,
 			);
@@ -878,7 +880,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.wubi86rime.macos;
-				PRODUCT_NAME = MeifengWubi;
+				PRODUCT_NAME = "玫枫五笔";
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "Shared/Engine/Meifeng-Bridging-Header.h";
 			};
@@ -911,7 +913,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.wubi86rime.macos;
-				PRODUCT_NAME = MeifengWubi;
+				PRODUCT_NAME = "玫枫五笔";
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "Shared/Engine/Meifeng-Bridging-Header.h";
 			};

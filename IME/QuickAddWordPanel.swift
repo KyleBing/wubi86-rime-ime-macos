@@ -10,11 +10,14 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
     private let groupPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let addButton = NSButton(title: "添加", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
+    private let root = NSStackView()
     private var groupIndexes: [Int] = []
+    // 内容区宽度；高度按控件贴合，不预留底部空白
+    private let contentWidth: CGFloat = 312
 
     private override init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 360, height: 196),
+            contentRect: NSRect(x: 0, y: 0, width: 312, height: 120),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -25,17 +28,23 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         build()
+        installTitleLogo()
     }
 
     func showPanel() {
+        // 标题栏图标在窗口显示后才稳定出现，弹出时再刷一次
+        installTitleLogo()
         reloadGroups()
-        status.stringValue = ""
         wordField.stringValue = ""
         codeField.stringValue = ""
+        setStatus("", color: .secondaryLabelColor)
         panel.center()
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(wordField)
+        DispatchQueue.main.async { [weak self] in
+            self?.installTitleLogo()
+        }
     }
 
     private func build() {
@@ -58,8 +67,10 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         status.font = .systemFont(ofSize: 11)
         status.textColor = .secondaryLabelColor
         status.maximumNumberOfLines = 2
-        // 提示文字不要抢垂直空间，否则会把按钮顶离表单。
-        status.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        status.isHidden = true
+        // 换行高度按内容区宽度算，避免空提示把窗口撑高。
+        status.preferredMaxLayoutWidth = contentWidth - 32
+        status.setContentHuggingPriority(.required, for: .vertical)
 
         let wordRow = labeled("词条", wordField)
         let codeRow = labeled("编码", codeField)
@@ -67,39 +78,37 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         let form = NSStackView(views: [wordRow, codeRow, groupRow])
         form.orientation = .vertical
         form.alignment = .leading
-        form.spacing = 10
+        form.spacing = 8
 
-        // 左右弹性空白等宽，按钮水平居中。
+        // 底栏：按钮水平居中
         let leadingSpacer = NSView()
         let trailingSpacer = NSView()
         leadingSpacer.setContentHuggingPriority(.init(1), for: .horizontal)
         trailingSpacer.setContentHuggingPriority(.init(1), for: .horizontal)
-        let buttonRow = NSStackView(views: [leadingSpacer, addButton, trailingSpacer])
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
+        let footer = NSStackView(views: [leadingSpacer, addButton, trailingSpacer])
+        footer.orientation = .horizontal
+        footer.alignment = .centerY
 
-        // 多余高度留在底部，按钮紧跟表单。
-        let bottomSpacer = NSView()
-        bottomSpacer.setContentHuggingPriority(.init(1), for: .vertical)
-
-        let root = NSStackView(views: [form, buttonRow, status, bottomSpacer])
         root.orientation = .vertical
         root.alignment = .leading
         root.spacing = 8
-        root.edgeInsets = NSEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
+        root.edgeInsets = NSEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
+        // 没提示时不占位，窗口只包住表单和底栏。
+        root.detachesHiddenViews = true
+        root.addArrangedSubview(form)
+        root.addArrangedSubview(status)
+        root.addArrangedSubview(footer)
         root.translatesAutoresizingMaskIntoConstraints = false
         panel.contentView = NSView()
         panel.contentView?.addSubview(root)
         guard let content = panel.contentView else { return }
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 18),
-            root.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -18),
+            root.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+            root.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
             root.topAnchor.constraint(equalTo: content.topAnchor),
-            root.bottomAnchor.constraint(equalTo: content.bottomAnchor),
 
             form.widthAnchor.constraint(equalTo: root.widthAnchor),
-            status.widthAnchor.constraint(equalTo: form.widthAnchor),
-            buttonRow.widthAnchor.constraint(equalTo: form.widthAnchor),
+            footer.widthAnchor.constraint(equalTo: form.widthAnchor),
             leadingSpacer.widthAnchor.constraint(equalTo: trailingSpacer.widthAnchor),
             wordRow.widthAnchor.constraint(equalTo: form.widthAnchor),
             codeRow.widthAnchor.constraint(equalTo: form.widthAnchor),
@@ -108,6 +117,71 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
             groupPopup.widthAnchor.constraint(equalTo: wordField.widthAnchor),
             addButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 72)
         ])
+        fitPanel(anchorTop: false)
+    }
+
+    // 标题栏左侧文档图标位换成品牌 Logo（SettingsLogo，不用 AppIcon）。
+    private func installTitleLogo() {
+        guard let logo = loadBrandLogo() else { return }
+        // 指向 Logo 文件以唤出标题栏 proxy 图标按钮
+        if let url = brandLogoURL() {
+            panel.representedURL = url
+        } else {
+            panel.representedURL = URL(fileURLWithPath: "/")
+        }
+        logo.size = NSSize(width: 16, height: 16)
+        if let button = panel.standardWindowButton(.documentIconButton) {
+            button.image = logo
+            // 禁止点图标跳到 Finder
+            button.action = nil
+            button.target = nil
+        }
+    }
+
+    private func brandLogoURL() -> URL? {
+        let name = BrandIcon.settingsResourceName
+        if let resources = Bundle.main.resourceURL {
+            let url = resources.appendingPathComponent("\(name).png")
+            if FileManager.default.fileExists(atPath: url.path) { return url }
+        }
+        return Bundle.main.url(forResource: name, withExtension: "png")
+    }
+
+    // 只用透明枫叶 Logo，不用圆角 App 图标。
+    private func loadBrandLogo() -> NSImage? {
+        if let url = brandLogoURL(), let img = NSImage(contentsOf: url) {
+            return img
+        }
+        if let img = Bundle.main.image(forResource: BrandIcon.settingsResourceName) {
+            return img
+        }
+        return BrandIcon.settingsImage()
+    }
+
+    // 按当前控件高度收缩内容区，顶部保持不动。
+    private func fitPanel(anchorTop: Bool) {
+        guard panel.contentView != nil else { return }
+        let oldMaxY = panel.frame.maxY
+        panel.layoutIfNeeded()
+        root.layoutSubtreeIfNeeded()
+        // 根栈没有被拉满到窗口底部，布局后的高度就是内容高度。
+        var height = ceil(root.bounds.height)
+        if height < 1 {
+            height = ceil(root.fittingSize.height)
+        }
+        guard height > 1 else { return }
+        panel.setContentSize(NSSize(width: contentWidth, height: height))
+        guard anchorTop, panel.isVisible else { return }
+        var frame = panel.frame
+        frame.origin.y += oldMaxY - frame.maxY
+        panel.setFrame(frame, display: true)
+    }
+
+    private func setStatus(_ message: String, color: NSColor) {
+        status.stringValue = message
+        status.textColor = color
+        status.isHidden = message.isEmpty
+        fitPanel(anchorTop: panel.isVisible)
     }
 
     private func reloadGroups() {
@@ -150,21 +224,21 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let text = wordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            status.textColor = .systemOrange
-            status.stringValue = "词条不能为空。"
+            setStatus("词条不能为空。", color: .systemOrange)
             return
         }
         guard !code.isEmpty, (1...4).contains(code.count) else {
-            status.textColor = .systemOrange
-            status.stringValue = code.isEmpty
-                ? "无法自动编码。请到「词库目录」生成单字字典，或手填编码。"
-                : "编码需 1–4 位。"
+            setStatus(
+                code.isEmpty
+                    ? "无法自动编码。请到「词库目录」生成单字字典，或手填编码。"
+                    : "编码需 1–4 位。",
+                color: .systemOrange
+            )
             return
         }
         let popupIndex = groupPopup.indexOfSelectedItem
         guard groupIndexes.indices.contains(popupIndex) else {
-            status.textColor = .systemOrange
-            status.stringValue = "请选择分组。"
+            setStatus("请选择分组。", color: .systemOrange)
             return
         }
         let groupIndex = groupIndexes[popupIndex]
@@ -175,18 +249,15 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
             _ = RimeSession.shared.ensureStarted()
             switch deploy {
             case .success:
-                status.textColor = .secondaryLabelColor
-                status.stringValue = "已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」并部署。"
+                setStatus("已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」并部署。", color: .secondaryLabelColor)
                 wordField.stringValue = ""
                 codeField.stringValue = ""
                 panel.makeFirstResponder(wordField)
             case .failure(let message):
-                status.textColor = .systemRed
-                status.stringValue = "已写入，但部署失败：\(message)"
+                setStatus("已写入，但部署失败：\(message)", color: .systemRed)
             }
         } catch {
-            status.textColor = .systemRed
-            status.stringValue = error.localizedDescription
+            setStatus(error.localizedDescription, color: .systemRed)
         }
     }
 

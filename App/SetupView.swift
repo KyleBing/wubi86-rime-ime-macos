@@ -15,10 +15,8 @@ struct SetupView: View {
         return "v\(version) (\(build))"
     }
     var body: some View {
-        NavigationStack {
-            // 内容高于屏幕时可滚动，避免顶部被裁掉
-            ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        // 不用 ScrollView / Spacer 撑高，窗口高度跟内容走（配合 .contentSize）
+        VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 14) {
                 // 主页用透明枫叶 Logo，不用 AppIcon / 圆角图标。
                 if let brand = BrandIcon.settingsImage() {
@@ -52,9 +50,12 @@ struct SetupView: View {
                         Button("安装 / 更新输入法") { install() }
                             .disabled(isBusy)
                         Button("打开系统设置·输入法") { IMEInstaller.openInputSourcesPrefs() }
-                        // 重新读取是否已安装 / 已在系统输入法列表中启用（安装后或去系统设置改完再点）。
-                        Button("刷新状态") { status = IMEInstaller.statusText() }
-                            .help("重新检查输入法是否已安装并在系统中启用")
+                        // 重新检查安装状态，并清掉宿主包内 payload 抢注册。
+                        Button("刷新状态") {
+                            IMEInstaller.reassertInstalledIME()
+                            status = IMEInstaller.statusText()
+                        }
+                            .help("重新检查输入法是否已安装并在系统中启用；同时清除错误注册")
                     }
                     if !message.isEmpty {
                         Text(message)
@@ -146,14 +147,14 @@ struct SetupView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
             }
-
-            Spacer(minLength: 0)
         }
         .padding(24)
-            }
-        }
+        .frame(width: 420)
+        .fixedSize(horizontal: true, vertical: true)
         .onAppear {
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
+            // 打开宿主会让系统扫到包内 .payload；立刻改回只认 ~/Library/Input Methods。
+            IMEInstaller.reassertInstalledIME()
             status = IMEInstaller.statusText()
             if preferOpenCandidatePrefs {
                 CandidateSettingsWindow.show()
@@ -178,7 +179,7 @@ struct SetupView: View {
                 DispatchQueue.main.async {
                     IMEInstaller.finishInstallOnMain()
                     status = IMEInstaller.statusText()
-                    message = "已安装到 ~/Library/Input Methods。请用 Fn/地球键切到「玫枫五笔」试打。"
+                    message = "已安装到 ~/Library/Input Methods，并尝试加入菜单栏。若列表仍没有，请到系统设置 → 键盘 → 输入法里删掉再添加一次「玫枫五笔」。"
                     isBusy = false
                 }
             } catch {

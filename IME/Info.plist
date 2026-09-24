@@ -4,6 +4,7 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh-Hans</string>
+	<!-- 任意系统语言下显示名均为中文「玫枫五笔」（en / zh-Hans 的 InfoPlist.strings 同此） -->
 	<key>CFBundleDisplayName</key>
 	<string>玫枫五笔</string>
 	<key>CFBundleExecutable</key>
@@ -31,7 +32,7 @@
 			<dict>
 				<key>TISIconLabels</key>
 				<dict>
-					<!-- 无图标时的文字回退；正式名称走 InfoPlist.strings -->
+					<!-- 无图标时的文字回退；列表正式名称走 InfoPlist.strings -->
 					<key>Primary</key>
 					<string>玫枫</string>
 				</dict>
@@ -75,6 +76,7 @@
 	<string>MeifengPreferencesWindowController</string>
 	<key>LSBackgroundOnly</key>
 	<false/>
+	<!-- Finder / 输入法列表走本地化显示名 -->
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>

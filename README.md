@@ -20,7 +20,7 @@ xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi -configuration Deb
 
 ## 安装
 
-1. 运行 `MeifengWubi.app`
+1. 运行 `玫枫五笔.app`
 2. 点「安装 / 更新输入法」
 3. 系统设置 → 键盘 → 输入法 → 启用「玫枫五笔」
 4. 若列表不出现，注销一次再试
