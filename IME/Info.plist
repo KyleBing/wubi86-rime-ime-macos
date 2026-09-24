@@ -39,12 +39,9 @@
 				<string>cn.kylebing.inputmethod.meifengwubi.wubi</string>
 				<key>TISIntendedLanguage</key>
 				<string>zh-Hans</string>
-				<!-- 状态栏：桌面枫叶图的 16/32 px 模板 TIFF -->
+				<!-- 状态栏、Fn 切换器都用同一张黑剪影，由 TISIconIsTemplate 随深浅背景上色 -->
 				<key>tsInputModeMenuIconFileKey</key>
-				<string>ime-menu.tiff</string>
-				<key>tsInputModeAlternateMenuIconFileKey</key>
-				<string>ime-selected.tiff</string>
-				<!-- Fn/地球键切换器通常读取模式的面板图标 -->
+				<string>ime-fn.tiff</string>
 				<key>tsInputModePaletteIconFileKey</key>
 				<string>ime-fn.tiff</string>
 				<key>tsInputModeCharacterRepertoireKey</key>
@@ -90,9 +87,9 @@
 	<string>NSApplication</string>
 	<key>TICapsLockLanguageSwitchCapable</key>
 	<true/>
-	<!-- 图标自带浅色描边，选中态不再当成模板反色，避免浅底上变成看不见的白图 -->
+	<!-- 黑剪影模板：浅底画黑、深底画白，选中行由系统反色 -->
 	<key>TISIconIsTemplate</key>
-	<false/>
+	<true/>
 	<key>TISIconLabels</key>
 	<dict>
 		<key>Primary</key>
@@ -107,11 +104,9 @@
 		<string>Hans</string>
 		<string>Latn</string>
 	</array>
-	<!-- Input Sources 列表使用方法级图标 -->
+	<!-- 输入法列表与模式图标同一张 -->
 	<key>tsInputMethodIconFileKey</key>
-	<string>ime-input-source.tiff</string>
-	<key>tsInputMethodAlternateIconFileKey</key>
-	<string>ime-selected.tiff</string>
+	<string>ime-fn.tiff</string>
 	<key>tsInputMethodPaletteIconFileKey</key>
 	<string>ime-fn.tiff</string>
 </dict>
