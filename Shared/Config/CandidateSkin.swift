@@ -248,7 +248,7 @@ struct CandidateSkin: Codable, Equatable {
         [coralPreset, monochromePreset]
     }
 
-    // 珊瑚红：纯白 / 纯黑底，首选珊瑚红高亮，紧凑间距。
+    // 珊瑚红：纯白 / 纯黑底，首选珊瑚红高亮；尺寸与简约黑白共用。
     private static var coralPreset: CandidateSkin {
         let coral = RGBAColor(red: 0.96, green: 0.377, blue: 0.377)
         return CandidateSkin(
@@ -256,31 +256,31 @@ struct CandidateSkin: Codable, Equatable {
             name: "珊瑚红",
             author: "玫枫五笔",
             fontName: "",
-            paddingTop: 4,
-            paddingBottom: 4,
+            paddingTop: 3,
+            paddingBottom: 3,
             paddingLeft: 5,
             paddingRight: 5,
             offsetTop: 4,
             offsetLeft: 0,
-            cornerRadius: 8,
+            cornerRadius: 7,
             verticalAlignment: .center,
-            itemSpacing: 1,
-            indexSpacing: 3,
-            candidateFontSize: 16,
+            itemSpacing: 3,
+            indexSpacing: 6,
+            candidateFontSize: 18,
             candidateWeight: .regular,
-            indexFontSize: 10,
+            indexFontSize: 11,
             indexWeight: .light,
             borderWidth: 0.5,
             shadowEnabled: true,
-            shadowRadius: 10,
-            shadowOffsetX: 0,
+            shadowRadius: 4,
+            shadowOffsetX: 2,
             shadowOffsetY: -2,
             highlightEnabled: true,
             highlightCornerRadius: 5,
-            highlightPaddingTop: 2,
-            highlightPaddingBottom: 2,
-            highlightPaddingLeft: 5,
-            highlightPaddingRight: 5,
+            highlightPaddingTop: 1,
+            highlightPaddingBottom: 1,
+            highlightPaddingLeft: 3,
+            highlightPaddingRight: 3,
             highlightWeight: .medium,
             light: Colors(
                 background: .init(red: 1, green: 1, blue: 1),
@@ -305,16 +305,10 @@ struct CandidateSkin: Codable, Equatable {
         )
     }
 
-    // 简约黑白：在珊瑚红基础上去掉彩色高亮，首选仅靠加粗与同底色区分。
+    // 简约黑白：沿用珊瑚红尺寸，去掉彩色高亮，首选仅靠加粗与同底色区分。
     private static var monochromePreset: CandidateSkin {
         var skin = coralPreset
         skin.name = "简约黑白"
-        skin.itemSpacing = 3
-        skin.indexSpacing = 4
-        skin.highlightPaddingTop = 1
-        skin.highlightPaddingBottom = 1
-        skin.highlightPaddingLeft = 3
-        skin.highlightPaddingRight = 3
         skin.light.highlightBackground = .init(red: 1, green: 1, blue: 1)
         skin.light.highlightText = .init(red: 0, green: 0, blue: 0)
         skin.light.highlightIndexText = .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695)

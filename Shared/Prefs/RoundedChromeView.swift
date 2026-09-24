@@ -17,7 +17,8 @@ final class RoundedChromeView: NSView {
         let skin = IMEAppearancePrefs.skin
         guard skin.shadowEnabled else { return 0 }
         let offset = max(abs(skin.shadowOffsetX), abs(skin.shadowOffsetY))
-        return ceil(CGFloat(skin.shadowRadius + offset + 2))
+        // 高斯模糊的衰减范围约为模糊半径的 2 倍，只留 1 倍会在窗口边缘被硬裁切。
+        return ceil(CGFloat(skin.shadowRadius * 2 + offset + 2))
     }
 
     override init(frame frameRect: NSRect) {
