@@ -74,8 +74,8 @@ func saveThirdParty(_ list: [[String: Any]]) {
     CFPreferencesAppSynchronize(inputSourcesDomain)
 }
 
-// 清 HIToolbox 里误写入的条目，避免与 ThirdParty 双份 mode（设置页会丢）
-for key in ["AppleEnabledInputSources", "AppleSelectedInputSources"] {
+// 只清启用列表。Selected 是当前选中项，清掉后一切到别的软件就会掉回旧输入法。
+for key in ["AppleEnabledInputSources"] {
     guard let entries = CFPreferencesCopyValue(
         key as CFString, hiToolbox, kCFPreferencesCurrentUser, kCFPreferencesAnyHost
     ) as? [[String: Any]] else { continue }

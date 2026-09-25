@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import InputMethodKit
 import os.log
 
@@ -9,14 +10,16 @@ private let log = Logger(subsystem: "cn.kylebing.inputmethod.meifengwubi", categ
 enum MeifengIMEMain {
     static func main() {
         let app = NSApplication.shared
-        // accessory：无 Dock，但允许设置窗口置前（勿用 prohibited / LSBackgroundOnly）
-        app.setActivationPolicy(.accessory)
+        // 不要在这里改 activationPolicy。LSUIElement 已经没有 Dock；
+        // 启动时再设 accessory，部分应用（含 Electron）不会把按键交给输入法，菜单项也不出现。
         let delegate = IMEAppDelegate()
         app.delegate = delegate
         // IMK 要求尽早建立连接名，不要等 run loop 空转
         delegate.startServer()
         _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
         QuickAddHotKey.install()
+        // 各软件会记住自己的输入法；选中玫枫后再点别的输入框，要跟着过去
+        MeifengInputSourceLock.install()
         IMEAppDelegate.appendLaunchLog("main entered, server+rime ready")
         app.run()
     }
@@ -74,5 +77,69 @@ final class IMEAppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         NSLog("[MeifengWubi] %@", msg)
+    }
+}
+
+/// 用户选中玫枫五笔后，切换到其他软件的输入框时保持选中。
+enum MeifengInputSourceLock {
+    private static let modeId = "cn.kylebing.inputmethod.meifengwubi.wubi"
+    // 离开当前软件时若仍是玫枫，下个软件也选回玫枫
+    private static var restoreOnNextApp = false
+    // 切软件时系统会先改回那个软件的旧输入法，这段时间内忽略，避免把「跟着走」清掉
+    private static var ignoreSourceChangeUntil = Date.distantPast
+    private static var applying = false
+
+    static func install() {
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(
+            forName: NSWorkspace.didDeactivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard !applying else { return }
+            restoreOnNextApp = isSelected()
+            if restoreOnNextApp {
+                ignoreSourceChangeUntil = Date().addingTimeInterval(0.6)
+            }
+        }
+        center.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { note in
+            guard restoreOnNextApp else { return }
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            if app?.bundleIdentifier == Bundle.main.bundleIdentifier { return }
+            applying = true
+            select()
+            applying = false
+            IMEAppDelegate.appendLaunchLog("kept input source for \(app?.bundleIdentifier ?? "?")")
+        }
+        DistributedNotificationCenter.default().addObserver(
+            forName: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+            object: nil,
+            queue: .main
+        ) { _ in
+            if applying || Date() < ignoreSourceChangeUntil { return }
+            // 用户在当前软件里手动换了输入法，就不再自动跟过去
+            restoreOnNextApp = isSelected()
+        }
+        restoreOnNextApp = isSelected()
+    }
+
+    private static func isSelected() -> Bool {
+        let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+        return inputSourceID(source) == modeId
+    }
+
+    private static func select() {
+        guard let list = TISCreateInputSourceList(nil, true)?.takeRetainedValue() as? [TISInputSource] else { return }
+        guard let mode = list.first(where: { inputSourceID($0) == modeId }) else { return }
+        _ = TISSelectInputSource(mode)
+    }
+
+    private static func inputSourceID(_ source: TISInputSource) -> String {
+        guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return "" }
+        return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
     }
 }

@@ -45,20 +45,20 @@
 				<string>ime-fn.tiff</string>
 				<key>tsInputModePaletteIconFileKey</key>
 				<string>ime-fn.tiff</string>
+				<!-- 模式不要带 Latn，否则会被当成 ASCII 键盘，菜单栏不单列、也挂不上输入法菜单 -->
 				<key>tsInputModeCharacterRepertoireKey</key>
 				<array>
 					<string>Hans</string>
-					<string>Latn</string>
 				</array>
 				<key>tsInputModeDefaultStateKey</key>
 				<true/>
 				<key>tsInputModeIsVisibleKey</key>
 				<true/>
-				<!-- 与系统五笔一致：不抢简体中文主输入法位，避免切换异常 -->
+				<!-- 独立输入源（与鼠须管相同）：primary + Unicode 脚本才会出现在菜单栏，并带上自己的菜单 -->
 				<key>tsInputModePrimaryInScriptKey</key>
-				<false/>
+				<true/>
 				<key>tsInputModeScriptKey</key>
-				<string>smSimpChinese</string>
+				<string>smUnicodeScript</string>
 			</dict>
 		</dict>
 		<key>tsVisibleInputModeOrderedArrayKey</key>
@@ -99,8 +99,9 @@
 	</dict>
 	<key>TISInputSourceID</key>
 	<string>cn.kylebing.inputmethod.meifengwubi</string>
+	<!-- 父输入法标 en，模式仍是 zh-Hans。父项也标中文时，菜单栏不会单独列出这一项 -->
 	<key>TISIntendedLanguage</key>
-	<string>zh-Hans</string>
+	<string>en</string>
 	<key>tsInputMethodCharacterRepertoireKey</key>
 	<array>
 		<string>Hans</string>

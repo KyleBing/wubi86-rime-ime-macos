@@ -79,7 +79,10 @@ done
 /tmp/check_tis_meifeng
 # 再杀一次，避免仍挂着系统目录旧进程；下次切换输入法时由系统拉起用户目录副本
 killall MeifengWubiIME 2>/dev/null || true
-killall TextInputMenuAgent 2>/dev/null || true
+# 这两个进程忽略 SIGTERM，killall 杀不掉，会把登录时的输入法列表一直留到重启
+for pid in $(ps -ax -o pid=,command= | awk '/TextInputMenuAgent.app\/Contents\/MacOS\/TextInputMenuAgent|TextInputSwitcher.app\/Contents\/MacOS\/TextInputSwitcher/ {print $1}'); do
+  kill -9 "$pid" 2>/dev/null || true
+done
 
 echo "已安装到: $IME_DEST"
 if [[ -e "$IME_SYSTEM" ]]; then

@@ -52,8 +52,16 @@ struct SetupView: View {
                         Button("打开系统设置·输入法") { IMEInstaller.openInputSourcesPrefs() }
                         // 重新检查安装状态，并清掉宿主包内 payload 抢注册。
                         Button("刷新状态") {
-                            IMEInstaller.reassertInstalledIME()
-                            status = IMEInstaller.statusText()
+                            isBusy = true
+                            // 扫构建目录很慢，放到后台；TIS 仍回主线程
+                            DispatchQueue.global(qos: .userInitiated).async {
+                                IMEInstaller.unregisterStaleBuildCopies()
+                                DispatchQueue.main.async {
+                                    IMEInstaller.reassertInstalledIME()
+                                    status = IMEInstaller.statusText()
+                                    isBusy = false
+                                }
+                            }
                         }
                             .help("重新检查输入法是否已安装并在系统中启用；同时清除错误注册")
                     }
@@ -153,12 +161,18 @@ struct SetupView: View {
         .fixedSize(horizontal: true, vertical: true)
         .onAppear {
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
-            // 打开宿主会让系统扫到包内 .payload；立刻改回只认 ~/Library/Input Methods。
-            IMEInstaller.reassertInstalledIME()
             status = IMEInstaller.statusText()
             if preferOpenCandidatePrefs {
                 CandidateSettingsWindow.show()
                 preferOpenCandidatePrefs = false
+            }
+            // 清 payload 放到后台。主线程上扫盘 + 重注册会卡住十余秒，并且把当前输入法 disable 掉。
+            DispatchQueue.global(qos: .utility).async {
+                IMEInstaller.unregisterKnownGhostCopies()
+                DispatchQueue.main.async {
+                    IMEInstaller.ensureEnabledOnMain()
+                    status = IMEInstaller.statusText()
+                }
             }
         }
         .onChange(of: preferOpenCandidatePrefs) { new in

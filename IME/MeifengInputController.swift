@@ -15,6 +15,8 @@ final class MeifengInputController: IMKInputController {
     private var specialPreedit = ""
     // 强引用，避免设置窗口闪一下被释放
     private var preferencesWindowController: MeifengPreferencesWindowController?
+    // 菜单交给另一个进程绘制，必须自己留着，否则项会被释放掉
+    private var inputMenu: NSMenu?
 
     private func log(_ msg: String) {
         let line = "\(ISO8601DateFormatter().string(from: Date())) \(msg)\n"
@@ -406,13 +408,16 @@ final class MeifengInputController: IMKInputController {
     }
 
     override func menu() -> NSMenu! {
+        // 状态栏菜单属于 TextInputMenuAgent。自动启用时它的响应链里没有本控制器，项会被关掉并隐藏。
         let menu = NSMenu(title: "玫枫五笔")
+        menu.autoenablesItems = false
         let deploy = NSMenuItem(
             title: "部署",
             action: #selector(deployFromMenu(_:)),
             keyEquivalent: ""
         )
         deploy.target = self
+        deploy.isEnabled = true
         menu.addItem(deploy)
         let prefs = NSMenuItem(
             title: "玫枫五笔设置…",
@@ -420,7 +425,10 @@ final class MeifengInputController: IMKInputController {
             keyEquivalent: ","
         )
         prefs.target = self
+        prefs.isEnabled = true
         menu.addItem(prefs)
+        inputMenu = menu
+        log("menu built items=\(menu.numberOfItems)")
         return menu
     }
 

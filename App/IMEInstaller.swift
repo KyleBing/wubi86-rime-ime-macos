@@ -60,11 +60,33 @@ enum IMEInstaller {
         case .success: NSLog("[MeifengWubi] pre-deploy ok")
         case .failure(let err): NSLog("[MeifengWubi] pre-deploy failed: %@", err)
         }
-        let killAgent = Process()
-        killAgent.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
-        killAgent.arguments = ["TextInputMenuAgent"]
-        try? killAgent.run()
-        killAgent.waitUntilExit()
+    }
+
+    /// TextInputSwitcher / MenuAgent 忽略普通退出，killall 无效，会一直用登录时的输入法列表。
+    /// 必须 kill -9，系统会马上拉起新进程并重读注册信息，否则只有重启电脑才生效。
+    static func restartInputMenuAgents() {
+        let markers = [
+            "/TextInputMenuAgent.app/Contents/MacOS/TextInputMenuAgent",
+            "/TextInputSwitcher.app/Contents/MacOS/TextInputSwitcher",
+        ]
+        let listed = Process()
+        listed.executableURL = URL(fileURLWithPath: "/bin/ps")
+        listed.arguments = ["-ax", "-o", "pid=,command="]
+        let pipe = Pipe()
+        listed.standardOutput = pipe
+        try? listed.run()
+        listed.waitUntilExit()
+        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        for line in text.split(separator: "\n") {
+            let row = line.trimmingCharacters(in: .whitespaces)
+            guard markers.contains(where: { row.contains($0) }) else { continue }
+            guard let pid = row.split(separator: " ").first else { continue }
+            let kill = Process()
+            kill.executableURL = URL(fileURLWithPath: "/bin/kill")
+            kill.arguments = ["-9", String(pid)]
+            try? kill.run()
+            kill.waitUntilExit()
+        }
     }
 
     // 结束正在运行的输入法进程，系统下次需要时会自动拉起，从而读到新的词库目录
@@ -127,12 +149,38 @@ enum IMEInstaller {
         unregisterPaths(Array(paths).filter { $0 != installedIMEURL.path })
     }
 
-    /// 打开宿主时调用：清掉包内 payload 抢注册，只保留用户目录输入法。
+    /// 打开宿主时调用：只注销包内 payload 等已知幽灵路径（可在后台跑）。
+    /// 不要扫 DerivedData，那会把主线程堵住十几秒，窗口一直进不去。
+    static func unregisterKnownGhostCopies() {
+        var paths = [
+            "/Applications/MeifengWubi.app/Contents/Resources/MeifengWubiIME.payload",
+            "/Applications/玫枫五笔.app/Contents/Resources/MeifengWubiIME.payload",
+            legacySystemIMEURL.path,
+        ]
+        if let embedded = Bundle.main.url(forResource: "MeifengWubiIME", withExtension: "payload") {
+            paths.append(embedded.path)
+        }
+        unregisterPaths(paths.filter { $0 != installedIMEURL.path })
+    }
+
+    /// 刷新状态时清构建目录里的旧副本。会遍历 DerivedData，必须放后台。
+    static func unregisterStaleBuildCopies() {
+        unregisterBuildProductCopies()
+        unregisterPaths([legacySystemIMEURL.path])
+    }
+
+    /// 打开宿主时调用：已启用就不要再 disable / 重注册，否则刚选中的输入法会立刻掉线。
+    static func ensureEnabledOnMain() {
+        precondition(Thread.isMainThread, "TIS 必须在主线程")
+        guard FileManager.default.fileExists(atPath: installedIMEURL.path) else { return }
+        if isModeEnabled() { return }
+        registerInputSource(at: installedIMEURL)
+    }
+
+    /// 安装或手动刷新后，把用户目录输入法重新登记为当前项。调用前应已在后台清完幽灵路径。
     static func reassertInstalledIME() {
         precondition(Thread.isMainThread, "TIS 必须在主线程")
         guard FileManager.default.fileExists(atPath: installedIMEURL.path) else { return }
-        unregisterBuildProductCopies()
-        unregisterPaths([legacySystemIMEURL.path])
         registerInputSource(at: installedIMEURL)
     }
 
@@ -178,6 +226,9 @@ enum IMEInstaller {
             name: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
             object: nil
         )
+        // 不重启切换进程的话，菜单和选中状态要等下次登录才更新
+        restartRunningIME()
+        restartInputMenuAgents()
     }
 
     private static let inputSourcesDomain = "com.apple.inputsources" as CFString
@@ -213,9 +264,9 @@ enum IMEInstaller {
         saveThirdPartyEnabledList(list)
     }
 
-    // 清掉误写入 HIToolbox 的条目，防止与 ThirdParty 叠成双份 mode
+    // 只清启用列表里的重复项。不要动 AppleSelectedInputSources，否则一切换软件就退回别的输入法。
     private static func removeFromHIToolboxEnabledList() {
-        for key in ["AppleEnabledInputSources", "AppleSelectedInputSources"] {
+        for key in ["AppleEnabledInputSources"] {
             guard let entries = CFPreferencesCopyValue(
                 key as CFString,
                 hiToolboxDomain,
