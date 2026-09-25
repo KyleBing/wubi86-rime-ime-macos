@@ -20,20 +20,23 @@ final class CandidatePanelController {
             backing: .buffered,
             defer: false
         )
-        panel.level = .floating
         panel.isOpaque = false
         panel.backgroundColor = .clear
         // 系统阴影不可调参数，改由 RoundedChromeView 按皮肤绘制。
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
-        panel.isFloatingPanel = true
+        // 不要设 isFloatingPanel=true：它会把 level 强制打回 .floating(3)，
+        // Spotlight 约在 23，候选框会被盖住。Squirrel 也不开这个开关。
         panel.worksWhenModal = true
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        // 不加 transient：避免跟 key window 绑定后被压到下层。
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         // 关键：不成为 key window，避免 Finder sheet 后焦点丢失
         panel.becomesKeyOnlyIfNeeded = true
         panel.isReleasedWhenClosed = false
         // 默认进出场会把窗口缩放淡入，缩放过程中文字被拉糊。
         panel.animationBehavior = .none
+        // 与 Squirrel 一致；不要在此前设 isFloatingPanel=true，否则 level 会被打回 .floating。
+        panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
 
         chrome = RoundedChromeView(frame: panel.contentView?.bounds ?? .zero)
         chrome.autoresizingMask = [.width, .height]
@@ -71,11 +74,15 @@ final class CandidatePanelController {
             return
         }
         render()
-        // 已在屏幕上时重复 orderFront 会再播一次出现动画。
-        if !panel.isVisible {
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()
-        }
+        // 每次更新都前置，并重申层级（防止被系统改回）。
+        applyCandidateWindowLevel()
+        panel.alphaValue = 1
+        panel.orderFrontRegardless()
+    }
+
+    // 候选条需高于 Spotlight（约 23）；屏蔽层与 Squirrel 一致。
+    private func applyCandidateWindowLevel() {
+        panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
     }
 
     func hide() {
@@ -94,6 +101,8 @@ final class CandidatePanelController {
             return
         }
         render()
+        applyCandidateWindowLevel()
+        panel.orderFrontRegardless()
     }
 
     // 重建内容 → 取自动布局真实尺寸 → 按可见圆角条贴齐光标。
