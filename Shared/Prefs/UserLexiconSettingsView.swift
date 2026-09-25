@@ -5,8 +5,6 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
     private let tipLabel = NSTextField(labelWithString: "")
     private let textField = NSTextField(string: "")
     private let codeField = NSTextField(string: "")
-    private let groupTitleLabel = NSTextField(labelWithString: "分组")
-    private let entriesTitleLabel = NSTextField(labelWithString: "词条")
     private let groupsTable = ReorderTableView()
     private let entriesTable = ReorderTableView()
     // 拖动排序：正在拖动的表格、跟随鼠标的行快照浮层、被拖动的原行、当前目标行
@@ -21,11 +19,26 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
     private var document = UserDictDocument.empty
     // 与全局造词窗口共用，默认加到这里选中的分组
     private var selectedGroupIndex = QuickAddPrefs.selectedGroupIndex
+    private var userDictObserver: NSObjectProtocol?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         build()
         reload()
+        // 云端合并或覆盖本地后，刷新当前分组词条。
+        userDictObserver = NotificationCenter.default.addObserver(
+            forName: .meifengUserDictDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.reload()
+        }
+    }
+
+    deinit {
+        if let userDictObserver {
+            NotificationCenter.default.removeObserver(userDictObserver)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -48,7 +61,18 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         codeField.setContentHuggingPriority(.required, for: .horizontal)
         let add = smallButton("添加", #selector(addEntry))
         let reloadBtn = smallButton("重新加载", #selector(reload))
-        let form = NSStackView(views: [textField, codeField, add, reloadBtn])
+        // 数量和操作提示靠这一行右侧，输入框保持原宽度。
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tipLabel.font = .systemFont(ofSize: 11)
+        tipLabel.textColor = .secondaryLabelColor
+        tipLabel.alignment = .right
+        tipLabel.lineBreakMode = .byTruncatingTail
+        tipLabel.maximumNumberOfLines = 1
+        tipLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        tipLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let form = NSStackView(views: [textField, codeField, add, reloadBtn, spacer, tipLabel])
         form.orientation = .horizontal
         form.alignment = .centerY
         form.spacing = 6
@@ -56,16 +80,6 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         // 两个输入框先放进同一父视图，再设倍数宽度，否则约束激活时会抛异常把页面卡死。
         codeField.widthAnchor.constraint(equalToConstant: 72).isActive = true
         textField.widthAnchor.constraint(equalTo: codeField.widthAnchor, multiplier: 3).isActive = true
-
-        tipLabel.font = .systemFont(ofSize: 11)
-        tipLabel.textColor = .secondaryLabelColor
-        tipLabel.maximumNumberOfLines = 2
-        tipLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        groupTitleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-        groupTitleLabel.textColor = .secondaryLabelColor
-        entriesTitleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-        entriesTitleLabel.textColor = .secondaryLabelColor
 
         let addGroup = textButton("添加分组", #selector(promptAddGroup))
         let renameGroup = textButton("重命名", #selector(promptRenameGroup))
@@ -79,23 +93,17 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         configureGroupsTable()
         configureEntriesTable()
 
-        let leftHeader = NSStackView(views: [groupTitleLabel, groupTools])
-        leftHeader.orientation = .vertical
-        leftHeader.alignment = .leading
-        leftHeader.spacing = 4
-        leftHeader.translatesAutoresizingMaskIntoConstraints = false
+        groupTools.translatesAutoresizingMaskIntoConstraints = false
 
         let leftPane = NSView()
         leftPane.translatesAutoresizingMaskIntoConstraints = false
         leftPane.clipsToBounds = true
-        leftPane.addSubview(leftHeader)
+        leftPane.addSubview(groupTools)
         leftPane.addSubview(groupsScroll)
 
         let rightPane = NSView()
         rightPane.translatesAutoresizingMaskIntoConstraints = false
         rightPane.clipsToBounds = true
-        entriesTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        rightPane.addSubview(entriesTitleLabel)
         rightPane.addSubview(entriesScroll)
 
         let split = NSView()
@@ -105,7 +113,6 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         split.addSubview(rightPane)
 
         addSubview(form)
-        addSubview(tipLabel)
         addSubview(split)
 
         NSLayoutConstraint.activate([
@@ -113,13 +120,9 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
             form.trailingAnchor.constraint(equalTo: trailingAnchor),
             form.topAnchor.constraint(equalTo: topAnchor),
 
-            tipLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
-            tipLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
-            tipLabel.topAnchor.constraint(equalTo: form.bottomAnchor, constant: 6),
-
             split.leadingAnchor.constraint(equalTo: leadingAnchor),
             split.trailingAnchor.constraint(equalTo: trailingAnchor),
-            split.topAnchor.constraint(equalTo: tipLabel.bottomAnchor, constant: 8),
+            split.topAnchor.constraint(equalTo: form.bottomAnchor, constant: 8),
             split.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             leftPane.leadingAnchor.constraint(equalTo: split.leadingAnchor),
@@ -132,19 +135,13 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
             rightPane.topAnchor.constraint(equalTo: split.topAnchor),
             rightPane.bottomAnchor.constraint(equalTo: split.bottomAnchor),
 
-            leftHeader.leadingAnchor.constraint(equalTo: leftPane.leadingAnchor),
-            leftHeader.trailingAnchor.constraint(equalTo: leftPane.trailingAnchor),
-            leftHeader.topAnchor.constraint(equalTo: leftPane.topAnchor),
+            groupTools.leadingAnchor.constraint(equalTo: leftPane.leadingAnchor),
+            groupTools.topAnchor.constraint(equalTo: leftPane.topAnchor),
 
             groupsScroll.leadingAnchor.constraint(equalTo: leftPane.leadingAnchor),
             groupsScroll.trailingAnchor.constraint(equalTo: leftPane.trailingAnchor),
-            groupsScroll.topAnchor.constraint(equalTo: leftHeader.bottomAnchor, constant: 4),
+            groupsScroll.topAnchor.constraint(equalTo: groupTools.bottomAnchor, constant: 4),
             groupsScroll.bottomAnchor.constraint(equalTo: leftPane.bottomAnchor),
-
-            entriesTitleLabel.leadingAnchor.constraint(equalTo: rightPane.leadingAnchor),
-            entriesTitleLabel.trailingAnchor.constraint(equalTo: rightPane.trailingAnchor),
-            entriesTitleLabel.topAnchor.constraint(equalTo: rightPane.topAnchor),
-            entriesTitleLabel.heightAnchor.constraint(equalToConstant: 16),
 
             entriesScroll.leadingAnchor.constraint(equalTo: rightPane.leadingAnchor),
             entriesScroll.trailingAnchor.constraint(equalTo: rightPane.trailingAnchor),
@@ -286,32 +283,23 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         if document.groups.indices.contains(selectedGroupIndex) {
             groupsTable.selectRowIndexes(IndexSet(integer: selectedGroupIndex), byExtendingSelection: false)
         }
-        refreshEntriesTitle()
         if tipLabel.stringValue.isEmpty
             || tipLabel.stringValue.hasPrefix("共")
             || tipLabel.stringValue.hasPrefix("暂无")
             || tipLabel.stringValue.hasPrefix("分组") {
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = summaryText()
+            setTip(summaryText(), color: .secondaryLabelColor)
         }
     }
 
     private func summaryText() -> String {
-        let n = document.entryCount
-        let g = document.groups.count
-        if n == 0 {
-            return "暂无用户词。选中左侧分组后添加词条。"
-        }
-        return "分组 \(g) · 词条 \(n)"
+        "分组 \(document.groups.count) · 词条 \(document.entryCount)"
     }
 
-    private func refreshEntriesTitle() {
-        guard document.groups.indices.contains(selectedGroupIndex) else {
-            entriesTitleLabel.stringValue = "词条"
-            return
-        }
-        let group = document.groups[selectedGroupIndex]
-        entriesTitleLabel.stringValue = "\(group.displayName) · \(group.entries.count)"
+    // 输入行右侧的数量或操作结果，过长时悬停可看全文。
+    private func setTip(_ text: String, color: NSColor) {
+        tipLabel.textColor = color
+        tipLabel.stringValue = text
+        tipLabel.toolTip = text
     }
 
     @objc private func groupSelectionChanged() {
@@ -319,7 +307,6 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         guard document.groups.indices.contains(row) else { return }
         selectedGroupIndex = row
         QuickAddPrefs.selectedGroupIndex = row
-        refreshEntriesTitle()
         entriesTable.reloadData()
     }
 
@@ -346,13 +333,11 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         do {
             try UserDictWriter.saveActiveDocument(doc)
             selectedGroupIndex = max(0, doc.groups.count - 1)
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = "已添加分组「\(group.displayName)」"
+            setTip("已添加分组「\(group.displayName)」", color: .secondaryLabelColor)
             reload()
             maybeDeploy(successHint: tipLabel.stringValue)
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 
@@ -373,12 +358,10 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         doc.isGroupMode = true
         do {
             try UserDictWriter.saveActiveDocument(doc)
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = "已重命名为「\(doc.groups[selectedGroupIndex].displayName)」"
+            setTip("已重命名为「\(doc.groups[selectedGroupIndex].displayName)」", color: .secondaryLabelColor)
             reload()
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 
@@ -403,13 +386,11 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
             try UserDictWriter.saveActiveDocument(doc)
             UserDictWriter.markNeedsDeploy()
             selectedGroupIndex = min(selectedGroupIndex, max(0, doc.groups.count - 1))
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = "已删除分组"
+            setTip("已删除分组", color: .secondaryLabelColor)
             reload()
             maybeDeploy(successHint: tipLabel.stringValue)
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 
@@ -419,13 +400,11 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let text = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !code.isEmpty, !text.isEmpty, (1...4).contains(code.count) else {
-            tipLabel.stringValue = "编码需 1–4 位，词条非空。"
-            tipLabel.textColor = .systemOrange
+            setTip("编码需 1–4 位，词条非空。", color: .systemOrange)
             return
         }
         guard document.groups.indices.contains(selectedGroupIndex) else {
-            tipLabel.stringValue = "请先选择左侧分组。"
-            tipLabel.textColor = .systemOrange
+            setTip("请先选择左侧分组。", color: .systemOrange)
             return
         }
         let index = selectedGroupIndex
@@ -435,13 +414,11 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
             codeField.stringValue = ""
             textField.stringValue = ""
             let name = document.groups[index].displayName
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = "已添加到「\(name)」"
+            setTip("已添加到「\(name)」", color: .secondaryLabelColor)
             reload()
             maybeDeploy(successHint: tipLabel.stringValue)
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 
@@ -454,21 +431,19 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         do {
             try UserDictWriter.removeEntry(entry, fromGroupIndex: selectedGroupIndex)
             UserDictWriter.markNeedsDeploy()
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = "已删除「\(entry.text)」"
+            setTip("已删除「\(entry.text)」", color: .secondaryLabelColor)
             reload()
             maybeDeploy(successHint: tipLabel.stringValue)
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 
     private func maybeDeploy(successHint: String) {
         if let actions = IMESettingsControls.lexiconActions, actions.deploy().ok {
-            tipLabel.stringValue = "\(successHint)，已部署。"
+            setTip("\(successHint)，已部署。", color: .secondaryLabelColor)
         } else {
-            tipLabel.stringValue = "\(successHint)。请到「词库目录」部署生效。"
+            setTip("\(successHint)。请到「词库目录」部署生效。", color: .secondaryLabelColor)
         }
     }
 
@@ -646,8 +621,7 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         let newCode = code.field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let newNote = note.field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !newText.isEmpty, !newCode.isEmpty, (1...4).contains(newCode.count) else {
-            tipLabel.stringValue = "编码需 1–4 位，词条非空。"
-            tipLabel.textColor = .systemOrange
+            setTip("编码需 1–4 位，词条非空。", color: .systemOrange)
             return
         }
         let weightText = weight.field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -657,16 +631,14 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         } else if let value = Int(weightText) {
             newWeight = value
         } else {
-            tipLabel.stringValue = "权重需要是整数，或留空。"
-            tipLabel.textColor = .systemOrange
+            setTip("权重需要是整数，或留空。", color: .systemOrange)
             return
         }
         let duplicate = entries.enumerated().contains { index, item in
             index != row && item.text == newText && item.code == newCode
         }
         guard !duplicate else {
-            tipLabel.stringValue = "本组已有相同词条和编码。"
-            tipLabel.textColor = .systemOrange
+            setTip("本组已有相同词条和编码。", color: .systemOrange)
             return
         }
         var doc = document
@@ -984,14 +956,12 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         do {
             try UserDictWriter.saveActiveDocument(doc)
             UserDictWriter.markNeedsDeploy()
-            tipLabel.textColor = .secondaryLabelColor
-            tipLabel.stringValue = success
+            setTip(success, color: .secondaryLabelColor)
             reload()
             after?()
             maybeDeploy(successHint: success)
         } catch {
-            tipLabel.textColor = .systemRed
-            tipLabel.stringValue = error.localizedDescription
+            setTip(error.localizedDescription, color: .systemRed)
         }
     }
 

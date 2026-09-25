@@ -39,8 +39,9 @@ enum ExtraDictUpdater {
         var lastName: String?
         for item in sorted {
             let name = item.category_name
+            // 编码按本地解析规则转成小写。文件里的 API 读出来是 api，不转写会每次都算成新增。
             let entry = UserDictEntry(
-                code: item.code,
+                code: item.code.lowercased(),
                 text: item.word,
                 weight: max(0, item.weight),
                 note: item.comment?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

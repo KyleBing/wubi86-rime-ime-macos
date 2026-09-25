@@ -35,6 +35,14 @@ enum IMESettingsControls {
     static func makeFormView(width: CGFloat) -> NSView {
         makeFormView(size: NSSize(width: width, height: preferredWindowSize.height))
     }
+
+    // 跟设置代码所在的包走。系统设置里加载的是预置面板，不是主 App。
+    static var versionText: String {
+        let info = Bundle(for: SettingsRootView.self).infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "-"
+        let build = info?["CFBundleVersion"] as? String ?? "-"
+        return "v\(version) (\(build))"
+    }
 }
 
 /// 左侧栏目保持稳定，后续可直接增加登录、同步等设置页。
@@ -44,8 +52,8 @@ private final class SettingsRootView: NSView {
         case keyboard
         case userLexicon
         case lexiconDirectory
-        case help
         case account
+        case help
 
         var title: String {
             switch self {
@@ -149,32 +157,29 @@ private final class SettingsRootView: NSView {
         navigation.alignment = .leading
         navigation.spacing = 4
 
-        for section in Section.allCases {
-            let button = SidebarSectionButton(
-                title: section.title,
-                image: NSImage(systemSymbolName: section.symbolName, accessibilityDescription: section.title) ?? NSImage(),
-                target: self,
-                action: #selector(selectSection(_:))
-            )
-            button.tag = section.rawValue
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.widthAnchor.constraint(equalToConstant: 152).isActive = true
-            button.heightAnchor.constraint(equalToConstant: 32).isActive = true
-            navigation.addArrangedSubview(button)
-            sectionButtons.append(button)
+        for section in Section.allCases where section != .help {
+            navigation.addArrangedSubview(makeSectionButton(section))
         }
 
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
-        let version = NSTextField(labelWithString: "本地设置自动保存")
+        // 帮助固定在侧栏底部，不跟前面的栏目挤在一起。
+        let helpButton = makeSectionButton(.help)
+        let hint = NSTextField(labelWithString: "本地设置自动保存")
+        hint.font = .systemFont(ofSize: 10)
+        hint.textColor = .tertiaryLabelColor
+        let version = NSTextField(labelWithString: IMESettingsControls.versionText)
         version.font = .systemFont(ofSize: 10)
         version.textColor = .tertiaryLabelColor
+        version.isSelectable = true
 
-        let stack = NSStackView(views: [brand, navigation, spacer, version])
+        let stack = NSStackView(views: [brand, navigation, spacer, helpButton, hint, version])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 20
         stack.edgeInsets = NSEdgeInsets(top: 22, left: 16, bottom: 16, right: 16)
+        stack.setCustomSpacing(8, after: helpButton)
+        stack.setCustomSpacing(2, after: hint)
         stack.translatesAutoresizingMaskIntoConstraints = false
         effect.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -184,6 +189,21 @@ private final class SettingsRootView: NSView {
             stack.bottomAnchor.constraint(equalTo: effect.bottomAnchor)
         ])
         return effect
+    }
+
+    private func makeSectionButton(_ section: Section) -> NSButton {
+        let button = SidebarSectionButton(
+            title: section.title,
+            image: NSImage(systemSymbolName: section.symbolName, accessibilityDescription: section.title) ?? NSImage(),
+            target: self,
+            action: #selector(selectSection(_:))
+        )
+        button.tag = section.rawValue
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalToConstant: 152).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        sectionButtons.append(button)
+        return button
     }
 
     @objc private func selectSection(_ sender: NSButton) {
@@ -468,31 +488,27 @@ private final class SettingsRootView: NSView {
         )
     }
 
-    // 用户词铺满右侧，表格自己滚动，避免再套一层页面滚动把左右栏挤歪。
+    // 上面只留同步和扩展词库一条，下面整块是分组和词条。
     private func makeUserLexiconPage() -> NSView {
-        let heading = NSTextField(labelWithString: "用户词")
-        heading.font = .systemFont(ofSize: 24, weight: .bold)
-        let detail = NSTextField(wrappingLabelWithString: "左侧分组，右侧词条；添加写入当前选中分组。")
-        detail.font = .systemFont(ofSize: 12)
-        detail.textColor = .secondaryLabelColor
         let lexicon = UserLexiconSettingsView(frame: .zero)
         lexicon.setContentHuggingPriority(.defaultLow, for: .vertical)
         lexicon.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        let cloud = UserLexiconCloudBar(frame: .zero)
+        cloud.setContentHuggingPriority(.required, for: .vertical)
+        cloud.setContentCompressionResistancePriority(.required, for: .vertical)
         let root = NSView()
-        for view in [heading, detail, lexicon] {
+        for view in [cloud, lexicon] {
             view.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(view)
         }
         NSLayoutConstraint.activate([
-            heading.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 23),
-            heading.topAnchor.constraint(equalTo: root.topAnchor, constant: 26),
-            detail.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
-            detail.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -28),
-            detail.topAnchor.constraint(equalTo: heading.bottomAnchor, constant: 8),
-            lexicon.leadingAnchor.constraint(equalTo: heading.leadingAnchor),
-            lexicon.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
-            lexicon.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: 16),
-            lexicon.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -20)
+            cloud.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 23),
+            cloud.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
+            cloud.topAnchor.constraint(equalTo: root.topAnchor, constant: 16),
+            lexicon.leadingAnchor.constraint(equalTo: cloud.leadingAnchor),
+            lexicon.trailingAnchor.constraint(equalTo: cloud.trailingAnchor),
+            lexicon.topAnchor.constraint(equalTo: cloud.bottomAnchor, constant: 12),
+            lexicon.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -16)
         ])
         return root
     }
@@ -561,7 +577,7 @@ private final class SettingsRootView: NSView {
             ("仅圆点", "不展开候选词，只用小圆点表示当前页候选数量，适合熟练盲打"),
             ("不显示", "完全隐藏候选框，只保留编码下划线，数字键、空格等选词照常"),
             ("距光标上 / 左", "在「外观配置 › 布局细节」中调整候选窗与光标的距离"),
-            ("皮肤分享", "外观可导出为文件或复制到剪贴板，在其他设备导入")
+            ("皮肤分享", "外观可导出为文件，在其他设备从文件导入")
         ])
 
         let stack = NSStackView(views: [
@@ -644,7 +660,7 @@ private final class SettingsRootView: NSView {
         account.translatesAutoresizingMaskIntoConstraints = false
         return page(
             title: "账户",
-            subtitle: "登录后同步用户词库，并拉取线上扩展词库。",
+            subtitle: "登录后，到「用户词」页同步用户词并获取扩展词库。",
             content: card(title: nil, subtitle: nil, content: account)
         )
     }

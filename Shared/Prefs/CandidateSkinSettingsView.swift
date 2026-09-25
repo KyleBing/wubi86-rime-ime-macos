@@ -575,20 +575,15 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
     }
 
     private func sharingForm() -> NSView {
-        let copy = NSButton(title: "复制配置", target: self, action: #selector(copyConfig))
-        let paste = NSButton(title: "从剪贴板导入", target: self, action: #selector(importConfig))
         let exportFile = NSButton(title: "导出到文件", target: self, action: #selector(exportToFile))
         let importFile = NSButton(title: "从文件导入", target: self, action: #selector(importFromFile))
         let reset = NSButton(title: "恢复默认", target: self, action: #selector(resetConfig))
-        let clipboardRow = NSStackView(views: [copy, paste])
-        clipboardRow.orientation = .horizontal
-        clipboardRow.spacing = 8
         let fileRow = NSStackView(views: [exportFile, importFile, reset])
         fileRow.orientation = .horizontal
         fileRow.spacing = 8
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.font = .systemFont(ofSize: 11)
-        let stack = NSStackView(views: [clipboardRow, fileRow, statusLabel])
+        let stack = NSStackView(views: [fileRow, statusLabel])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 6
@@ -735,31 +730,6 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
             } else {
                 Self.setColor(color, slot: slot, colors: &$0.light)
             }
-        }
-    }
-
-    @objc private func copyConfig() {
-        do {
-            let json = try IMEAppearancePrefs.exportedSkinJSON()
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(json, forType: .string)
-            statusLabel.stringValue = "已复制皮肤配置。"
-        } catch {
-            show(error.localizedDescription)
-        }
-    }
-
-    @objc private func importConfig() {
-        guard let json = NSPasteboard.general.string(forType: .string) else {
-            show("剪贴板中没有文本配置。")
-            return
-        }
-        do {
-            try IMEAppearancePrefs.importSkinJSON(json)
-            build()
-            statusLabel.stringValue = "已导入皮肤配置。"
-        } catch {
-            show(error.localizedDescription)
         }
     }
 
