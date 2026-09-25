@@ -6,6 +6,7 @@ import InputMethodKit
 @objc(MeifengInputController)
 final class MeifengInputController: IMKInputController {
     private let panel = CandidatePanelController()
+    private let modeHint = ModeHintController()
     private var currentClient: (any IMKTextInput)?
     private var asciiMode = false
     private var shiftIsSticky = false
@@ -91,6 +92,8 @@ final class MeifengInputController: IMKInputController {
             return handleFlagsChanged(event)
         }
         guard event.type == .keyDown else { return false }
+        // 开始输入后收起模式提示，避免盖住编码或候选。
+        modeHint.hide()
 
         if event.modifierFlags.contains(.shift) {
             sawOtherKeyWithShift = true
@@ -240,11 +243,13 @@ final class MeifengInputController: IMKInputController {
         if shiftIsSticky, !sawOtherKeyWithShift {
             asciiMode.toggle()
             log("asciiMode=\(asciiMode)")
+            let caret = insertionCaretRect()
             if asciiMode {
                 commitOrClearPending(forceCommitRaw: true)
                 panel.hide()
                 clearMarkedText()
             }
+            modeHint.show(asciiMode: asciiMode, caretRect: caret)
             shiftIsSticky = false
             return true
         }
@@ -315,6 +320,24 @@ final class MeifengInputController: IMKInputController {
         panel.show(candidates: page, preedit: preedit, caretRect: caret) { [weak self] idx in
             _ = self?.selectCandidate(index: idx)
         }
+    }
+
+    /// 当前插入点的屏幕矩形，供模式提示贴在光标旁。
+    private func insertionCaretRect() -> NSRect {
+        guard let client = currentClient ?? (client() as? IMKTextInput) else {
+            let p = NSEvent.mouseLocation
+            return NSRect(x: p.x, y: p.y, width: 1, height: 16)
+        }
+        var caret = NSRect.zero
+        _ = client.attributes(forCharacterIndex: 0, lineHeightRectangle: &caret)
+        if caret.width == 0, caret.height == 0, caret.origin == .zero {
+            let p = NSEvent.mouseLocation
+            return NSRect(x: p.x, y: p.y, width: 1, height: 16)
+        }
+        if caret.height < 1 {
+            caret.size.height = 16
+        }
+        return caret
     }
 
     /// 当前下划线编码（marked text）的屏幕矩形，供候选窗定位到编码下方
@@ -466,10 +489,12 @@ final class MeifengInputController: IMKInputController {
 
     @objc private func toggleAscii() {
         asciiMode.toggle()
+        let caret = insertionCaretRect()
         if asciiMode {
             commitOrClearPending(forceCommitRaw: true)
             panel.hide()
             clearMarkedText()
         }
+        modeHint.show(asciiMode: asciiMode, caretRect: caret)
     }
 }

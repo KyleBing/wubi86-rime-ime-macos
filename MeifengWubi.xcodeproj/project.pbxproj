@@ -36,6 +36,7 @@
 		2EBB459ED60911BFA9C2AFE1 /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
 		2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
+		33166ADA3BFBDD94510A1C24 /* ModeHintController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249CA99771BE2D6114284DCB /* ModeHintController.swift */; };
 		34065D5CC126FD400B22845E /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
 		34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		35662FCD45096FD9C12C5706 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
@@ -171,6 +172,7 @@
 		2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeResourceDeployer.swift; sourceTree = "<group>"; };
 		23837C5F463DCA00A7AA16C3 /* PreferencePanes.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PreferencePanes.framework; path = System/Library/Frameworks/PreferencePanes.framework; sourceTree = SDKROOT; };
 		242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLexiconSettingsView.swift; sourceTree = "<group>"; };
+		249CA99771BE2D6114284DCB /* ModeHintController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeHintController.swift; sourceTree = "<group>"; };
 		25B4BCCAB83533C47D12EE70 /* Meifeng-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Meifeng-Bridging-Header.h"; sourceTree = "<group>"; };
 		2C18D3685813FDF25FAD2454 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDictWriter.swift; sourceTree = "<group>"; };
@@ -297,6 +299,7 @@
 				615469236E5D6367D75035EA /* MacKeyMapper.swift */,
 				EBEA840D939669F718FD4AD4 /* MeifengInputController.swift */,
 				AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */,
+				249CA99771BE2D6114284DCB /* ModeHintController.swift */,
 				810632C05167B29784D226C2 /* QuickAddHotKey.swift */,
 				042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */,
 				2CF649A4E4D7B4308E42C40A /* RimeSession.swift */,
@@ -735,6 +738,7 @@
 				29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */,
 				0211C3B73662C73A882F6158 /* MeifengInputController.swift in Sources */,
 				9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */,
+				33166ADA3BFBDD94510A1C24 /* ModeHintController.swift in Sources */,
 				84D3D97B8CF81544E6E1BFDD /* QuickAddHotKey.swift in Sources */,
 				C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */,
 				1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */,
