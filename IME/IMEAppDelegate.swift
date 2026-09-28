@@ -17,6 +17,7 @@ enum MeifengIMEMain {
         // IMK 要求尽早建立连接名，不要等 run loop 空转
         delegate.startServer()
         _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
+        IMEAppDelegate.installEditingMenu()
         QuickAddHotKey.install()
         // 各软件会记住自己的输入法；选中玫枫后再点别的输入框，要跟着过去
         MeifengInputSourceLock.install()
@@ -56,6 +57,37 @@ final class IMEAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         RimeSession.shared.shutdown()
+    }
+
+    // 输入法是后台进程，没有系统编辑菜单时，文本框收不到全选、复制、粘贴。
+    static func installEditingMenu() {
+        let main = NSApp.mainMenu ?? NSMenu()
+        let hasSelectAll = main.items.contains { item in
+            item.submenu?.items.contains { $0.action == #selector(NSText.selectAll(_:)) } == true
+        }
+        if hasSelectAll {
+            NSApp.mainMenu = main
+            return
+        }
+        if main.items.isEmpty {
+            let appItem = NSMenuItem()
+            appItem.submenu = NSMenu()
+            main.addItem(appItem)
+        }
+        let editItem = NSMenuItem()
+        let edit = NSMenu(title: "编辑")
+        editItem.submenu = edit
+        edit.addItem(withTitle: "撤销", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = NSMenuItem(title: "重做", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = NSEvent.ModifierFlags([.command, .shift])
+        edit.addItem(redo)
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "拷贝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     static func appendLaunchLog(_ msg: String) {

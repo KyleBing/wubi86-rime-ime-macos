@@ -1,7 +1,8 @@
 import AppKit
+import Carbon
 
 /// 全局快捷键弹出的造词窗口：输入词条后自动填编码，写入当前选中分组。
-final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
+final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     static let shared = QuickAddWordPanel()
 
     private let panel: NSPanel
@@ -12,6 +13,8 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
     private let status = NSTextField(wrappingLabelWithString: "")
     private let root = NSStackView()
     private var groupIndexes: [Int] = []
+    // 弹出前台应用，关闭窗口后把焦点还回去
+    private var previousApp: NSRunningApplication?
     // 内容区宽度；高度按控件贴合，不预留底部空白
     private let contentWidth: CGFloat = 312
 
@@ -27,11 +30,39 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.delegate = self
         build()
         installTitleLogo()
     }
 
+    // 造词框正在编辑文本（光标在词条或编码里）。
+    var isEditingText: Bool {
+        panel.isKeyWindow && panel.firstResponder is NSTextView
+    }
+
+    /// 造词框自己处理编辑键时返回是否吃掉事件；不是造词框则返回 nil，交给输入法。
+    func claimEditingKey(_ event: NSEvent) -> Bool? {
+        guard isEditingText else { return nil }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        // Command 快捷键走系统编辑命令（全选、复制、粘贴等），不要送进 Rime
+        if flags.contains(.command) {
+            return performStandardEdit(event)
+        }
+        let composing = RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true
+        // 没在组字时，方向键和退格留给输入框
+        if !composing, isNavigationEvent(event, flags: flags) {
+            return false
+        }
+        return nil
+    }
+
     func showPanel() {
+        if !panel.isVisible {
+            let front = NSWorkspace.shared.frontmostApplication
+            if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+                previousApp = front
+            }
+        }
         // 标题栏图标在窗口显示后才稳定出现，弹出时再刷一次
         installTitleLogo()
         reloadGroups()
@@ -54,6 +85,12 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         codeField.placeholderString = "自动生成，可修改"
         codeField.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
         codeField.delegate = self
+        // 允许选择、复制；长词条可在框内滚动
+        for field in [wordField, codeField] {
+            field.isEditable = true
+            field.isSelectable = true
+            field.cell?.isScrollable = true
+        }
         groupPopup.controlSize = .regular
         groupPopup.font = .systemFont(ofSize: 13)
 
@@ -245,19 +282,77 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate {
         do {
             try UserDictWriter.addEntry(UserDictEntry(code: code, text: text, weight: 100_000), toGroupIndex: groupIndex)
             QuickAddPrefs.selectedGroupIndex = groupIndex
-            let deploy = RimeConfigDeploy.deployNow()
-            _ = RimeSession.shared.ensureStarted()
-            switch deploy {
-            case .success:
-                setStatus("已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」并部署。", color: .secondaryLabelColor)
+            // 不要走 deployNow：它会 finalize 正在用的 librime，菜单还在但按键全部失效
+            let reloaded = RimeSession.shared.reloadUserDictionary()
+            if reloaded {
+                setStatus("已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」。", color: .secondaryLabelColor)
                 wordField.stringValue = ""
                 codeField.stringValue = ""
                 panel.makeFirstResponder(wordField)
-            case .failure(let message):
-                setStatus("已写入，但部署失败：\(message)", color: .systemRed)
+            } else {
+                setStatus("已写入，但词库重载失败。", color: .systemRed)
             }
         } catch {
             setStatus(error.localizedDescription, color: .systemRed)
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        // 用户已经点到别的软件时不要再抢焦点
+        guard NSApp.isActive else {
+            previousApp = nil
+            return
+        }
+        restorePreviousApp()
+    }
+
+    // Command+A / C / V / X / Z。输入法进程没有编辑菜单时，这些快捷键不会自动生效。
+    private func performStandardEdit(_ event: NSEvent) -> Bool {
+        guard let editor = panel.firstResponder as? NSTextView,
+              let key = event.charactersIgnoringModifiers?.lowercased() else { return false }
+        switch key {
+        case "a":
+            editor.selectAll(nil)
+        case "c":
+            editor.copy(nil)
+        case "x":
+            editor.cut(nil)
+        case "v":
+            editor.paste(nil)
+        case "z":
+            if event.modifierFlags.contains(.shift) {
+                editor.undoManager?.redo()
+            } else {
+                editor.undoManager?.undo()
+            }
+        default:
+            return false
+        }
+        return true
+    }
+
+    // 光标移动、选区、退格。组字过程中不在这里拦截。
+    private func isNavigationEvent(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool {
+        if flags.contains(.control) || flags.contains(.option) { return true }
+        switch Int(event.keyCode) {
+        case kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow,
+             kVK_Home, kVK_End, kVK_PageUp, kVK_PageDown,
+             kVK_Delete, kVK_ForwardDelete:
+            return true
+        default:
+            return false
+        }
+    }
+
+    // 关掉窗口后激活原来的软件，避免按键掉进没有文本框的输入法进程。
+    private func restorePreviousApp() {
+        guard let app = previousApp else { return }
+        previousApp = nil
+        if app.processIdentifier == ProcessInfo.processInfo.processIdentifier { return }
+        if #available(macOS 14.0, *) {
+            app.activate(from: NSRunningApplication.current, options: [.activateIgnoringOtherApps])
+        } else {
+            app.activate(options: [.activateIgnoringOtherApps])
         }
     }
 

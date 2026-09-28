@@ -27,6 +27,8 @@ NS_ASSUME_NONNULL_BEGIN
             forceFullCheck:(BOOL)forceFullCheck
                      error:(NSError * _Nullable * _Nullable)error;
 - (void)shutdown;
+// 外部已经 finalize 过 librime 时，只清会话标记，避免再 finalize 一次。
+- (void)noteAPIShutdown;
 - (BOOL)isStarted;
 
 - (BOOL)selectSchema:(NSString *)schemaId;

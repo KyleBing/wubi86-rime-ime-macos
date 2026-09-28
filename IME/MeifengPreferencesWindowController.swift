@@ -30,23 +30,31 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
             deploy: {
                 switch RimeConfigDeploy.deployNow() {
                 case .success:
-                    _ = RimeSession.shared.ensureStarted()
-                    return (true, "部署成功")
-                case .failure(let err): return (false, err)
+                    let ok = RimeSession.shared.restartAfterExternalDeploy()
+                    return (ok, ok ? "部署成功" : "已部署，但输入法重载失败")
+                case .failure(let err):
+                    _ = RimeSession.shared.restartAfterExternalDeploy()
+                    return (false, err)
                 }
             },
             reset: {
                 switch RimeConfigDeploy.resetToFactory() {
-                case .success: return (true, "已复位并部署")
-                case .failure(let err): return (false, err)
+                case .success:
+                    let ok = RimeSession.shared.restartAfterExternalDeploy()
+                    return (ok, ok ? "已复位并部署" : "已复位，但输入法重载失败")
+                case .failure(let err):
+                    _ = RimeSession.shared.restartAfterExternalDeploy()
+                    return (false, err)
                 }
             },
             changeDataDirectory: { url in
                 switch RimeConfigDeploy.changeUserDataDirectory(to: url) {
                 case .success:
+                    let ok = RimeSession.shared.restartAfterExternalDeploy()
                     let message = url == nil ? "已恢复默认词库目录并部署" : "已切换词库目录并部署"
-                    return (true, message)
+                    return (ok, ok ? message : message + "，但输入法重载失败")
                 case .failure(let err):
+                    _ = RimeSession.shared.restartAfterExternalDeploy()
                     return (false, err)
                 }
             },

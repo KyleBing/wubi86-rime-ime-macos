@@ -47,5 +47,47 @@ final class RimeSession {
         started = false
     }
 
+    /// 造词后重载用户词。走进程内增量部署，不 finalize 正在用的 librime。
+    @discardableResult
+    func reloadUserDictionary() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        _ = UserDictWriter.consumeNeedsDeploy()
+        if started, engine.isReady {
+            if engine.redeploy() {
+                NSLog("[MeifengWubi] user dict reloaded")
+                return true
+            }
+            NSLog("[MeifengWubi] user dict redeploy failed, restarting")
+            engine.noteExternalShutdown()
+            started = false
+        }
+        return startLocked(forceFullCheck: false)
+    }
+
+    /// `deployNow` 会 finalize 全局 librime。输入法进程里调用后必须重建，否则菜单还在但按键无效。
+    @discardableResult
+    func restartAfterExternalDeploy() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        _ = UserDictWriter.consumeNeedsDeploy()
+        engine.noteExternalShutdown()
+        started = false
+        return startLocked(forceFullCheck: false)
+    }
+
+    private func startLocked(forceFullCheck: Bool) -> Bool {
+        do {
+            try engine.start(forceFullCheck: forceFullCheck)
+            started = true
+            NSLog("[MeifengWubi] rime restarted forceFull=%d", forceFullCheck ? 1 : 0)
+            return true
+        } catch {
+            NSLog("[MeifengWubi] rime restart failed: %@", error.localizedDescription)
+            started = false
+            return false
+        }
+    }
+
     var bridgeEngine: RimeEngineLibrime { engine }
 }

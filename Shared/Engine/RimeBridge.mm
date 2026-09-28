@@ -110,6 +110,11 @@
     _started = NO;
 }
 
+- (void)noteAPIShutdown {
+    _sessionId = 0;
+    _started = NO;
+}
+
 - (BOOL)isStarted {
     return _started;
 }
@@ -245,6 +250,9 @@
     _sessionId = _api->create_session();
     if (_sessionId) {
         _api->select_schema(_sessionId, "wubi86_jidian");
+    } else {
+        // 会话没建起来就不要继续假装在运行，否则按键会被空会话吃掉
+        _started = NO;
     }
     return _sessionId != 0;
 }

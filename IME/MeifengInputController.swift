@@ -89,6 +89,10 @@ final class MeifengInputController: IMKInputController {
         currentClient = (sender as? IMKTextInput) ?? currentClient
 
         if event.type == .flagsChanged {
+            // 造词框里的 Shift 用来选字，不要当成中英切换
+            if QuickAddWordPanel.shared.isEditingText {
+                return false
+            }
             return handleFlagsChanged(event)
         }
         guard event.type == .keyDown else { return false }
@@ -97,6 +101,10 @@ final class MeifengInputController: IMKInputController {
 
         if event.modifierFlags.contains(.shift) {
             sawOtherKeyWithShift = true
+        }
+
+        if let editing = QuickAddWordPanel.shared.claimEditingKey(event) {
+            return editing
         }
 
         // 有 Command 交给系统
@@ -458,7 +466,7 @@ final class MeifengInputController: IMKInputController {
     // 菜单栏手动全量部署，并让当前输入法进程立刻重载
     @objc func deployFromMenu(_ sender: Any?) {
         let result = RimeConfigDeploy.deployNow()
-        _ = RimeSession.shared.ensureStarted()
+        _ = RimeSession.shared.restartAfterExternalDeploy()
         let alert = NSAlert()
         switch result {
         case .success:

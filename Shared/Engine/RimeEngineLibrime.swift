@@ -23,6 +23,12 @@ final class RimeEngineLibrime: RimeEngine {
         isReady = false
     }
 
+    // 全量部署已经 finalize 全局 API，这里只丢掉失效会话，交给 start 重新拉起。
+    func noteExternalShutdown() {
+        bridge.noteAPIShutdown()
+        isReady = false
+    }
+
     func processKey(_ keyCode: Int32, modifiers: Int32) -> Bool {
         bridge.processKey(keyCode, modifiers: modifiers)
     }
