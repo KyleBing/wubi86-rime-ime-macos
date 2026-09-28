@@ -14,3 +14,8 @@ DerivedData/
 *.log
 *.tmp
 .claude/
+
+# 说明站
+site/node_modules/
+site/docs/.vitepress/cache/
+site/docs/.vitepress/dist/

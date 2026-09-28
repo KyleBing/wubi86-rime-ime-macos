@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="148" viewBox="0 0 720 148">
+  <rect width="720" height="148" rx="16" fill="#F6F4F2"/>
+  <text x="28" y="36" fill="#8A847E" font-family="PingFang SC, sans-serif" font-size="13">编码 date</text>
+  <text x="28" y="62" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="18">date</text>
+  <rect x="28" y="78" width="664" height="46" rx="10" fill="#FAFAFB" stroke="#00000022"/>
+  <rect x="36" y="86" width="118" height="30" rx="6" fill="#3378F5"/>
+  <text x="48" y="106" fill="#FFFFFFC7" font-family="PingFang SC, sans-serif" font-size="12">1</text>
+  <text x="62" y="106" fill="#FFFFFF" font-family="PingFang SC, sans-serif" font-size="15" font-weight="500">2026-09-28</text>
+  <text x="176" y="106" fill="#616166" font-family="PingFang SC, sans-serif" font-size="12">2</text>
+  <text x="190" y="106" fill="#141416" font-family="PingFang SC, sans-serif" font-size="15">2026/09/28</text>
+  <text x="300" y="106" fill="#616166" font-family="PingFang SC, sans-serif" font-size="12">3</text>
+  <text x="314" y="106" fill="#141416" font-family="PingFang SC, sans-serif" font-size="15">2026.09.28</text>
+  <text x="424" y="106" fill="#616166" font-family="PingFang SC, sans-serif" font-size="12">4</text>
+  <text x="438" y="106" fill="#141416" font-family="PingFang SC, sans-serif" font-size="15">20260928</text>
+  <text x="530" y="106" fill="#616166" font-family="PingFang SC, sans-serif" font-size="12">5</text>
+  <text x="544" y="106" fill="#141416" font-family="PingFang SC, sans-serif" font-size="15">2026年9月28日</text>
+</svg>

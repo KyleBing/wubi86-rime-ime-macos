@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
+  <rect width="720" height="360" rx="16" fill="#F3F1EF"/>
+  <rect x="70" y="28" width="580" height="304" rx="12" fill="#F7F7F8" stroke="#E4E4E7"/>
+  <rect x="71" y="29" width="578" height="36" rx="11" fill="#ECECEE"/>
+  <circle cx="92" cy="46" r="6" fill="#FF5F57"/>
+  <circle cx="112" cy="46" r="6" fill="#FEBC2E"/>
+  <circle cx="132" cy="46" r="6" fill="#28C840"/>
+  <text x="360" y="51" text-anchor="middle" fill="#3A3A3C" font-family="PingFang SC, sans-serif" font-size="13" font-weight="600">添加自造词</text>
+  <text x="96" y="96" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">词条</text>
+  <rect x="148" y="78" width="360" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="160" y="97" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="14">玫枫五笔</text>
+  <text x="96" y="138" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">编码</text>
+  <rect x="148" y="120" width="120" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="160" y="139" fill="#1C1C1E" font-family="ui-monospace, SF Mono, monospace" font-size="14">gsgt</text>
+  <text x="284" y="139" fill="#8E8E93" font-family="PingFang SC, sans-serif" font-size="12">自动生成，可改</text>
+  <text x="96" y="180" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">权重</text>
+  <rect x="148" y="162" width="200" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="160" y="181" fill="#C7C7CC" font-family="PingFang SC, sans-serif" font-size="13">可空，默认 100000</text>
+  <text x="96" y="222" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">分组</text>
+  <rect x="148" y="204" width="180" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="160" y="223" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="13">常用</text>
+  <rect x="520" y="204" width="96" height="28" rx="6" fill="#C43838"/>
+  <text x="568" y="223" text-anchor="middle" fill="#FFFFFF" font-family="PingFang SC, sans-serif" font-size="13" font-weight="600">添加</text>
+  <text x="96" y="262" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">同编码词条</text>
+  <rect x="96" y="272" width="528" height="40" rx="8" fill="#FFFFFF" stroke="#E4E4E7"/>
+  <text x="110" y="296" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="13">gsgt    用户词 · 权重 100000</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="340" viewBox="0 0 720 340">
+  <rect width="720" height="340" rx="16" fill="#F3F1EF"/>
+  <rect x="70" y="24" width="580" height="292" rx="12" fill="#F7F7F8" stroke="#E4E4E7"/>
+  <rect x="71" y="25" width="578" height="36" rx="11" fill="#ECECEE"/>
+  <circle cx="92" cy="42" r="6" fill="#FF5F57"/>
+  <circle cx="112" cy="42" r="6" fill="#FEBC2E"/>
+  <circle cx="132" cy="42" r="6" fill="#28C840"/>
+  <text x="360" y="47" text-anchor="middle" fill="#3A3A3C" font-family="PingFang SC, sans-serif" font-size="13" font-weight="600">删除候选</text>
+  <text x="96" y="92" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">词条</text>
+  <text x="168" y="92" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600">玫枫五笔</text>
+  <text x="96" y="124" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">编码</text>
+  <text x="168" y="124" fill="#1C1C1E" font-family="ui-monospace, SF Mono, monospace" font-size="14">gsgt</text>
+  <text x="96" y="164" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">词库</text>
+  <rect x="168" y="146" width="220" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="180" y="165" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="13">用户词 · 常用</text>
+  <text x="96" y="204" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">权重</text>
+  <text x="168" y="204" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="14">100000</text>
+  <text x="96" y="240" fill="#636366" font-family="PingFang SC, sans-serif" font-size="12">同编码</text>
+  <text x="168" y="240" fill="#3A3A3C" font-family="PingFang SC, sans-serif" font-size="13">确认前可以看清会不会误删</text>
+  <rect x="430" y="268" width="88" height="28" rx="6" fill="#FFFFFF" stroke="#D0D0D4"/>
+  <text x="474" y="287" text-anchor="middle" fill="#1C1C1E" font-family="PingFang SC, sans-serif" font-size="13">取消</text>
+  <rect x="530" y="268" width="88" height="28" rx="6" fill="#C43838"/>
+  <text x="574" y="287" text-anchor="middle" fill="#FFFFFF" font-family="PingFang SC, sans-serif" font-size="13" font-weight="600">删除</text>
+</svg>
