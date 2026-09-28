@@ -3,6 +3,8 @@ import AppKit
 /// IMK showPreferences: 使用的窗口控制器（Info.plist InputMethodServerPreferencesWindowControllerClass）
 @objc(MeifengPreferencesWindowController)
 final class MeifengPreferencesWindowController: NSWindowController, NSWindowDelegate {
+    private var restoreProhibitedOnClose = false
+
     @objc override init(window: NSWindow?) {
         // IMK 常走 alloc/init → init(window: nil)，必须在这里建好窗口
         if let window {
@@ -28,33 +30,39 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
         // IME 进程注入词库部署 / 目录切换；换目录后重启自身以便读新路径。
         IMESettingsControls.lexiconActions = IMESettingsControls.LexiconActions(
             deploy: {
-                switch RimeConfigDeploy.deployNow() {
+                let outcome = RimeSession.shared.performExternalDeploy {
+                    RimeConfigDeploy.deployNow()
+                }
+                switch outcome.result {
                 case .success:
-                    let ok = RimeSession.shared.restartAfterExternalDeploy()
+                    let ok = outcome.restarted
                     return (ok, ok ? "部署成功" : "已部署，但输入法重载失败")
                 case .failure(let err):
-                    _ = RimeSession.shared.restartAfterExternalDeploy()
                     return (false, err)
                 }
             },
             reset: {
-                switch RimeConfigDeploy.resetToFactory() {
+                let outcome = RimeSession.shared.performExternalDeploy {
+                    RimeConfigDeploy.resetToFactory()
+                }
+                switch outcome.result {
                 case .success:
-                    let ok = RimeSession.shared.restartAfterExternalDeploy()
+                    let ok = outcome.restarted
                     return (ok, ok ? "已复位并部署" : "已复位，但输入法重载失败")
                 case .failure(let err):
-                    _ = RimeSession.shared.restartAfterExternalDeploy()
                     return (false, err)
                 }
             },
             changeDataDirectory: { url in
-                switch RimeConfigDeploy.changeUserDataDirectory(to: url) {
+                let outcome = RimeSession.shared.performExternalDeploy {
+                    RimeConfigDeploy.changeUserDataDirectory(to: url)
+                }
+                switch outcome.result {
                 case .success:
-                    let ok = RimeSession.shared.restartAfterExternalDeploy()
+                    let ok = outcome.restarted
                     let message = url == nil ? "已恢复默认词库目录并部署" : "已切换词库目录并部署"
                     return (ok, ok ? message : message + "，但输入法重载失败")
                 case .failure(let err):
-                    _ = RimeSession.shared.restartAfterExternalDeploy()
                     return (false, err)
                 }
             },
@@ -104,10 +112,18 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
         }
         if NSApp.activationPolicy() == .prohibited {
             NSApp.setActivationPolicy(.accessory)
+            restoreProhibitedOnClose = true
         }
         super.showWindow(sender)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(sender)
         window?.orderFrontRegardless()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        // 设置窗口曾把进程改成 accessory 时，关掉后改回去，否则其它软件的输入法菜单会空。
+        guard restoreProhibitedOnClose else { return }
+        restoreProhibitedOnClose = false
+        NSApp.setActivationPolicy(.prohibited)
     }
 }

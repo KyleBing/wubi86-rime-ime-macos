@@ -23,7 +23,11 @@ final class RimeSession {
         if started, engine.isReady {
             if UserDictWriter.consumeNeedsDeploy() || needsFullBuild {
                 NSLog("[MeifengWubi] redeploy rime (needsFull=%d)", needsFullBuild)
-                _ = engine.redeploy()
+                if !engine.redeploy() {
+                    NSLog("[MeifengWubi] automatic redeploy failed, restarting")
+                    started = false
+                    return startLocked(forceFullCheck: force)
+                }
             }
             return true
         }
@@ -74,6 +78,18 @@ final class RimeSession {
         engine.noteExternalShutdown()
         started = false
         return startLocked(forceFullCheck: false)
+    }
+
+    /// 同进程全量部署前先结束活动会话，避免 deployer initialize/finalize 破坏仍在使用的引擎。
+    func performExternalDeploy<T>(_ operation: () -> T) -> (result: T, restarted: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        engine.stop()
+        started = false
+        let result = operation()
+        _ = UserDictWriter.consumeNeedsDeploy()
+        engine.noteExternalShutdown()
+        return (result, startLocked(forceFullCheck: false))
     }
 
     private func startLocked(forceFullCheck: Bool) -> Bool {

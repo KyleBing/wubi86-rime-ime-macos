@@ -42,8 +42,7 @@ enum IMEInstaller {
         try? kill.run()
         kill.waitUntilExit()
 
-        unregisterBuildProductCopies()
-        // 宿主包内的 .payload、用户目录旧副本、曾装到系统目录的副本一并注销
+        // 普通更新只处理已知安装路径；扫描全部构建目录留给“修复 / 清理重复项”。
         unregisterPaths([embedded.path, installedIMEURL.path, legacySystemIMEURL.path])
 
         if fm.fileExists(atPath: installedIMEURL.path) {
@@ -55,10 +54,13 @@ enum IMEInstaller {
     static func finishInstallOnMain() {
         precondition(Thread.isMainThread, "finishInstallOnMain 必须在主线程")
         registerInputSource(at: installedIMEURL)
-        _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
-        switch RimeConfigDeploy.deployNow() {
-        case .success: NSLog("[MeifengWubi] pre-deploy ok")
-        case .failure(let err): NSLog("[MeifengWubi] pre-deploy failed: %@", err)
+        // 词库部署可能要几十秒，留在主线程会让整个窗口点不了。
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
+            switch RimeConfigDeploy.deployNow() {
+            case .success: NSLog("[MeifengWubi] pre-deploy ok")
+            case .failure(let err): NSLog("[MeifengWubi] pre-deploy failed: %@", err)
+            }
         }
     }
 
@@ -75,8 +77,10 @@ enum IMEInstaller {
         let pipe = Pipe()
         listed.standardOutput = pipe
         try? listed.run()
+        // 先把输出读完。管道写满后 ps 会停住，再 waitUntilExit 就会和它一起卡死，安装界面也就没反应了。
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
         listed.waitUntilExit()
-        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let text = String(data: data, encoding: .utf8) ?? ""
         for line in text.split(separator: "\n") {
             let row = line.trimmingCharacters(in: .whitespaces)
             guard markers.contains(where: { row.contains($0) }) else { continue }
@@ -226,9 +230,11 @@ enum IMEInstaller {
             name: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
             object: nil
         )
-        // 不重启切换进程的话，菜单和选中状态要等下次登录才更新
-        restartRunningIME()
-        restartInputMenuAgents()
+        // 重启输入法菜单会跑 ps。放后台，避免安装时把宿主界面卡在主线程上。
+        DispatchQueue.global(qos: .userInitiated).async {
+            restartRunningIME()
+            restartInputMenuAgents()
+        }
     }
 
     private static let inputSourcesDomain = "com.apple.inputsources" as CFString

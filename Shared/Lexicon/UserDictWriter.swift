@@ -170,7 +170,8 @@ enum UserDictWriter {
         return entries
     }
 
-    private static func parseEntryLine(_ line: String) -> UserDictEntry? {
+    // 词库检索和删行也要按同一规则拆列。
+    static func parseEntryLine(_ line: String) -> UserDictEntry? {
         // 优先按 tab 拆（码表助手标准）；兼容空格分隔旧行
         let parts: [String]
         if line.contains("\t") {

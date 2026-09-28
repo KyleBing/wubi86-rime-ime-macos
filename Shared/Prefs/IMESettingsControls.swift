@@ -475,7 +475,7 @@ private final class SettingsRootView: NSView {
         let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
         settings.addArrangedSubview(formRow("造词", quickAdd))
 
-        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。")
+        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选。")
         note.textColor = .secondaryLabelColor
         note.font = .systemFont(ofSize: 11)
         note.preferredMaxLayoutWidth = 420
@@ -555,7 +555,8 @@ private final class SettingsRootView: NSView {
             ("'", "反查结束符，拼音输完可按 ' 结束反查")
         ])
         let keys = helpList([
-            ("造词快捷键", "默认 ⌃⌥N，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组"),
+            ("造词快捷键", "默认 ⌃⌥N，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组；两分钟内刚上屏的词会自动填入，并列出同编码词来自哪个词库"),
+            ("删除候选", "候选出现时，按与造词相同的修饰键加数字（默认 ⌃⌥1–9）。确认框会显示词库、权重、备注和同编码词，确认后从该词库删除"),
             ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
             ("空格", "上屏第一个候选"),
             ("1 – 9", "选择对应序号的候选（仅数量圆点模式下同样有效）"),

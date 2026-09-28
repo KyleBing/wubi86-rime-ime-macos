@@ -75,6 +75,9 @@ final class RimeEngineLibrime: RimeEngine {
     }
 
     func redeploy() -> Bool {
-        bridge.deploy()
+        let ready = bridge.deploy()
+        // 会话重建失败后必须同步失效，避免上层继续把空会话当成可用。
+        isReady = ready
+        return ready
     }
 }

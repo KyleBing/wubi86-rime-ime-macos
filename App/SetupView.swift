@@ -50,8 +50,8 @@ struct SetupView: View {
                         Button("安装 / 更新输入法") { install() }
                             .disabled(isBusy)
                         Button("打开系统设置·输入法") { IMEInstaller.openInputSourcesPrefs() }
-                        // 重新检查安装状态，并清掉宿主包内 payload 抢注册。
-                        Button("刷新状态") {
+                        // 完整扫描仅在注册异常或出现重复项时手动执行。
+                        Button("修复 / 清理重复项") {
                             isBusy = true
                             // 扫构建目录很慢，放到后台；TIS 仍回主线程
                             DispatchQueue.global(qos: .userInitiated).async {
@@ -63,7 +63,7 @@ struct SetupView: View {
                                 }
                             }
                         }
-                            .help("重新检查输入法是否已安装并在系统中启用；同时清除错误注册")
+                            .help("完整扫描构建目录，清除重复或错误注册；通常不需要执行")
                     }
                     if !message.isEmpty {
                         Text(message)

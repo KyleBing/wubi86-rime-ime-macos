@@ -142,10 +142,15 @@ enum MeifengInputSourceLock {
             guard restoreOnNextApp else { return }
             let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
             if app?.bundleIdentifier == Bundle.main.bundleIdentifier { return }
-            applying = true
-            select()
-            applying = false
-            IMEAppDelegate.appendLaunchLog("kept input source for \(app?.bundleIdentifier ?? "?")")
+            // 已经是玫枫就不要再选一次。重复 TISSelect 会让 Electron 只收到 deactivate，状态栏菜单挂不上。
+            if isSelected() { return }
+            DispatchQueue.main.async {
+                guard restoreOnNextApp, !isSelected() else { return }
+                applying = true
+                select()
+                applying = false
+                IMEAppDelegate.appendLaunchLog("kept input source for \(app?.bundleIdentifier ?? "?")")
+            }
         }
         DistributedNotificationCenter.default().addObserver(
             forName: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),

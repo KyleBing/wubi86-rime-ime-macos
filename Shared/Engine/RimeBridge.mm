@@ -251,7 +251,8 @@
     if (_sessionId) {
         _api->select_schema(_sessionId, "wubi86_jidian");
     } else {
-        // 会话没建起来就不要继续假装在运行，否则按键会被空会话吃掉
+        // 会话没建起来时完整收尾；下次 start 才能从干净状态重新 initialize。
+        _api->finalize();
         _started = NO;
     }
     return _sessionId != 0;

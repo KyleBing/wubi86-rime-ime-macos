@@ -8,20 +8,25 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     private let panel: NSPanel
     private let wordField = NSTextField(string: "")
     private let codeField = NSTextField(string: "")
+    private let weightField = NSTextField(string: "")
     private let groupPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let addButton = NSButton(title: "添加", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
+    private let sameCodeView = NSTextView()
+    private let sameCodeScroll = NSScrollView()
+    private let sameCodeTitle = NSTextField(labelWithString: "同编码词条")
     private let root = NSStackView()
     private var groupIndexes: [Int] = []
-    // 弹出前台应用，关闭窗口后把焦点还回去
-    private var previousApp: NSRunningApplication?
+    // 最近一次上屏的词，短时间内打开造词窗时填进词条框。
+    private static var lastCommittedWord = ""
+    private static var lastCommittedAt: Date?
     // 内容区宽度；高度按控件贴合，不预留底部空白
-    private let contentWidth: CGFloat = 312
+    private let contentWidth: CGFloat = 520
 
     private override init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 312, height: 120),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 120),
+            styleMask: [.titled, .closable, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -30,48 +35,173 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // 关掉窗口时不要跟着隐藏，否则点一下别的软件造词框就没了。
+        panel.hidesOnDeactivate = false
         panel.delegate = self
         build()
         installTitleLogo()
     }
 
-    // 造词框正在编辑文本（光标在词条或编码里）。
-    var isEditingText: Bool {
-        panel.isKeyWindow && panel.firstResponder is NSTextView
+    // 候选上屏后记下来，供接下来打开的造词窗预填。
+    static func noteCommittedWord(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.contains(where: { WubiDictEncoder.isChineseHanzi($0) }) else { return }
+        lastCommittedWord = trimmed
+        lastCommittedAt = Date()
     }
 
-    /// 造词框自己处理编辑键时返回是否吃掉事件；不是造词框则返回 nil，交给输入法。
+    // 两分钟内选过的词才自动填入，避免很久以后打开造词窗还带着旧词。
+    private static func recentCommittedWord() -> String? {
+        guard let at = lastCommittedAt, Date().timeIntervalSince(at) < 120 else { return nil }
+        return lastCommittedWord.isEmpty ? nil : lastCommittedWord
+    }
+
+    var isOpen: Bool { panel.isVisible }
+
+    // 造词框正在编辑文本（光标在词条或编码里）。
+    var isEditingText: Bool {
+        panel.isVisible && (panel.isKeyWindow || panel.firstResponder is NSTextView)
+    }
+
+    // 词条框需要走 Rime 组字；编码和权重框仍直接接收 ASCII。
+    var acceptsComposedText: Bool {
+        panel.isVisible && focusedTextField() === wordField
+    }
+
+    /// 造词框开着时按键留在词条框里，不送进当前软件，也不把输入法进程变成前台。
     func claimEditingKey(_ event: NSEvent) -> Bool? {
-        guard isEditingText else { return nil }
+        guard panel.isVisible else { return nil }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        // Command 快捷键走系统编辑命令（全选、复制、粘贴等），不要送进 Rime
         if flags.contains(.command) {
+            _ = ensureFieldEditor()
             return performStandardEdit(event)
         }
-        let composing = RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true
-        // 没在组字时，方向键和退格留给输入框
-        if !composing, isNavigationEvent(event, flags: flags) {
-            return false
+        if event.keyCode == UInt16(kVK_Escape) {
+            panel.performClose(nil)
+            return true
         }
+        if event.keyCode == UInt16(kVK_Return) || event.keyCode == UInt16(kVK_ANSI_KeypadEnter) {
+            // 词条仍在组字时先交给 Rime 上屏，下一次回车再添加。
+            if acceptsComposedText,
+               RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
+                return nil
+            }
+            addWord()
+            return true
+        }
+        if event.keyCode == UInt16(kVK_Tab) {
+            focusNextField(shift: flags.contains(.shift))
+            return true
+        }
+        guard let editor = ensureFieldEditor() else { return true }
+        if acceptsComposedText {
+            let composing = RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true
+            if !composing, isTextNavigationEvent(event, flags: flags) {
+                editor.interpretKeyEvents([event])
+                return true
+            }
+            // 普通文字键和组字期间的编辑键交回输入控制器，再把结果定向写入词条框。
+            return nil
+        }
+        editor.interpretKeyEvents([event])
+        return true
+    }
+
+    // 输入控制器提交的候选只写入词条框，不写回原来的应用。
+    @discardableResult
+    func insertComposedText(_ text: String) -> Bool {
+        guard acceptsComposedText, let editor = ensureFieldEditor() else { return false }
+        editor.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        return true
+    }
+
+    @discardableResult
+    func setComposition(_ text: NSAttributedString, selectionRange: NSRange) -> Bool {
+        guard acceptsComposedText, let editor = ensureFieldEditor() else { return false }
+        editor.setMarkedText(
+            text,
+            selectedRange: selectionRange,
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+        return true
+    }
+
+    @discardableResult
+    func clearComposition() -> Bool {
+        guard acceptsComposedText, let editor = ensureFieldEditor() else { return false }
+        if editor.hasMarkedText() {
+            editor.unmarkText()
+        }
+        return true
+    }
+
+    // 候选窗定位到词条框当前光标，而不是原应用的输入位置。
+    func compositionScreenRect() -> NSRect? {
+        guard acceptsComposedText, let editor = ensureFieldEditor() else { return nil }
+        let range = editor.selectedRange()
+        let rect = editor.firstRect(forCharacterRange: range, actualRange: nil)
+        return rect.width > 0 || rect.height > 0 ? rect : nil
+    }
+
+    // 非激活面板也能拿到字段编辑器，这样不用把输入法进程激活到前台。
+    private func ensureFieldEditor() -> NSTextView? {
+        if let editor = panel.firstResponder as? NSTextView { return editor }
+        if !panel.isKeyWindow {
+            panel.makeKey()
+        }
+        let field = focusedTextField() ?? wordField
+        panel.makeFirstResponder(field)
+        return panel.firstResponder as? NSTextView
+    }
+
+    private func focusedTextField() -> NSTextField? {
+        guard let editor = panel.firstResponder as? NSTextView else { return nil }
+        if editor === wordField.currentEditor() { return wordField }
+        if editor === codeField.currentEditor() { return codeField }
+        if editor === weightField.currentEditor() { return weightField }
         return nil
     }
 
-    func showPanel() {
-        if !panel.isVisible {
-            let front = NSWorkspace.shared.frontmostApplication
-            if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-                previousApp = front
-            }
+    private func focusNextField(shift: Bool) {
+        let fields = [wordField, codeField, weightField]
+        let current = focusedTextField() ?? wordField
+        let index = fields.firstIndex(where: { $0 === current }) ?? 0
+        let next = shift ? (index + fields.count - 1) % fields.count : (index + 1) % fields.count
+        panel.makeFirstResponder(fields[next])
+    }
+
+    // 没在组字时，光标移动和删除由词条框自己处理。
+    private func isTextNavigationEvent(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool {
+        if flags.contains(.control) || flags.contains(.option) { return true }
+        switch Int(event.keyCode) {
+        case kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow,
+             kVK_Home, kVK_End, kVK_PageUp, kVK_PageDown,
+             kVK_Delete, kVK_ForwardDelete:
+            return true
+        default:
+            return false
         }
+    }
+
+    func showPanel(prefill selectedText: String? = nil) {
         // 标题栏图标在窗口显示后才稳定出现，弹出时再刷一次
         installTitleLogo()
         reloadGroups()
-        wordField.stringValue = ""
-        codeField.stringValue = ""
+        // 优先使用快捷键触发时读取到的完整选区；不支持读取选区的应用再回退到最近上屏内容。
+        let prefill = selectedText ?? Self.recentCommittedWord() ?? ""
+        wordField.stringValue = prefill
+        if prefill.isEmpty {
+            codeField.stringValue = ""
+        } else {
+            codeField.stringValue = WubiDictEncoder.encode(word: prefill)
+        }
+        refreshSameCode()
+        weightField.stringValue = ""
         setStatus("", color: .secondaryLabelColor)
         panel.center()
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
+        // 不调用 activate。输入法进程一旦变成前台，别的软件就挂不上状态栏菜单。
+        panel.orderFrontRegardless()
+        panel.makeKey()
         panel.makeFirstResponder(wordField)
         DispatchQueue.main.async { [weak self] in
             self?.installTitleLogo()
@@ -85,8 +215,12 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         codeField.placeholderString = "自动生成，可修改"
         codeField.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
         codeField.delegate = self
+        weightField.placeholderString = "可空"
+        weightField.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        weightField.delegate = self
+        weightField.cell?.isScrollable = true
         // 允许选择、复制；长词条可在框内滚动
-        for field in [wordField, codeField] {
+        for field in [wordField, codeField, weightField] {
             field.isEditable = true
             field.isSelectable = true
             field.cell?.isScrollable = true
@@ -109,10 +243,24 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         status.preferredMaxLayoutWidth = contentWidth - 32
         status.setContentHuggingPriority(.required, for: .vertical)
 
+        sameCodeTitle.font = .systemFont(ofSize: 12, weight: .medium)
+        sameCodeView.isEditable = false
+        sameCodeView.isSelectable = true
+        sameCodeView.drawsBackground = false
+        sameCodeView.textContainerInset = NSSize(width: 4, height: 4)
+        sameCodeView.configureAsLexiconTable()
+        sameCodeScroll.documentView = sameCodeView
+        sameCodeScroll.hasVerticalScroller = true
+        sameCodeScroll.hasHorizontalScroller = true
+        sameCodeScroll.autohidesScrollers = true
+        sameCodeScroll.borderType = .bezelBorder
+        sameCodeScroll.drawsBackground = false
+
         let wordRow = labeled("词条", wordField)
         let codeRow = labeled("编码", codeField)
+        let weightRow = labeled("权重", weightControls())
         let groupRow = labeled("分组", groupPopup)
-        let form = NSStackView(views: [wordRow, codeRow, groupRow])
+        let form = NSStackView(views: [wordRow, codeRow, weightRow, groupRow])
         form.orientation = .vertical
         form.alignment = .leading
         form.spacing = 8
@@ -133,6 +281,8 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         // 没提示时不占位，窗口只包住表单和底栏。
         root.detachesHiddenViews = true
         root.addArrangedSubview(form)
+        root.addArrangedSubview(sameCodeTitle)
+        root.addArrangedSubview(sameCodeScroll)
         root.addArrangedSubview(status)
         root.addArrangedSubview(footer)
         root.translatesAutoresizingMaskIntoConstraints = false
@@ -145,10 +295,14 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             root.topAnchor.constraint(equalTo: content.topAnchor),
 
             form.widthAnchor.constraint(equalTo: root.widthAnchor),
+            sameCodeTitle.widthAnchor.constraint(equalTo: form.widthAnchor),
+            sameCodeScroll.widthAnchor.constraint(equalTo: form.widthAnchor),
+            sameCodeScroll.heightAnchor.constraint(equalToConstant: 140),
             footer.widthAnchor.constraint(equalTo: form.widthAnchor),
             leadingSpacer.widthAnchor.constraint(equalTo: trailingSpacer.widthAnchor),
             wordRow.widthAnchor.constraint(equalTo: form.widthAnchor),
             codeRow.widthAnchor.constraint(equalTo: form.widthAnchor),
+            weightRow.widthAnchor.constraint(equalTo: form.widthAnchor),
             groupRow.widthAnchor.constraint(equalTo: form.widthAnchor),
             codeField.widthAnchor.constraint(equalTo: wordField.widthAnchor),
             groupPopup.widthAnchor.constraint(equalTo: wordField.widthAnchor),
@@ -240,7 +394,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         doCommandBy commandSelector: Selector
     ) -> Bool {
         // 词条或编码里按回车，直接添加
-        if (control === wordField || control === codeField),
+        if (control === wordField || control === codeField || control === weightField),
            commandSelector == #selector(NSResponder.insertNewline(_:)) {
             addWord()
             return true
@@ -249,11 +403,48 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     }
 
     func controlTextDidChange(_ obj: Notification) {
-        guard (obj.object as? NSTextField) === wordField else { return }
-        let word = wordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let encoded = WubiDictEncoder.encode(word: word)
-        if !encoded.isEmpty {
-            codeField.stringValue = encoded
+        let field = obj.object as? NSTextField
+        if field === wordField {
+            let word = wordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let encoded = WubiDictEncoder.encode(word: word)
+            if !encoded.isEmpty {
+                codeField.stringValue = encoded
+            }
+            refreshSameCode()
+        } else if field === codeField {
+            refreshSameCode()
+        }
+    }
+
+    // 按当前编码列出各词库里已有的同码词。
+    private func refreshSameCode() {
+        let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let show = !code.isEmpty
+        sameCodeTitle.isHidden = !show
+        sameCodeScroll.isHidden = !show
+        guard show else {
+            fitPanel(anchorTop: panel.isVisible)
+            return
+        }
+        sameCodeTitle.stringValue = "同编码词条"
+        sameCodeView.setLexiconTable(DictLexiconHit.message("正在查找…"))
+        fitPanel(anchorTop: panel.isVisible)
+        let requested = code
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let hits = DictLexiconIndex.shared.hits(code: requested)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let current = self.codeField.stringValue
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .lowercased()
+                guard current == requested else { return }
+                self.sameCodeTitle.stringValue = hits.isEmpty ? "同编码词条" : "同编码词条（\(hits.count)）"
+                let table = hits.isEmpty
+                    ? DictLexiconHit.message("当前词库里没有这个编码。")
+                    : DictLexiconHit.alignedTable(hits)
+                self.sameCodeView.setLexiconTable(table)
+                self.fitPanel(anchorTop: self.panel.isVisible)
+            }
         }
     }
 
@@ -279,15 +470,33 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             return
         }
         let groupIndex = groupIndexes[popupIndex]
+        let weightText = weightField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let weight: Int?
+        if weightText.isEmpty {
+            weight = nil
+        } else if let value = Int(weightText) {
+            weight = value
+        } else {
+            setStatus("权重需为整数，或留空。", color: .systemOrange)
+            return
+        }
         do {
-            try UserDictWriter.addEntry(UserDictEntry(code: code, text: text, weight: 100_000), toGroupIndex: groupIndex)
+            // 留空的权重不写进 yaml；有值才写出第三列。
+            try UserDictWriter.addEntry(
+                UserDictEntry(code: code, text: text, weight: weight),
+                toGroupIndex: groupIndex,
+                boostWeight: false
+            )
             QuickAddPrefs.selectedGroupIndex = groupIndex
             // 不要走 deployNow：它会 finalize 正在用的 librime，菜单还在但按键全部失效
+            DictLexiconIndex.shared.invalidate()
             let reloaded = RimeSession.shared.reloadUserDictionary()
             if reloaded {
                 setStatus("已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」。", color: .secondaryLabelColor)
                 wordField.stringValue = ""
                 codeField.stringValue = ""
+                weightField.stringValue = ""
+                refreshSameCode()
                 panel.makeFirstResponder(wordField)
             } else {
                 setStatus("已写入，但词库重载失败。", color: .systemRed)
@@ -297,13 +506,36 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         }
     }
 
-    func windowWillClose(_ notification: Notification) {
-        // 用户已经点到别的软件时不要再抢焦点
-        guard NSApp.isActive else {
-            previousApp = nil
-            return
+    // 当前编码里已有词的最大权重，没有权重时按 0。
+    @objc private func applyWeightStep(_ sender: NSButton) {
+        let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let base = DictLexiconIndex.shared.hits(code: code).compactMap(\.entry.weight).max() ?? 0
+        weightField.stringValue = String(base + sender.tag)
+    }
+
+    private func weightControls() -> NSView {
+        let steps = NSStackView()
+        steps.orientation = .horizontal
+        steps.spacing = 4
+        steps.alignment = .centerY
+        // 顺序按使用习惯：先加 5、再加 10、再加 1。
+        for (title, delta) in [("n+5", 5), ("n+10", 10), ("n+1", 1)] {
+            let button = NSButton(title: title, target: self, action: #selector(applyWeightStep(_:)))
+            button.tag = delta
+            button.bezelStyle = .rounded
+            button.controlSize = .small
+            button.font = .monospacedSystemFont(ofSize: 11, weight: .medium)
+            button.setContentHuggingPriority(.required, for: .horizontal)
+            steps.addArrangedSubview(button)
         }
-        restorePreviousApp()
+        weightField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        weightField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let row = NSStackView(views: [weightField, steps])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 8
+        steps.setContentHuggingPriority(.required, for: .horizontal)
+        return row
     }
 
     // Command+A / C / V / X / Z。输入法进程没有编辑菜单时，这些快捷键不会自动生效。
@@ -329,31 +561,6 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             return false
         }
         return true
-    }
-
-    // 光标移动、选区、退格。组字过程中不在这里拦截。
-    private func isNavigationEvent(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool {
-        if flags.contains(.control) || flags.contains(.option) { return true }
-        switch Int(event.keyCode) {
-        case kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow,
-             kVK_Home, kVK_End, kVK_PageUp, kVK_PageDown,
-             kVK_Delete, kVK_ForwardDelete:
-            return true
-        default:
-            return false
-        }
-    }
-
-    // 关掉窗口后激活原来的软件，避免按键掉进没有文本框的输入法进程。
-    private func restorePreviousApp() {
-        guard let app = previousApp else { return }
-        previousApp = nil
-        if app.processIdentifier == ProcessInfo.processInfo.processIdentifier { return }
-        if #available(macOS 14.0, *) {
-            app.activate(from: NSRunningApplication.current, options: [.activateIgnoringOtherApps])
-        } else {
-            app.activate(options: [.activateIgnoringOtherApps])
-        }
     }
 
     private func labeled(_ title: String, _ field: NSView) -> NSView {

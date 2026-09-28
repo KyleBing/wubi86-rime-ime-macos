@@ -12,7 +12,9 @@ enum QuickAddHotKey {
             var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
                 DispatchQueue.main.async {
-                    QuickAddWordPanel.shared.showPanel()
+                    // 面板获得焦点后原应用可能清掉选区，先取出完整文本。
+                    let selectedText = MeifengInputController.selectedTextFromActiveClient()
+                    QuickAddWordPanel.shared.showPanel(prefill: selectedText)
                 }
                 return noErr
             }, 1, &spec, nil, &handler)

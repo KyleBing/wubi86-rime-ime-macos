@@ -5,6 +5,7 @@ import InputMethodKit
 /// 玫枫五笔 IMK 控制器：inline preedit + 非激活候选条
 @objc(MeifengInputController)
 final class MeifengInputController: IMKInputController {
+    private static weak var activeController: MeifengInputController?
     private let panel = CandidatePanelController()
     private let modeHint = ModeHintController()
     private var currentClient: (any IMKTextInput)?
@@ -61,6 +62,7 @@ final class MeifengInputController: IMKInputController {
     override func activateServer(_ sender: Any!) {
         super.activateServer(sender)
         currentClient = (sender as? IMKTextInput) ?? (client() as? IMKTextInput)
+        Self.activeController = self
         let ok = RimeSession.shared.ensureStarted()
         log("activateServer rime=\(ok) client=\(currentClient != nil)")
     }
@@ -87,15 +89,23 @@ final class MeifengInputController: IMKInputController {
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event else { return false }
         currentClient = (sender as? IMKTextInput) ?? currentClient
+        Self.activeController = self
 
         if event.type == .flagsChanged {
+            // 删除确认框开着时，Shift 不要切成英文。
+            if DeleteCandidatePanel.shared.isOpen {
+                return true
+            }
             // 造词框里的 Shift 用来选字，不要当成中英切换
-            if QuickAddWordPanel.shared.isEditingText {
-                return false
+            if QuickAddWordPanel.shared.isOpen {
+                return true
             }
             return handleFlagsChanged(event)
         }
         guard event.type == .keyDown else { return false }
+        if DeleteCandidatePanel.shared.isOpen {
+            return DeleteCandidatePanel.shared.handleKey(event)
+        }
         // 开始输入后收起模式提示，避免盖住编码或候选。
         modeHint.hide()
 
@@ -105,6 +115,11 @@ final class MeifengInputController: IMKInputController {
 
         if let editing = QuickAddWordPanel.shared.claimEditingKey(event) {
             return editing
+        }
+
+        // 候选出现时：造词那组修饰键 + 数字，删除对应候选。要放在 Command 提前返回之前。
+        if handleDeleteCandidateShortcut(event) {
+            return true
         }
 
         // 有 Command 交给系统
@@ -154,6 +169,21 @@ final class MeifengInputController: IMKInputController {
     }
 
     // MARK: - Private
+
+    // 必须在造词面板成为关键窗口前读取，否则原应用的选区可能已经收起。
+    static func selectedTextFromActiveClient() -> String? {
+        guard let controller = activeController,
+              let client = controller.currentClient ?? (controller.client() as? IMKTextInput) else {
+            return nil
+        }
+        let range = client.selectedRange()
+        guard range.location != NSNotFound, range.length > 0,
+              let selected = client.attributedSubstring(from: range)?.string else {
+            return nil
+        }
+        let text = selected.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
+    }
 
     // 当前编码命中预置候选时，按设置里的选词 / 翻页键操作；返回 nil 表示交给 Rime 继续处理。
     private func handleSpecialCandidateKey(_ event: NSEvent) -> Bool? {
@@ -350,6 +380,9 @@ final class MeifengInputController: IMKInputController {
 
     /// 当前下划线编码（marked text）的屏幕矩形，供候选窗定位到编码下方
     private func markedTextScreenRect(preedit: String) -> NSRect {
+        if let rect = QuickAddWordPanel.shared.compositionScreenRect() {
+            return rect
+        }
         guard let client = currentClient ?? (client() as? IMKTextInput) else {
             let p = NSEvent.mouseLocation
             return NSRect(x: p.x, y: p.y, width: 0, height: 16)
@@ -380,7 +413,65 @@ final class MeifengInputController: IMKInputController {
         return start
     }
 
+    // Control / Option 下 characters 可能为空，数字行和数字键盘都认。
+    private func digitIndex(for event: NSEvent) -> Int? {
+        if let ch = event.charactersIgnoringModifiers?.first,
+           let number = ch.wholeNumberValue,
+           (1...9).contains(number) {
+            return number - 1
+        }
+        switch Int(event.keyCode) {
+        case kVK_ANSI_1, kVK_ANSI_Keypad1: return 0
+        case kVK_ANSI_2, kVK_ANSI_Keypad2: return 1
+        case kVK_ANSI_3, kVK_ANSI_Keypad3: return 2
+        case kVK_ANSI_4, kVK_ANSI_Keypad4: return 3
+        case kVK_ANSI_5, kVK_ANSI_Keypad5: return 4
+        case kVK_ANSI_6, kVK_ANSI_Keypad6: return 5
+        case kVK_ANSI_7, kVK_ANSI_Keypad7: return 6
+        case kVK_ANSI_8, kVK_ANSI_Keypad8: return 7
+        case kVK_ANSI_9, kVK_ANSI_Keypad9: return 8
+        default: return nil
+        }
+    }
+
+    // 造词修饰键 + 1–9：弹出删除确认，并说明词库、权重和同编码词。
+    private func handleDeleteCandidateShortcut(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let carbon = QuickAddPrefs.carbonModifiers(from: flags)
+        guard carbon != 0, carbon == QuickAddPrefs.modifiers else { return false }
+        if QuickAddWordPanel.shared.isOpen { return false }
+        guard let index = digitIndex(for: event) else { return false }
+        guard let snap = RimeSession.shared.bridgeEngine.snapshot(), snap.isComposing else { return false }
+        let preedit = snap.preedit ?? ""
+        if DateTimeCandidates.candidates(for: preedit) != nil {
+            DeleteCandidatePanel.shared.presentUnavailable("这是预置的日期或时间候选，不在词库里，不能删除。")
+            return true
+        }
+        guard index < snap.candidates.count else { return true }
+        let text = snap.candidates[index].text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return true }
+        DeleteCandidatePanel.shared.present(candidate: text, preedit: preedit) { [weak self] code in
+            self?.restoreComposition(code)
+        }
+        return true
+    }
+
+    // 删词会重建 Rime 会话，把删除前的编码重新输进去。
+    private func restoreComposition(_ preedit: String) {
+        let engine = RimeSession.shared.bridgeEngine
+        for scalar in preedit.unicodeScalars {
+            let value = Int32(scalar.value)
+            guard (0x20...0x7E).contains(value) else { continue }
+            _ = engine.processKey(value, modifiers: 0)
+        }
+        _ = consumeRimeUpdate()
+    }
+
     private func insertText(_ string: String) {
+        if QuickAddWordPanel.shared.insertComposedText(string) {
+            return
+        }
+        QuickAddWordPanel.noteCommittedWord(string)
         guard let client = currentClient ?? (client() as? IMKTextInput) else {
             log("insertText FAILED no client: \(string)")
             return
@@ -389,14 +480,20 @@ final class MeifengInputController: IMKInputController {
     }
 
     private func setMarkedText(_ string: String) {
-        guard let client = currentClient ?? (client() as? IMKTextInput) else {
-            log("setMarkedText FAILED no client: \(string)")
-            return
-        }
         let attrs: [NSAttributedString.Key: Any] = [
             .underlineStyle: NSUnderlineStyle.single.rawValue
         ]
         let marked = NSAttributedString(string: string, attributes: attrs)
+        if QuickAddWordPanel.shared.setComposition(
+            marked,
+            selectionRange: NSRange(location: string.count, length: 0)
+        ) {
+            return
+        }
+        guard let client = currentClient ?? (client() as? IMKTextInput) else {
+            log("setMarkedText FAILED no client: \(string)")
+            return
+        }
         client.setMarkedText(
             marked,
             selectionRange: NSRange(location: string.count, length: 0),
@@ -405,6 +502,9 @@ final class MeifengInputController: IMKInputController {
     }
 
     private func clearMarkedText() {
+        if QuickAddWordPanel.shared.clearComposition() {
+            return
+        }
         guard let client = currentClient ?? (client() as? IMKTextInput) else { return }
         client.setMarkedText(
             "",
@@ -465,13 +565,18 @@ final class MeifengInputController: IMKInputController {
 
     // 菜单栏手动全量部署，并让当前输入法进程立刻重载
     @objc func deployFromMenu(_ sender: Any?) {
-        let result = RimeConfigDeploy.deployNow()
-        _ = RimeSession.shared.restartAfterExternalDeploy()
+        let outcome = RimeSession.shared.performExternalDeploy {
+            RimeConfigDeploy.deployNow()
+        }
         let alert = NSAlert()
-        switch result {
-        case .success:
+        switch outcome.result {
+        case .success where outcome.restarted:
             alert.messageText = "部署完成"
             alert.informativeText = "当前词库配置已重新部署。"
+        case .success:
+            alert.messageText = "部署完成，但输入法重载失败"
+            alert.informativeText = "请重新切换输入法；若仍无法输入，请重启输入法进程。"
+            alert.alertStyle = .warning
         case .failure(let message):
             alert.messageText = "部署失败"
             alert.informativeText = message
