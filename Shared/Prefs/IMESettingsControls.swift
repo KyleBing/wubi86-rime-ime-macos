@@ -53,6 +53,7 @@ private final class SettingsRootView: NSView {
         case lexiconDirectory
         case appearance
         case keyboard
+        case punctuation
         case account
         case help
 
@@ -62,6 +63,7 @@ private final class SettingsRootView: NSView {
             case .lexiconDirectory: return "词库目录"
             case .appearance: return "外观配置"
             case .keyboard: return "按键"
+            case .punctuation: return "标点"
             case .account: return "账户"
             case .help: return "帮助"
             }
@@ -71,6 +73,7 @@ private final class SettingsRootView: NSView {
             switch self {
             case .appearance: return "paintpalette"
             case .keyboard: return "keyboard"
+            case .punctuation: return "command"
             case .userLexicon: return "book"
             case .lexiconDirectory: return "folder"
             case .help: return "questionmark.circle"
@@ -227,6 +230,8 @@ private final class SettingsRootView: NSView {
                 page = makeAppearancePage()
             case .keyboard:
                 page = makeKeyboardPage()
+            case .punctuation:
+                page = makePunctuationPage()
             case .userLexicon:
                 page = makeUserLexiconPage()
             case .lexiconDirectory:
@@ -484,6 +489,15 @@ private final class SettingsRootView: NSView {
         secondThird.widthAnchor.constraint(greaterThanOrEqualToConstant: 210).isActive = true
         settings.addArrangedSubview(formRow("二三候选", secondThird))
 
+        let caretHint = NSButton(
+            checkboxWithTitle: "",
+            target: ToggleTarget.shared,
+            action: #selector(ToggleTarget.caretModeHintChanged(_:))
+        )
+        caretHint.state = IMEAppearancePrefs.showCaretModeHint ? .on : .off
+        caretHint.toolTip = "输入光标出现时，在旁边显示当前是中文还是英文"
+        settings.addArrangedSubview(formRow("光标提示", caretHint))
+
         let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
         settings.addArrangedSubview(formRow("造词", quickAdd))
 
@@ -497,6 +511,15 @@ private final class SettingsRootView: NSView {
             title: "按键",
             subtitle: "设置翻页、快捷选词和全局造词快捷键。",
             content: card(title: "候选按键", subtitle: nil, content: settings)
+        )
+    }
+
+    private func makePunctuationPage() -> NSView {
+        let body = PunctuationSettingsView(frame: .zero)
+        return page(
+            title: "标点",
+            subtitle: "标点由输入法处理。输出用空格分开多项，可直接修改。直接上屏只输出第一项；候选列表弹出全部符号供选择。",
+            content: card(title: "标点输出", subtitle: nil, content: body)
         )
     }
 
@@ -570,6 +593,7 @@ private final class SettingsRootView: NSView {
             ("造词快捷键", "默认 ⌃⌥N，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组；两分钟内刚上屏的词会自动填入，并列出同编码词来自哪个词库"),
             ("删除候选", "候选出现时，按与造词相同的修饰键加数字（默认 ⌃⌥1–9）。确认框会显示词库、权重、备注和同编码词，确认后从该词库删除"),
             ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
+            ("光标提示", "输入框出现光标时，在旁边显示当前是中文还是英文。可在「按键」页关闭"),
             ("空格", "上屏第一个候选"),
             ("1 – 9", "选择对应序号的候选（仅数量圆点模式下同样有效）"),
             ("; '", "选第二、第三候选（需在「按键」页开启）"),
@@ -1064,6 +1088,10 @@ private final class ToggleTarget: NSObject {
     static let shared = ToggleTarget()
     @objc func preeditChanged(_ sender: NSButton) {
         IMEAppearancePrefs.showPreeditInPanel = sender.state == .on
+    }
+
+    @objc func caretModeHintChanged(_ sender: NSButton) {
+        IMEAppearancePrefs.showCaretModeHint = sender.state == .on
     }
 }
 

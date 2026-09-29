@@ -25,6 +25,7 @@ targets:
       - path: Shared/Config/CandidateSkin.swift
       - path: Shared/Config/IMEAppearancePrefs.swift
       - path: Shared/Config/RimeBehaviorPrefs.swift
+      - path: Shared/Config/PunctuationPrefs.swift
       - path: Shared/Config/RimeResourceDeployer.swift
       - path: Shared/Config/AppGroupPaths.swift
       - path: Shared/Prefs/IMESettingsControls.swift
@@ -35,6 +36,7 @@ targets:
       - path: Shared/Prefs/UserLexiconSettingsView.swift
       - path: Shared/Prefs/DictEditorIcons.swift
       - path: Shared/Prefs/LexiconDirectorySettingsView.swift
+      - path: Shared/Prefs/PunctuationSettingsView.swift
       - path: Shared/Lexicon/DictModels.swift
       - path: Shared/Lexicon/UserDictWriter.swift
       - path: Shared/Lexicon/UserDictWriter+Active.swift

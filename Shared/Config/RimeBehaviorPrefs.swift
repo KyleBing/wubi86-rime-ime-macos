@@ -132,13 +132,24 @@ enum RimeBehaviorPrefs {
         let user = RimeResourceDeployer.resolveUserDataURL()
         try FileManager.default.createDirectory(at: user, withIntermediateDirectories: true)
         let url = user.appendingPathComponent("default.custom.yaml")
+        // 只更新玫枫自己生成过的 custom；上游或用户原文件保持不动
+        guard mayRewriteCustomYAML(at: url) else { return }
+        let existingText = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        var schemaIds = RimeExistingLexicon.schemaIds(in: existingText)
+        for id in RimeExistingLexicon.requiredSchemaIds where !schemaIds.contains(id) {
+            schemaIds.append(id)
+        }
+        if schemaIds.isEmpty {
+            schemaIds = RimeExistingLexicon.requiredSchemaIds
+        }
 
         var lines: [String] = []
         lines.append("# 由玫枫五笔设置生成，修改「候选栏设置」会覆盖此文件中的 patch")
         lines.append("patch:")
         lines.append("  schema_list:")
-        lines.append("    - schema: wubi86_jidian")
-        lines.append("    - schema: pinyin_simp")
+        for id in schemaIds {
+            lines.append("    - schema: \(id)")
+        }
         lines.append("  \"menu/page_size\": \(pageSize)")
         lines.append("  \"key_binder/bindings\":")
         lines.append("    __patch:")
@@ -153,6 +164,12 @@ enum RimeBehaviorPrefs {
         lines.append("")
 
         try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    // 只改写带玫枫标记的 default.custom.yaml，避免盖掉极点原配置
+    private static func mayRewriteCustomYAML(at url: URL) -> Bool {
+        guard let existing = try? String(contentsOf: url, encoding: .utf8) else { return false }
+        return existing.contains("由玫枫五笔设置生成")
     }
 
     /// 与 UserDictWriter.markNeedsDeploy 同路径，供 Prefs 在无词库模块时也能通知 IME

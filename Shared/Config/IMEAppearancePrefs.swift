@@ -223,6 +223,20 @@ enum IMEAppearancePrefs {
         }
     }
 
+    // 输入光标出现时，是否在旁边显示当前是中文还是英文。默认开启。
+    static var showCaretModeHint: Bool {
+        get {
+            // 设置在另一个进程里改，读之前先同步，避免输入法还拿着旧值。
+            defaults.synchronize()
+            if defaults.object(forKey: Keys.showCaretModeHint) == nil { return true }
+            return defaults.bool(forKey: Keys.showCaretModeHint)
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.showCaretModeHint)
+            notify()
+        }
+    }
+
     // 是否在每个候选词后面显示它的五笔编码
     static var showPreeditInPanel: Bool {
         get {
@@ -448,6 +462,7 @@ enum IMEAppearancePrefs {
         static let fontSize = "candidate.fontSize"
         static let fontName = "candidate.fontName"
         static let showPreedit = "candidate.showPreedit"
+        static let showCaretModeHint = "input.showCaretModeHint"
         static let codeDetail = "candidate.codeDetail"
         static let showIndex = "candidate.showIndex"
         static let indexStyle = "candidate.indexStyle"

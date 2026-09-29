@@ -3,21 +3,22 @@
 
 schema:
   schema_id: wubi86_jidian
-  name: "玫枫五笔"
+  name: "极点五笔86"
   version: "1.0"
-  icon: "wubi86_jidian.ico"           # string 方案图标，格式： .ico
-  ascii_icon:                         # string
   author:
     - 创始人 王永民先生
   description: |
     五笔字形 86 极点极爽版，方案由 KyleBing 修改 - 2019年11月08日 10:26
   dependencies:
-    - pinyin_simp
+#    - pinyin_simp
 
 switches:
   - name: ascii_mode
     reset: 0
     states: [ 中, En ]
+  - name: zh_trad
+    reset: 0    # 初始状态为 0: 简 -> 简 1: 简 -> 繁
+    states: [ 简体, 繁体 ]
   - name: full_shape
     states: [ 半角, 全角 ]
   - name: extended_charset
@@ -46,8 +47,10 @@ engine:
     - punct_translator
     - reverse_lookup_translator
     - table_translator
-    # history_translator 在精简 librime 中可能不可用，会导致整套方案加载失败
-    # - history_translator@repeat_last_input
+    - history_translator@repeat_last_input # 重复上一次输入，对应下面的 repeat_last_input
+  filters:
+    - simplifier@tradition
+
 
 # 自动造词功能：参阅： https://github.com/KyleBing/rime-wubi86-jidian#6-%E5%BC%80%E5%90%AF%E8%87%AA%E5%8A%A8%E9%80%A0%E8%AF%8D
 
@@ -58,7 +61,7 @@ speller:
 
 translator:
   dictionary: wubi86_jidian             # 翻译器将调取此字典文件
-  enable_charset_filter: false          # iOS 无 OpenCC 字符集时勿开启，否则可能无候选
+  enable_charset_filter: true           # 开启字符集过滤
   enable_completion: true               # 是否显示编码未输入完整的词条
 
   enable_sentence: false                # 句子输入模式
@@ -78,6 +81,16 @@ translator:
 # 1. 先从简转繁体
 # 2. 如果配置了台湾繁体，就会将上一步生成的繁体进一步处理
 # 3. 根据这个文件：https://github.com/BYVoid/OpenCC/blob/master/data/dictionary/TWVariants.txt 把台湾与正常繁体不同的地方转成台湾版本的字，比如 “床”
+
+tradition:
+  #  opencc_config: s2t.json  # 简 -> 繁
+  opencc_config: s2hk.json  # 繁 -> 香港
+  #  opencc_config: t2s.json   # 繁 -> 简
+  #  opencc_config: t2tw.json  # 繁 -> 台湾
+  #  opencc_config: t2hk.json  # 繁 -> 香港
+  #  opencc_config: s2tw.json  # 簡 -> 臺灣標準
+  #  opencc_config: s2twp.json  # 簡 -> 臺灣片語
+  option_name: zh_trad
 
 reverse_lookup:
   dictionary: pinyin_simp  # 反查使用的拼音词库
@@ -104,8 +117,8 @@ recognizer:
 #    punct: "^/([0-9]+[a-z]*|[a-z]+)$" # 注意前方需要有4个空格，跟下面对齐
     reverse_lookup: "^z[a-z]*'?$" # 反查词条的正则
 
-# 重复上一次输入（依赖 history_translator；部分精简 librime 无此组件时勿启用）
-#repeat_last_input:
-#  input: z
-#  size: 1
-#  initial_quality: 1
+# 重复上一次输入
+repeat_last_input:
+  input: z
+  size: 1
+  initial_quality: 1

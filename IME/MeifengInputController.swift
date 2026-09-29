@@ -10,11 +10,18 @@ final class MeifengInputController: IMKInputController {
     private let modeHint = ModeHintController()
     private var currentClient: (any IMKTextInput)?
     private var asciiMode = false
+    // 取消已经排上、但输入框已经失焦的光标提示。
+    private var caretHintToken = 0
+    // 这段时间内系统清浮层时，保留刚出现的中/英提示。
+    private var caretHintArmedUntil: Date?
     private var shiftIsSticky = false
     private var sawOtherKeyWithShift = false
     // 预置候选（date / time）由输入法自行分页，记录当前页与所属编码。
     private var specialPage = 0
     private var specialPreedit = ""
+    // 输入法自己的标点候选，不交给 Rime。
+    private var punctSymbols: [String] = []
+    private var punctPage = 0
     // 强引用，避免设置窗口闪一下被释放
     private var preferencesWindowController: MeifengPreferencesWindowController?
     // 菜单交给另一个进程绘制，必须自己留着，否则项会被释放掉
@@ -65,10 +72,17 @@ final class MeifengInputController: IMKInputController {
         Self.activeController = self
         let ok = RimeSession.shared.ensureStarted()
         log("activateServer rime=\(ok) client=\(currentClient != nil)")
+        // 光标出现时先标出当前中/英，避免打字后才发现要切换。可在设置里关闭。
+        if IMEAppearancePrefs.showCaretModeHint {
+            scheduleModeHintAtCaret()
+        }
     }
 
     override func deactivateServer(_ sender: Any!) {
+        caretHintToken += 1
+        caretHintArmedUntil = nil
         commitOrClearPending()
+        clearPunctuation()
         panel.hide()
         // 输入框失焦后提示不再属于当前会话，立刻收掉，避免残留在别的窗口上。
         modeHint.hide()
@@ -78,14 +92,19 @@ final class MeifengInputController: IMKInputController {
     }
 
     override func hidePalettes() {
-        panel.hide()
+        clearPunctuation()
+        // 光标提示刚排上时，有的客户端会顺手清一次浮层，这时别把提示清掉。
+        if let until = caretHintArmedUntil, Date() < until {
+            super.hidePalettes()
+            return
+        }
         modeHint.hide()
         super.hidePalettes()
     }
 
     override func commitComposition(_ sender: Any!) {
         commitOrClearPending(forceCommitRaw: true)
-        panel.hide()
+        clearPunctuation()
         clearMarkedText()
     }
 
@@ -133,6 +152,11 @@ final class MeifengInputController: IMKInputController {
         guard RimeSession.shared.ensureStarted() else {
             log("handle: rime not ready")
             return false
+        }
+
+        // 标点在输入法里处理。编码过程中仍交给 Rime，避免打断翻页和选词。
+        if !asciiMode, let handled = handlePunctuationKey(event) {
+            return handled
         }
 
         // 预置候选不在 Rime 菜单里，选词 / 翻页键需自行处理。
@@ -255,6 +279,120 @@ final class MeifengInputController: IMKInputController {
         }
     }
 
+    // 未组字时拦截标点。返回 nil 表示这颗键继续交给 Rime。
+    private func handlePunctuationKey(_ event: NSEvent) -> Bool? {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags.contains(.control) || flags.contains(.option) {
+            return nil
+        }
+        let composing = RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true
+        let ch = event.characters
+
+        if !punctSymbols.isEmpty {
+            if event.keyCode == 53 {
+                clearPunctuation()
+                return true
+            }
+            if let ch, handlePunctuationNavigation(ch, keyCode: event.keyCode) {
+                return true
+            }
+            // 标点候选开着时再按标点，改输出这一颗。
+            if let ch, !composing, let item = PunctuationPrefs.item(for: ch) {
+                applyPunctuation(item)
+                return true
+            }
+            clearPunctuation()
+            return nil
+        }
+
+        guard !composing, let ch, let item = PunctuationPrefs.item(for: ch) else {
+            return nil
+        }
+        applyPunctuation(item)
+        return true
+    }
+
+    // 标点候选的选词和翻页。处理了返回 true。
+    private func handlePunctuationNavigation(_ ch: String, keyCode: UInt16) -> Bool {
+        let pageSize = IMEAppearancePrefs.pageSize
+        let pageCount = max((punctSymbols.count + pageSize - 1) / pageSize, 1)
+        func pick(_ n: Int) -> Bool {
+            let index = punctPage * pageSize + n
+            guard n < pageSize, punctSymbols.indices.contains(index) else { return true }
+            commitPunctuation(punctSymbols[index])
+            return true
+        }
+        func turn(_ delta: Int) -> Bool {
+            let target = min(max(punctPage + delta, 0), pageCount - 1)
+            if target != punctPage {
+                punctPage = target
+                showPunctuationPage()
+            }
+            return true
+        }
+        if let digit = Int(ch), (1...9).contains(digit) {
+            return pick(digit - 1)
+        }
+        if ch == " " {
+            return pick(0)
+        }
+        let paging = RimeBehaviorPrefs.pagingKeys
+        let minusEqual = paging == .minusEqual || paging == .minusAndComma
+        let commaPeriod = paging == .commaPeriod || paging == .minusAndComma
+        let brackets = paging == .brackets
+        switch ch {
+        case "-" where minusEqual, "," where commaPeriod, "[" where brackets:
+            return turn(-1)
+        case "=" where minusEqual, "." where commaPeriod, "]" where brackets:
+            return turn(1)
+        default:
+            break
+        }
+        switch Int(keyCode) {
+        case kVK_PageUp:
+            return turn(-1)
+        case kVK_PageDown:
+            return turn(1)
+        default:
+            return false
+        }
+    }
+
+    private func applyPunctuation(_ item: PunctuationPrefs.Item) {
+        let symbols = PunctuationPrefs.symbols(for: item.key)
+        let mode = PunctuationPrefs.mode(for: item.key)
+        if mode == .direct {
+            commitPunctuation(symbols.first ?? item.key)
+            return
+        }
+        punctSymbols = symbols
+        punctPage = 0
+        showPunctuationPage()
+    }
+
+    private func showPunctuationPage() {
+        let pageSize = IMEAppearancePrefs.pageSize
+        let start = min(punctPage * pageSize, max(punctSymbols.count - 1, 0))
+        let page = Array(punctSymbols[start..<min(start + pageSize, punctSymbols.count)])
+        panel.show(candidates: page, codes: [], caretRect: insertionCaretRect()) { [weak self] idx in
+            guard let self else { return }
+            let index = self.punctPage * pageSize + idx
+            guard self.punctSymbols.indices.contains(index) else { return }
+            self.commitPunctuation(self.punctSymbols[index])
+        }
+    }
+
+    private func commitPunctuation(_ text: String) {
+        insertText(text)
+        clearPunctuation()
+    }
+
+    private func clearPunctuation() {
+        punctSymbols = []
+        punctPage = 0
+        panel.hide()
+    }
+
     // 编码变化时回到预置候选第一页。
     private func syncSpecialPage(preedit: String) {
         if preedit != specialPreedit {
@@ -372,6 +510,55 @@ final class MeifengInputController: IMKInputController {
         let typed = RimeSession.shared.bridgeEngine.rawInput()
         let input = typed.isEmpty ? preedit : typed
         return DictLexiconIndex.shared.displayCodes(texts: texts, preedit: input)
+    }
+
+    // 聚焦后隔一小段再量光标。激活当帧客户端经常还没把插入点算出来。
+    private func scheduleModeHintAtCaret() {
+        caretHintToken += 1
+        let token = caretHintToken
+        // 覆盖重试和大约一秒的显示时间。
+        caretHintArmedUntil = Date().addingTimeInterval(1.4)
+        revealModeHintAtCaret(token: token, attemptsLeft: 8)
+    }
+
+    private func revealModeHintAtCaret(token: Int, attemptsLeft: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
+            guard let self, token == self.caretHintToken else { return }
+            if let caret = self.focusedInsertionCaretRect() {
+                self.modeHint.show(asciiMode: self.asciiMode, caretRect: caret)
+                return
+            }
+            guard attemptsLeft > 1 else { return }
+            self.revealModeHintAtCaret(token: token, attemptsLeft: attemptsLeft - 1)
+        }
+    }
+
+    // 当前插入点的屏幕矩形。段尾用前一个字的右缘，避免下标越界拿到空矩形。
+    private func focusedInsertionCaretRect() -> NSRect? {
+        guard let client = currentClient ?? (client() as? IMKTextInput) else { return nil }
+        let selected = client.selectedRange()
+        guard selected.location != NSNotFound else { return nil }
+
+        var index = selected.location
+        var atTrailingEdge = false
+        if index > 0 {
+            index -= 1
+            atTrailingEdge = true
+        }
+
+        var rect = NSRect.zero
+        _ = client.attributes(forCharacterIndex: index, lineHeightRectangle: &rect)
+        if rect.width == 0, rect.height == 0, rect.origin == .zero {
+            return nil
+        }
+        if atTrailingEdge {
+            rect.origin.x += max(rect.width, 0)
+        }
+        rect.size.width = 1
+        if rect.height < 1 {
+            rect.size.height = 16
+        }
+        return rect
     }
 
     /// 当前插入点的屏幕矩形，供模式提示贴在光标旁。
@@ -546,6 +733,8 @@ final class MeifengInputController: IMKInputController {
         let ptr = TISGetInputSourceProperty(current, kTISPropertyBundleID)
         let currentId = ptr.map { Unmanaged<CFString>.fromOpaque($0).takeUnretainedValue() as String }
         if currentId != bundleId {
+            caretHintToken += 1
+            caretHintArmedUntil = nil
             commitOrClearPending(forceCommitRaw: true)
             panel.hide()
             modeHint.hide()

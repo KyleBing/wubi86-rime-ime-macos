@@ -14,7 +14,7 @@ final class RimeEngineLibrime: RimeEngine {
             userDir: dirs.user.path,
             forceFullCheck: forceFullCheck
         )
-        _ = bridge.selectSchema(RimeResourceDeployer.schemaId)
+        // 不强制切换方案，使用该目录 schema_list 里的默认方案
         isReady = true
     }
 

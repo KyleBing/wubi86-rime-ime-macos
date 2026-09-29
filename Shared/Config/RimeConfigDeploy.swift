@@ -12,21 +12,19 @@ enum RimeConfigDeploy {
         let userURL = RimeResourceDeployer.resolveUserDataURL()
         // 上传整个文件夹时常多一层目录，先尝试提升到根
         _ = RimeFileLayout.flattenNestedSchemeIfNeeded(at: userURL)
+        // 缺方案时补内置文件；已有主码表不覆盖
+        _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
         if let problem = RimeFileLayout.validateSchemeRoot(at: userURL) {
             return .failure(problem)
         }
         do {
+            // 用户自己的 Rime 目录同时作为共享目录和用户目录，沿用其中的方案与词库
             try RimeMaintenanceDeployer.deploy(withSharedDir: userURL.path, userDir: userURL.path)
-            // 部署后检查是否产出了方案编译结果
             let build = userURL.appendingPathComponent("build", isDirectory: true)
-            let hasTable = FileManager.default.fileExists(
-                atPath: build.appendingPathComponent("wubi86_jidian.table.bin").path
-            )
-            let hasSchemaBuild = FileManager.default.fileExists(
-                atPath: build.appendingPathComponent("wubi86_jidian.schema.yaml").path
-            )
-            if !hasTable && !hasSchemaBuild {
-                return .failure("部署完成但未生成词库，请点「复位原始配置」后重试")
+            let compiled = (try? FileManager.default.contentsOfDirectory(at: build, includingPropertiesForKeys: nil)) ?? []
+            let hasSchemaBuild = compiled.contains { $0.lastPathComponent.hasSuffix(".schema.yaml") }
+            if !hasSchemaBuild {
+                return .failure("部署完成但没有编译出方案，请确认目录里有可用的 .schema.yaml")
             }
             // 键盘扩展下次出现时整引擎重启
             UserDictWriter.markNeedsDeploy()
@@ -56,12 +54,14 @@ enum RimeConfigDeploy {
             guard fm.isWritableFile(atPath: target.path) else {
                 return .failure("目录不可写：\(target.path)")
             }
-            // build 为编译产物，切换后重新部署生成，不必拷贝
-            let items = try fm.contentsOfDirectory(at: oldURL, includingPropertiesForKeys: nil)
-            for item in items where item.lastPathComponent != "build" {
-                let dest = target.appendingPathComponent(item.lastPathComponent)
-                if !fm.fileExists(atPath: dest.path) {
-                    try fm.copyItem(at: item, to: dest)
+            // 目标目录已有方案时保持原样。空目录才从当前目录补缺少的文件。
+            if !RimeResourceDeployer.containsSchemaFile(at: target) {
+                let items = try fm.contentsOfDirectory(at: oldURL, includingPropertiesForKeys: nil)
+                for item in items where item.lastPathComponent != "build" {
+                    let dest = target.appendingPathComponent(item.lastPathComponent)
+                    if !fm.fileExists(atPath: dest.path) {
+                        try fm.copyItem(at: item, to: dest)
+                    }
                 }
             }
             try AppGroupPaths.setCustomRimeUserDataURL(newURL)
@@ -129,10 +129,9 @@ enum RimeFileLayout {
         return true
     }
 
-    /// 部署前检查：必须能在根目录找到本 App 使用的 schema
+    /// 部署前检查：根目录里要有任意一份方案
     static func validateSchemeRoot(at root: URL) -> String? {
-        let schema = root.appendingPathComponent(RimeResourceDeployer.schemaFileName)
-        if FileManager.default.fileExists(atPath: schema.path) { return nil }
+        if RimeResourceDeployer.containsSchemaFile(at: root) { return nil }
 
         if let items = try? FileManager.default.contentsOfDirectory(
             at: root,
@@ -142,12 +141,11 @@ enum RimeFileLayout {
             for item in items {
                 let isDir = (try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
                 guard isDir else { continue }
-                let nested = item.appendingPathComponent(RimeResourceDeployer.schemaFileName)
-                if FileManager.default.fileExists(atPath: nested.path) {
-                    return "方案在子目录「\(item.lastPathComponent)」内，根目录缺少 \(RimeResourceDeployer.schemaFileName)。请重新上传目录内文件，或点「复位原始配置」。"
+                if RimeResourceDeployer.containsSchemaFile(at: item) {
+                    return "方案在子目录「\(item.lastPathComponent)」内，请改选该目录本身。"
                 }
             }
         }
-        return "缺少 \(RimeResourceDeployer.schemaFileName)，无法出候选。请点「复位原始配置」恢复内置方案后再部署。"
+        return "目录里没有 Rime 方案（.schema.yaml），无法部署。"
     }
 }

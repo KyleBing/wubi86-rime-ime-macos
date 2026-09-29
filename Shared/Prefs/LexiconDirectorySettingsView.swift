@@ -64,7 +64,7 @@ final class LexiconDirectorySettingsView: NSView {
         deployRow.alignment = .centerY
         deployRow.spacing = 8
 
-        let hint = NSTextField(wrappingLabelWithString: "更改目录会把现有配置与用户词拷贝到新位置（不覆盖同名文件）。部署后输入法即可使用最新词库。")
+        let hint = NSTextField(wrappingLabelWithString: "选择已有的 Rime 配置目录即可使用其中的方案和词库，不会改写已有文件。空目录才会补上内置五笔。标点在「标点」页设置，不使用 Rime 的符号表。")
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .secondaryLabelColor
         hint.preferredMaxLayoutWidth = 560
@@ -140,7 +140,7 @@ final class LexiconDirectorySettingsView: NSView {
         panel.allowsMultipleSelection = false
         panel.directoryURL = RimeResourceDeployer.resolveUserDataURL()
         panel.prompt = "使用此目录"
-        panel.message = "选择词库目录，现有配置与用户词会拷贝到新目录（不覆盖同名文件）"
+        panel.message = "选择已有的 Rime 配置目录。目录里已有方案时保持原样。"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         changeDataDir(to: url, actions: actions)
     }

@@ -5,13 +5,22 @@ enum RimeResourceDeployer {
     static let schemaId = "wubi86_jidian"
     static let schemaFileName = "wubi86_jidian.schema.yaml"
     static let resourceVersionKey = "rime.resource.version"
-    // 升版本以强制覆盖同步内置方案（修 charset / history_translator 等）
+    // 升版本时补齐用户目录里还没有的内置文件，已有文件不覆盖
     static let bundledResourceVersion = "6"
-
-    /// 内置 Resources/Rime 目录
+    /// 内置五笔方案（仅在目录还没有方案时同步进去）
     static var bundledRimeURL: URL? {
         Bundle.main.resourceURL?.appendingPathComponent("Rime", isDirectory: true)
             ?? Bundle.main.url(forResource: "Rime", withExtension: nil)
+    }
+
+    /// 目录根上是否已有任意 Rime 方案。有的话就直接用，不再补内置文件。
+    static func containsSchemaFile(at root: URL) -> Bool {
+        guard let items = try? FileManager.default.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return false }
+        return items.contains { $0.lastPathComponent.hasSuffix(".schema.yaml") }
     }
 
     /// 可写用户目录（优先 App Group；失败则用本地 Documents/rime）
@@ -30,11 +39,15 @@ enum RimeResourceDeployer {
         return docs
     }
 
-    /// 将 Bundle 方案文件同步到用户目录（版本变化时覆盖）
+    /// 空目录才补内置五笔。已有方案的目录原样使用，共享目录就是该目录本身。
     @discardableResult
     static func syncBundledResourcesIfNeeded() -> (shared: URL, user: URL)? {
         let defaults = UserDefaults(suiteName: AppGroupPaths.appGroupId) ?? .standard
         let user = resolveUserDataURL()
+        if containsSchemaFile(at: user) {
+            return (user, user)
+        }
+        copyMissingBundledFiles(into: user)
         let marker = user.appendingPathComponent(".resource_version")
         let markerValue = (try? String(contentsOf: marker, encoding: .utf8))
             ?? defaults.string(forKey: resourceVersionKey)
@@ -50,7 +63,10 @@ enum RimeResourceDeployer {
                 return (user, user)
             }
         }
-        return try? forceSyncBundledResources(overwriteUserDict: false)
+        guard (try? forceSyncBundledResources(overwriteUserDict: false)) != nil else {
+            return nil
+        }
+        return (user, user)
     }
 
     /// 强制把内置方案拷到用户目录
@@ -75,13 +91,13 @@ enum RimeResourceDeployer {
         }
         for file in files {
             let name = file.lastPathComponent
+            // 用户目录已有自己的方案时，不补 default.custom.yaml，避免换掉原方案列表
+            if name == "default.custom.yaml", !overwriteUserDict, userAlreadyHasOwnSchema(at: user) {
+                continue
+            }
             let dest = user.appendingPathComponent(name)
-            let isUserDict = name.hasPrefix("wubi86_jidian_user")
-            // 扩展词库可能已从线上拉取，常规同步不要覆盖；复位时 overwriteUserDict=true 会恢复内置
-            let isExtraDict = name == "wubi86_jidian_extra.dict.yaml"
-            // 用户通过设置改过的 default.custom.yaml 常规同步保留
-            let isUserCustom = name == "default.custom.yaml"
-            if (isUserDict || isExtraDict || isUserCustom), !overwriteUserDict, fm.fileExists(atPath: dest.path) {
+            // 常规同步只补缺失文件，不改已有内容；复位才覆盖
+            if !overwriteUserDict, fm.fileExists(atPath: dest.path) {
                 continue
             }
             if fm.fileExists(atPath: dest.path) {
@@ -92,9 +108,11 @@ enum RimeResourceDeployer {
         let schema = user.appendingPathComponent(schemaFileName)
         let dict = user.appendingPathComponent("wubi86_jidian.dict.yaml")
         let custom = user.appendingPathComponent("default.custom.yaml")
+        // 用户自己的方案目录可以没有 default.custom.yaml
+        let needsCustom = !userAlreadyHasOwnSchema(at: user)
         guard fm.fileExists(atPath: schema.path),
               fm.fileExists(atPath: dict.path),
-              fm.fileExists(atPath: custom.path) else {
+              !needsCustom || fm.fileExists(atPath: custom.path) else {
             throw NSError(domain: "RimeResourceDeployer", code: 3, userInfo: [
                 NSLocalizedDescriptionKey: "内置方案拷贝不完整，缺少 schema/dict/default.custom"
             ])
@@ -105,4 +123,93 @@ enum RimeResourceDeployer {
         defaults.set(bundledResourceVersion, forKey: resourceVersionKey)
         return (user, user)
     }
+
+    // 把内置五笔方案里用户目录还没有的文件补进去，已有文件不动
+    static func copyMissingBundledFiles(into destRoot: URL) {
+        guard let bundled = bundledRimeURL,
+              FileManager.default.fileExists(atPath: bundled.path) else { return }
+        copyMissing(from: bundled, to: destRoot)
+    }
+
+    private static func copyMissing(from source: URL, to dest: URL) {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: dest, withIntermediateDirectories: true)
+        guard let items = try? fm.contentsOfDirectory(
+            at: source,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for item in items {
+            let target = dest.appendingPathComponent(item.lastPathComponent)
+            let isDir = (try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+            if item.lastPathComponent == "default.custom.yaml", userAlreadyHasOwnSchema(at: dest) {
+                continue
+            }
+            if fm.fileExists(atPath: target.path) {
+                // 已有文件保持原样，只往还没有的子目录里补文件
+                if isDir {
+                    copyMissing(from: item, to: target)
+                }
+                continue
+            }
+            try? fm.copyItem(at: item, to: target)
+        }
+    }
+
+    // 方案文件已在，且内容和内置副本不同，说明这是用户自己的 Rime 目录
+    private static func userAlreadyHasOwnSchema(at root: URL) -> Bool {
+        let fm = FileManager.default
+        let dest = root.appendingPathComponent(schemaFileName)
+        guard fm.fileExists(atPath: dest.path),
+              let existing = try? String(contentsOf: dest, encoding: .utf8),
+              let bundled = bundledRimeURL?.appendingPathComponent(schemaFileName),
+              let bundledText = try? String(contentsOf: bundled, encoding: .utf8) else {
+            return false
+        }
+        let left = existing.replacingOccurrences(of: "\r\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let right = bundledText.replacingOccurrences(of: "\r\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return left != right
+    }
 }
+
+/// 读取用户 Rime 目录里已有的方案列表，不改目录中的文件。
+enum RimeExistingLexicon {
+    static let requiredSchemaIds = ["wubi86_jidian", "pinyin_simp"]
+
+    // schema_list 里的方案，编译后 build/ 下应有 .schema.yaml 或 .table.bin
+    static func schemasMissingBuild(at root: URL) -> [String] {
+        let customURL = root.appendingPathComponent("default.custom.yaml")
+        let custom = (try? String(contentsOf: customURL, encoding: .utf8)) ?? ""
+        var ids = schemaIds(in: custom)
+        if ids.isEmpty {
+            let fallback = (try? String(contentsOf: root.appendingPathComponent("default.yaml"), encoding: .utf8)) ?? ""
+            ids = schemaIds(in: fallback)
+        }
+        if ids.isEmpty { ids = requiredSchemaIds }
+        let build = root.appendingPathComponent("build", isDirectory: true)
+        return ids.filter { id in
+            let schema = build.appendingPathComponent("\(id).schema.yaml")
+            let table = build.appendingPathComponent("\(id).table.bin")
+            return !FileManager.default.fileExists(atPath: schema.path)
+                && !FileManager.default.fileExists(atPath: table.path)
+        }
+    }
+
+    // 从 yaml 里按出现顺序收集 `schema:` id
+    static func schemaIds(in text: String) -> [String] {
+        guard let re = try? NSRegularExpression(
+            pattern: "(?m)^[ \\t]*-[ \\t]+schema:[ \\t]*[\"']?([A-Za-z0-9_.-]+)[\"']?"
+        ) else { return [] }
+        let ns = text as NSString
+        var ids: [String] = []
+        for match in re.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            guard match.numberOfRanges > 1 else { continue }
+            let id = ns.substring(with: match.range(at: 1))
+            if !ids.contains(id) { ids.append(id) }
+        }
+        return ids
+    }
+}
+

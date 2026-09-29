@@ -39,6 +39,7 @@
 		32B997953FA77D2663235110 /* CandidatePreviewPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E201C44D344AADC15675C /* CandidatePreviewPanelController.swift */; };
 		33166ADA3BFBDD94510A1C24 /* ModeHintController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249CA99771BE2D6114284DCB /* ModeHintController.swift */; };
 		34065D5CC126FD400B22845E /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
+		3456786CD1B50A35801714E2 /* PunctuationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */; };
 		34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		35662FCD45096FD9C12C5706 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
 		395CF399073BC362344F9142 /* RimeConfigDeploy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */; };
@@ -96,6 +97,7 @@
 		96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		976EDE71DD4F10047249C22B /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
 		99864FF33F01F9D8115B9FE1 /* RimeFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */; };
+		9B2C4CA6DC61900D05646B97 /* PunctuationPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */; };
 		9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73273824288403B472874C04 /* MeifengPreferencesPane.swift */; };
 		A25A48831BEDCD51C10831E5 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
 		A4CACD8E37D11B0C87216456 /* RimeMaintenanceDeployer.mm in Sources */ = {isa = PBXBuildFile; fileRef = F57DFE5123783D71073CC374 /* RimeMaintenanceDeployer.mm */; };
@@ -109,18 +111,22 @@
 		B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		BAC4E278D39E26725815C7E9 /* DeleteCandidatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */; };
+		C1FD11772FF7E1924A7B8850 /* PunctuationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */; };
 		C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
 		C786E1C3C70A4BD6C17C698B /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		C858DFB0B9FA9466611D701F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
 		CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
+		CD928E022A76F6B11BB69BC6 /* PunctuationPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */; };
 		CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		D242DD8FDF78FAD0E78EBAB6 /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
+		D6E6C23DDDD513ADF5031D91 /* PunctuationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */; };
 		DDAE8E5A0B37C9C0372B824D /* RimeResourceDeployer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263745D82C6D76E2C76453F /* RimeResourceDeployer.swift */; };
 		E08C588D6900B0980DED3F58 /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		E45D89ECD09C4AF33347119A /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
 		E49047D036A919C64779C4FB /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
+		E492892CE0385BCD45B3BF6E /* PunctuationPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */; };
 		E50B5B7A463BCDD4EFEF7B2C /* DateTimeCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45380EE6E89D22B29FEB9D6C /* DateTimeCandidates.swift */; };
 		E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C79DB8A203C0ED3239E5C43 /* UserDictWriter.swift */; };
 		E7C0D46C471910A67A1020C0 /* UserDictWriter+Active.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109C02DB8C32A7D8CBA53756 /* UserDictWriter+Active.swift */; };
@@ -161,6 +167,7 @@
 		036632193DB85E22A8599BC8 /* DictModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictModels.swift; sourceTree = "<group>"; };
 		042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddWordPanel.swift; sourceTree = "<group>"; };
 		064C42D5A8170877BEAB35CD /* RimeBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RimeBridge.mm; sourceTree = "<group>"; };
+		08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunctuationSettingsView.swift; sourceTree = "<group>"; };
 		0A138AABE28E2DC1350C0063 /* RimeMaintenanceDeployer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RimeMaintenanceDeployer.h; sourceTree = "<group>"; };
 		0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppearancePrefs.swift; sourceTree = "<group>"; };
 		0E1E8383EB913ACD399FD6F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -220,6 +227,7 @@
 		C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LexiconDirectorySettingsView.swift; sourceTree = "<group>"; };
 		C3378BFBAFBF24C858DA3A90 /* InputMethodKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = InputMethodKit.framework; path = System/Library/Frameworks/InputMethodKit.framework; sourceTree = SDKROOT; };
 		C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkinSettingsView.swift; sourceTree = "<group>"; };
+		CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunctuationPrefs.swift; sourceTree = "<group>"; };
 		CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RimeFileStore.swift; sourceTree = "<group>"; };
 		D856B4925F0354EB314DFC1A /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		D9112CC2424C4DDCBEC4A765 /* DictLexiconIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictLexiconIndex.swift; sourceTree = "<group>"; };
@@ -273,6 +281,7 @@
 				80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */,
 				3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */,
 				C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */,
+				08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */,
 				107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */,
 				61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */,
 				242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */,
@@ -425,6 +434,7 @@
 				F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */,
 				739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */,
 				0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */,
+				CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */,
 				1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */,
 				BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */,
 				134B146A12D73E1F4E7B4C14 /* RimeConfigDeploy.swift */,
@@ -665,6 +675,8 @@
 				2EF1F5D50E6D71E9A1646818 /* IMESettingsControls.swift in Sources */,
 				7284B5B5222BE96CB648D890 /* LexiconDirectorySettingsView.swift in Sources */,
 				7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */,
+				E492892CE0385BCD45B3BF6E /* PunctuationPrefs.swift in Sources */,
+				3456786CD1B50A35801714E2 /* PunctuationSettingsView.swift in Sources */,
 				92BD783033B1BEDE471A869A /* QuickAddHotkeySettingsView.swift in Sources */,
 				D242DD8FDF78FAD0E78EBAB6 /* QuickAddPrefs.swift in Sources */,
 				63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */,
@@ -707,6 +719,8 @@
 				34D51095F2D3C8BD3694CD09 /* IMESettingsControls.swift in Sources */,
 				76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */,
 				9EF1FC0F854CD578E389718F /* MeifengPreferencesPane.swift in Sources */,
+				CD928E022A76F6B11BB69BC6 /* PunctuationPrefs.swift in Sources */,
+				D6E6C23DDDD513ADF5031D91 /* PunctuationSettingsView.swift in Sources */,
 				9055E4A82FF5D9319DBE6173 /* QuickAddHotkeySettingsView.swift in Sources */,
 				96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */,
 				78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */,
@@ -749,6 +763,8 @@
 				0211C3B73662C73A882F6158 /* MeifengInputController.swift in Sources */,
 				9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */,
 				33166ADA3BFBDD94510A1C24 /* ModeHintController.swift in Sources */,
+				9B2C4CA6DC61900D05646B97 /* PunctuationPrefs.swift in Sources */,
+				C1FD11772FF7E1924A7B8850 /* PunctuationSettingsView.swift in Sources */,
 				84D3D97B8CF81544E6E1BFDD /* QuickAddHotKey.swift in Sources */,
 				C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */,
 				1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */,

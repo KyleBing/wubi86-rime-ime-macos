@@ -1,6 +1,6 @@
 import AppKit
 
-/// 单独按 Shift 切换中英后，在光标旁短暂出现的模式胶囊。
+/// 光标旁短暂出现的中/英模式胶囊：输入框聚焦出现光标时，或单独按 Shift 切换时显示。
 final class ModeHintController {
     private let panel: NSPanel
     private let chrome = ModeHintChrome()
