@@ -88,6 +88,10 @@ targets:
       - path: Resources/Rime
         type: folder
         buildPhase: resources
+      # default.yaml / 按键预设 / OpenCC，部署时作为 librime 共享目录
+      - path: Resources/SharedSupport
+        type: folder
+        buildPhase: resources
       # 与主 App 共用桌面图标，便于在「输入法」目录识别
       - path: App/AppIcon.icns
         buildPhase: resources
@@ -139,6 +143,9 @@ targets:
           - "*.iconset"
       - path: Shared
       - path: Resources/Rime
+        type: folder
+        buildPhase: resources
+      - path: Resources/SharedSupport
         type: folder
         buildPhase: resources
     settings:

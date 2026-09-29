@@ -17,14 +17,23 @@ enum RimeConfigDeploy {
         if let problem = RimeFileLayout.validateSchemeRoot(at: userURL) {
             return .failure(problem)
         }
+        // 缺的 import_tables 先补空表，否则主词库整本编不出来
+        RimeResourceDeployer.ensureMissingImportedDicts(at: userURL)
         do {
-            // 用户自己的 Rime 目录同时作为共享目录和用户目录，沿用其中的方案与词库
-            try RimeMaintenanceDeployer.deploy(withSharedDir: userURL.path, userDir: userURL.path)
+            // 共享目录用内置预设（default.yaml 等）；方案和词库仍在用户目录。用户目录里的同名文件优先。
+            let shared = RimeResourceDeployer.resolveSharedDataURL() ?? userURL
+            try RimeMaintenanceDeployer.deploy(withSharedDir: shared.path, userDir: userURL.path)
             let build = userURL.appendingPathComponent("build", isDirectory: true)
             let compiled = (try? FileManager.default.contentsOfDirectory(at: build, includingPropertiesForKeys: nil)) ?? []
             let hasSchemaBuild = compiled.contains { $0.lastPathComponent.hasSuffix(".schema.yaml") }
             if !hasSchemaBuild {
-                return .failure("部署完成但没有编译出方案，请确认目录里有可用的 .schema.yaml")
+                return .failure("部署完成但没有编译出方案。方案依赖预设 default.yaml，请确认输入法里带有 SharedSupport。")
+            }
+            let hasDictSource = (try? FileManager.default.contentsOfDirectory(at: userURL, includingPropertiesForKeys: nil))?
+                .contains { $0.lastPathComponent.hasSuffix(".dict.yaml") } == true
+            let hasTable = compiled.contains { $0.lastPathComponent.hasSuffix(".table.bin") }
+            if hasDictSource && !hasTable {
+                return .failure("方案配置已编译，但词库没有生成。请检查 .dict.yaml 的 import_tables 是否都能找到对应文件。")
             }
             // 键盘扩展下次出现时整引擎重启
             UserDictWriter.markNeedsDeploy()

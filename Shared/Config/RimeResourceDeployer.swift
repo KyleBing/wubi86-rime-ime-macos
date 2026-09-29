@@ -13,6 +13,74 @@ enum RimeResourceDeployer {
             ?? Bundle.main.url(forResource: "Rime", withExtension: nil)
     }
 
+    // 内置共享数据（default.yaml、按键预设、OpenCC）。只读，编译结果写到用户目录的 build/
+    static func resolveSharedDataURL() -> URL? {
+        let bundled = Bundle.main.resourceURL?.appendingPathComponent("SharedSupport", isDirectory: true)
+            ?? Bundle.main.url(forResource: "SharedSupport", withExtension: nil)
+        guard let bundled,
+              FileManager.default.fileExists(atPath: bundled.appendingPathComponent("default.yaml").path) else {
+            return nil
+        }
+        return bundled
+    }
+
+    // 词库 import_tables 指向的文件不在时，补一份空码表。缺文件会让整本主词库编译失败。
+    static func ensureMissingImportedDicts(at root: URL) {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for item in items where item.pathExtension == "yaml" && item.lastPathComponent.hasSuffix(".dict.yaml") {
+            guard let text = try? String(contentsOf: item, encoding: .utf8) else { continue }
+            for name in importedTableNames(in: text) {
+                let dest = root.appendingPathComponent("\(name).dict.yaml")
+                if fm.fileExists(atPath: dest.path) { continue }
+                if let bundled = bundledRimeURL?.appendingPathComponent("\(name).dict.yaml"),
+                   fm.fileExists(atPath: bundled.path) {
+                    try? fm.copyItem(at: bundled, to: dest)
+                    continue
+                }
+                let stub = """
+                # 引用的词库文件不存在，部署时补的空表，避免主码表编译失败
+                ---
+                name: \(name)
+                version: "0"
+                sort: original
+                columns:
+                  - text
+                  - code
+                  - weight
+                ...
+                """
+                try? stub.write(to: dest, atomically: true, encoding: .utf8)
+            }
+        }
+    }
+
+    // 只读 import_tables 段里的词库名，遇到下一个顶层字段就结束
+    static func importedTableNames(in text: String) -> [String] {
+        guard let header = try? NSRegularExpression(pattern: "^import_tables[ \\t]*:"),
+              let nextKey = try? NSRegularExpression(pattern: "^[A-Za-z0-9_]+[ \\t]*:"),
+              let item = try? NSRegularExpression(pattern: "^[ \\t]+-[ \\t]+([A-Za-z0-9_.-]+)")
+        else { return [] }
+        var names: [String] = []
+        var inSection = false
+        for line in text.components(separatedBy: .newlines) {
+            let range = NSRange(location: 0, length: (line as NSString).length)
+            if !inSection {
+                if header.firstMatch(in: line, range: range) != nil { inSection = true }
+                continue
+            }
+            if nextKey.firstMatch(in: line, range: range) != nil { break }
+            if let match = item.firstMatch(in: line, range: range), match.numberOfRanges > 1 {
+                names.append((line as NSString).substring(with: match.range(at: 1)))
+            }
+        }
+        return names
+    }
+
     /// 目录根上是否已有任意 Rime 方案。有的话就直接用，不再补内置文件。
     static func containsSchemaFile(at root: URL) -> Bool {
         guard let items = try? FileManager.default.contentsOfDirectory(

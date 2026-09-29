@@ -9,8 +9,11 @@ final class RimeEngineLibrime: RimeEngine {
         guard let dirs = RimeResourceDeployer.syncBundledResourcesIfNeeded() else {
             throw NSError(domain: "RimeEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "缺少内置 Rime 资源"])
         }
+        // 共享目录单独指向内置预设，避免用户目录没有 default.yaml 时编译不出方案
+        let shared = RimeResourceDeployer.resolveSharedDataURL() ?? dirs.user
+        RimeResourceDeployer.ensureMissingImportedDicts(at: dirs.user)
         try bridge.start(
-            withSharedDir: dirs.shared.path,
+            withSharedDir: shared.path,
             userDir: dirs.user.path,
             forceFullCheck: forceFullCheck
         )

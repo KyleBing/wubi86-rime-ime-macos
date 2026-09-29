@@ -28,6 +28,7 @@
 		1F1E1635DA501A9AE230D46E /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
 		2102BC84409D7D8C7BD15705 /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
 		2365B220914362C197C7EE2C /* IMEAppearancePrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */; };
+		243052D9224518F4C0E79FBF /* SharedSupport in Resources */ = {isa = PBXBuildFile; fileRef = 002817F1043FC35ED313E10C /* SharedSupport */; };
 		25E2D63AB7A10A0B5D60C569 /* RimeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF649A4E4D7B4308E42C40A /* RimeSession.swift */; };
 		262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		269ADB51357707561C741F56 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
@@ -48,6 +49,7 @@
 		3C9AADD04FDC6E138A9C27DD /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2C18D3685813FDF25FAD2454 /* Carbon.framework */; };
 		3DC3B9FF3092869D82E41440 /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
+		430DFC6832BC722BFCCC9AB0 /* SharedSupport in Resources */ = {isa = PBXBuildFile; fileRef = 002817F1043FC35ED313E10C /* SharedSupport */; };
 		43BC4B6339364043898203E7 /* RimeEngineLibrime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E6EFCDF4269B3F115466FF /* RimeEngineLibrime.swift */; };
 		482CA56946512CC0BBE06A4A /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
 		4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
@@ -163,6 +165,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		002817F1043FC35ED313E10C /* SharedSupport */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SharedSupport; path = Resources/SharedSupport; sourceTree = SOURCE_ROOT; };
 		0248BAC0C5FC7CF5DC533132 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		036632193DB85E22A8599BC8 /* DictModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictModels.swift; sourceTree = "<group>"; };
 		042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddWordPanel.swift; sourceTree = "<group>"; };
@@ -326,6 +329,7 @@
 			isa = PBXGroup;
 			children = (
 				0F7AB148116CEA6F22CB446A /* Rime */,
+				002817F1043FC35ED313E10C /* SharedSupport */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -581,6 +585,7 @@
 				F62728C765CD0D5DC6650D47 /* InfoPlist.strings in Resources */,
 				7EBB5925C68CB60B2128A1FC /* Rime in Resources */,
 				3DC3B9FF3092869D82E41440 /* SettingsLogo.png in Resources */,
+				243052D9224518F4C0E79FBF /* SharedSupport in Resources */,
 				18120E1FCFA44B7ABAA36407 /* ime-fn.tiff in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -604,6 +609,7 @@
 				6E115D99602A9D0A76DBFEF5 /* BrandIconRounded.png in Resources */,
 				C786E1C3C70A4BD6C17C698B /* Rime in Resources */,
 				7F074AAC5692FF21475E7E8E /* SettingsLogo.png in Resources */,
+				430DFC6832BC722BFCCC9AB0 /* SharedSupport in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
