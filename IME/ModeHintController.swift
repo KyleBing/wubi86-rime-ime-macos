@@ -5,6 +5,8 @@ final class ModeHintController {
     private let panel: NSPanel
     private let chrome = ModeHintChrome()
     private var dismissWork: DispatchWorkItem?
+    // 淡出动画的完成回调在输入法进程里经常不执行，用它强制收掉窗口。
+    private var forceHideWork: DispatchWorkItem?
     // 每次显示递增，避免上一次淡出把新提示关掉。
     private var generation = 0
 
@@ -21,6 +23,8 @@ final class ModeHintController {
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
+        // 只是提示，不能挡住底下的点击。
+        panel.ignoresMouseEvents = true
         panel.worksWhenModal = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.becomesKeyOnlyIfNeeded = true
@@ -31,11 +35,19 @@ final class ModeHintController {
         panel.contentView = chrome
     }
 
+    deinit {
+        dismissWork?.cancel()
+        forceHideWork?.cancel()
+        // 控制器释放后 AppKit 仍可能留着已显示的面板。
+        panel.orderOut(nil)
+    }
+
     /// 在光标旁显示当前模式，约一秒后淡出。左、上间距与候选条相同。
     func show(asciiMode: Bool, caretRect: NSRect) {
         generation += 1
         let token = generation
         dismissWork?.cancel()
+        forceHideWork?.cancel()
 
         chrome.setMode(ascii: asciiMode)
         let size = chrome.preferredSize(ascii: asciiMode)
@@ -61,26 +73,40 @@ final class ModeHintController {
         }
         dismissWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9, execute: work)
+
+        // 约 0.9 秒显示 + 0.28 秒淡出；到点无论动画有没有结束都关掉。
+        let force = DispatchWorkItem { [weak self] in
+            self?.forceHide(token: token)
+        }
+        forceHideWork = force
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.25, execute: force)
     }
 
-    // 开始打字或弹出候选时立刻收起，避免挡住编码。
+    // 开始打字、会话结束或弹出候选时立刻收起，避免挡住编码，也避免切走后还留在屏幕上。
     func hide() {
         generation += 1
         dismissWork?.cancel()
+        forceHideWork?.cancel()
         panel.alphaValue = 0
         panel.orderOut(nil)
     }
 
     private func fadeOut(token: Int) {
-        guard token == generation else { return }
+        guard token == generation, panel.isVisible else { return }
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.28
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
-            guard let self, token == self.generation else { return }
-            self.panel.orderOut(nil)
+            self?.forceHide(token: token)
         })
+    }
+
+    // 不依赖动画回调，直接把这一轮提示从屏幕上拿掉。
+    private func forceHide(token: Int) {
+        guard token == generation else { return }
+        panel.alphaValue = 0
+        panel.orderOut(nil)
     }
 
     // 可见胶囊左上角按候选条的左、上间距贴齐光标；贴底时翻到光标上方。

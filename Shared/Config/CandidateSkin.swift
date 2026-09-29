@@ -26,6 +26,8 @@ struct CandidateSkin: Codable, Equatable {
     var candidateWeight: FontWeight
     var indexFontSize: Double
     var indexWeight: FontWeight
+    /// 词条后面的五笔编码字号。
+    var codeFontSize: Double
     var borderWidth: Double
     var shadowEnabled: Bool
     var shadowRadius: Double
@@ -146,6 +148,10 @@ struct CandidateSkin: Codable, Equatable {
         var highlightBackground: RGBAColor
         var highlightText: RGBAColor
         var highlightIndexText: RGBAColor
+        /// 普通候选后面的编码颜色。
+        var codeText: RGBAColor
+        /// 首选高亮行里的编码颜色。
+        var highlightCodeText: RGBAColor
     }
 
     struct RGBAColor: Codable, Equatable {
@@ -208,6 +214,7 @@ struct CandidateSkin: Codable, Equatable {
             candidateWeight: .regular,
             indexFontSize: 11,
             indexWeight: .regular,
+            codeFontSize: 11,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 10,
@@ -228,7 +235,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.28),
                 highlightBackground: .init(red: 0.20, green: 0.47, blue: 0.96),
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
+                codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
+                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493)
             ),
             dark: Colors(
                 background: .init(red: 0.13, green: 0.13, blue: 0.15, alpha: 0.94),
@@ -238,7 +247,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.58),
                 highlightBackground: .init(red: 0.26, green: 0.53, blue: 0.98),
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
+                codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
+                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042)
             )
         )
     }
@@ -270,6 +281,7 @@ struct CandidateSkin: Codable, Equatable {
             candidateWeight: .regular,
             indexFontSize: 11,
             indexWeight: .light,
+            codeFontSize: 12,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 4,
@@ -290,7 +302,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.28),
                 highlightBackground: coral,
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
+                codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
+                highlightCodeText: .init(red: 1, green: 1, blue: 1)
             ),
             dark: Colors(
                 background: .init(red: 0.1355506262357012, green: 0.1355506262357012, blue: 0.138404323630137, alpha: 0.94),
@@ -300,7 +314,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.58),
                 highlightBackground: coral,
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
+                codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
+                highlightCodeText: .init(red: 1, green: 1, blue: 1)
             )
         )
     }
@@ -326,6 +342,7 @@ struct CandidateSkin: Codable, Equatable {
             candidateWeight: .regular,
             indexFontSize: 11,
             indexWeight: .light,
+            codeFontSize: 12,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 4,
@@ -346,7 +363,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.28),
                 highlightBackground: .init(red: 1, green: 1, blue: 1),
                 highlightText: .init(red: 0, green: 0, blue: 0),
-                highlightIndexText: .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695)
+                highlightIndexText: .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695),
+                codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
+                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493)
             ),
             dark: Colors(
                 background: .init(red: 0.13736087328767124, green: 0.13736087328767124, blue: 0.13736087328767124, alpha: 0.94),
@@ -356,7 +375,9 @@ struct CandidateSkin: Codable, Equatable {
                 shadow: .init(red: 0, green: 0, blue: 0, alpha: 0.58),
                 highlightBackground: .init(red: 0.1409193065068493, green: 0.1409193065068493, blue: 0.1409193065068493),
                 highlightText: .init(red: 1, green: 1, blue: 1),
-                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.68)
+                highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.68),
+                codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
+                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042)
             )
         )
     }
@@ -388,6 +409,7 @@ struct CandidateSkin: Codable, Equatable {
         result.indexSpacing = indexSpacing.clamped(to: 0...20)
         result.candidateFontSize = candidateFontSize.clamped(to: 9...40)
         result.indexFontSize = indexFontSize.clamped(to: 8...32)
+        result.codeFontSize = codeFontSize.clamped(to: 8...32)
         result.borderWidth = borderWidth.clamped(to: 0...6)
         result.shadowRadius = shadowRadius.clamped(to: 0...40)
         result.shadowOffsetX = shadowOffsetX.clamped(to: -30...30)
@@ -439,7 +461,9 @@ private extension CandidateSkin.Colors {
             shadow: shadow.normalized(),
             highlightBackground: highlightBackground.normalized(),
             highlightText: highlightText.normalized(),
-            highlightIndexText: highlightIndexText.normalized()
+            highlightIndexText: highlightIndexText.normalized(),
+            codeText: codeText.normalized(),
+            highlightCodeText: highlightCodeText.normalized()
         )
     }
 }

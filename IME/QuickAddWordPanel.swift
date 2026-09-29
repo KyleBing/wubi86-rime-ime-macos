@@ -11,21 +11,25 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     private let weightField = NSTextField(string: "")
     private let groupPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let addButton = NSButton(title: "添加", target: nil, action: nil)
+    private let addCloseButton = NSButton(title: "添加并关闭", target: nil, action: nil)
+    private let placementLabel = NSTextField(labelWithString: "")
     private let status = NSTextField(wrappingLabelWithString: "")
     private let sameCodeView = NSTextView()
     private let sameCodeScroll = NSScrollView()
     private let sameCodeTitle = NSTextField(labelWithString: "同编码词条")
     private let root = NSStackView()
     private var groupIndexes: [Int] = []
+    // 最近一次同编码查询结果，用来估算新词会排到第几位。
+    private var sameCodeHits: [DictLexiconHit] = []
     // 最近一次上屏的词，短时间内打开造词窗时填进词条框。
     private static var lastCommittedWord = ""
     private static var lastCommittedAt: Date?
     // 内容区宽度；高度按控件贴合，不预留底部空白
-    private let contentWidth: CGFloat = 520
+    private let contentWidth: CGFloat = 440
 
     private override init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 120),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 120),
             styleMask: [.titled, .closable, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -86,7 +90,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
                RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
                 return nil
             }
-            addWord()
+            _ = commitWord(closeAfter: false)
             return true
         }
         if event.keyCode == UInt16(kVK_Tab) {
@@ -234,6 +238,9 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         // 回车键默认按钮，颜色交给系统（不要手写 bezel / 文字色，否则会变成蓝底黑字）
         addButton.keyEquivalent = "\r"
         panel.defaultButtonCell = addButton.cell as? NSButtonCell
+        addCloseButton.target = self
+        addCloseButton.action = #selector(addWordAndClose)
+        addCloseButton.bezelStyle = .rounded
 
         status.font = .systemFont(ofSize: 11)
         status.textColor = .secondaryLabelColor
@@ -258,7 +265,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
 
         let wordRow = labeled("词条", wordField)
         let codeRow = labeled("编码", codeField)
-        let weightRow = labeled("权重", weightControls())
+        let weightRow = labeled("权重", weightControls(), alignment: .top)
         let groupRow = labeled("分组", groupPopup)
         let form = NSStackView(views: [wordRow, codeRow, weightRow, groupRow])
         form.orientation = .vertical
@@ -270,7 +277,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         let trailingSpacer = NSView()
         leadingSpacer.setContentHuggingPriority(.init(1), for: .horizontal)
         trailingSpacer.setContentHuggingPriority(.init(1), for: .horizontal)
-        let footer = NSStackView(views: [leadingSpacer, addButton, trailingSpacer])
+        let footer = NSStackView(views: [leadingSpacer, addButton, addCloseButton, trailingSpacer])
         footer.orientation = .horizontal
         footer.alignment = .centerY
 
@@ -306,7 +313,8 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             groupRow.widthAnchor.constraint(equalTo: form.widthAnchor),
             codeField.widthAnchor.constraint(equalTo: wordField.widthAnchor),
             groupPopup.widthAnchor.constraint(equalTo: wordField.widthAnchor),
-            addButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 72)
+            addButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 72),
+            addCloseButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 96)
         ])
         fitPanel(anchorTop: false)
     }
@@ -396,7 +404,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         // 词条或编码里按回车，直接添加
         if (control === wordField || control === codeField || control === weightField),
            commandSelector == #selector(NSResponder.insertNewline(_:)) {
-            addWord()
+            _ = commitWord(closeAfter: false)
             return true
         }
         return false
@@ -413,6 +421,8 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             refreshSameCode()
         } else if field === codeField {
             refreshSameCode()
+        } else if field === weightField {
+            updatePlacementHint()
         }
     }
 
@@ -423,9 +433,13 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         sameCodeTitle.isHidden = !show
         sameCodeScroll.isHidden = !show
         guard show else {
+            sameCodeHits = []
+            updatePlacementHint()
             fitPanel(anchorTop: panel.isVisible)
             return
         }
+        sameCodeHits = []
+        updatePlacementHint()
         sameCodeTitle.stringValue = "同编码词条"
         sameCodeView.setLexiconTable(DictLexiconHit.message("正在查找…"))
         fitPanel(anchorTop: panel.isVisible)
@@ -438,7 +452,9 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                     .lowercased()
                 guard current == requested else { return }
+                self.sameCodeHits = hits
                 self.sameCodeTitle.stringValue = hits.isEmpty ? "同编码词条" : "同编码词条（\(hits.count)）"
+                self.updatePlacementHint()
                 let table = hits.isEmpty
                     ? DictLexiconHit.message("当前词库里没有这个编码。")
                     : DictLexiconHit.alignedTable(hits)
@@ -449,11 +465,21 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     }
 
     @objc private func addWord() {
+        _ = commitWord(closeAfter: false)
+    }
+
+    @objc private func addWordAndClose() {
+        _ = commitWord(closeAfter: true)
+    }
+
+    // 写入当前分组。closeAfter 为真时成功后关掉窗口。
+    @discardableResult
+    private func commitWord(closeAfter: Bool) -> Bool {
         let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let text = wordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             setStatus("词条不能为空。", color: .systemOrange)
-            return
+            return false
         }
         guard !code.isEmpty, (1...4).contains(code.count) else {
             setStatus(
@@ -462,12 +488,12 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
                     : "编码需 1–4 位。",
                 color: .systemOrange
             )
-            return
+            return false
         }
         let popupIndex = groupPopup.indexOfSelectedItem
         guard groupIndexes.indices.contains(popupIndex) else {
             setStatus("请选择分组。", color: .systemOrange)
-            return
+            return false
         }
         let groupIndex = groupIndexes[popupIndex]
         let weightText = weightField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -478,7 +504,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             weight = value
         } else {
             setStatus("权重需为整数，或留空。", color: .systemOrange)
-            return
+            return false
         }
         do {
             // 留空的权重不写进 yaml；有值才写出第三列。
@@ -492,25 +518,58 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             DictLexiconIndex.shared.invalidate()
             let reloaded = RimeSession.shared.reloadUserDictionary()
             if reloaded {
+                if closeAfter {
+                    panel.performClose(nil)
+                    return true
+                }
                 setStatus("已添加到「\(groupPopup.titleOfSelectedItem ?? "当前分组")」。", color: .secondaryLabelColor)
                 wordField.stringValue = ""
                 codeField.stringValue = ""
                 weightField.stringValue = ""
                 refreshSameCode()
                 panel.makeFirstResponder(wordField)
+                return true
             } else {
                 setStatus("已写入，但词库重载失败。", color: .systemRed)
+                return false
             }
         } catch {
             setStatus(error.localizedDescription, color: .systemRed)
+            return false
         }
+    }
+
+    // 按当前权重，这个词会排在同编码词的第几位。留空权重按 0。
+    private func updatePlacementHint() {
+        let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let weightText = weightField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else {
+            placementLabel.stringValue = ""
+            return
+        }
+        let weight: Int
+        if weightText.isEmpty {
+            weight = 0
+        } else if let value = Int(weightText) {
+            weight = value
+        } else {
+            placementLabel.stringValue = ""
+            return
+        }
+        let word = wordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let peers = sameCodeHits.filter { $0.entry.text != word || $0.entry.code != code }
+        let ahead = peers.filter { ($0.entry.weight ?? 0) > weight }.count
+        placementLabel.stringValue = "第 \(ahead + 1) 位"
     }
 
     // 当前编码里已有词的最大权重，没有权重时按 0。
     @objc private func applyWeightStep(_ sender: NSButton) {
         let code = codeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let base = DictLexiconIndex.shared.hits(code: code).compactMap(\.entry.weight).max() ?? 0
+        let hits = DictLexiconIndex.shared.hits(code: code)
+        sameCodeHits = hits
+        let base = hits.compactMap(\.entry.weight).max() ?? 0
         weightField.stringValue = String(base + sender.tag)
+        updatePlacementHint()
     }
 
     private func weightControls() -> NSView {
@@ -518,8 +577,8 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         steps.orientation = .horizontal
         steps.spacing = 4
         steps.alignment = .centerY
-        // 顺序按使用习惯：先加 5、再加 10、再加 1。
-        for (title, delta) in [("n+5", 5), ("n+10", 10), ("n+1", 1)] {
+        // n 是同编码词的最大权重，其余按钮在这个基础上加减。
+        for (title, delta) in [("n", 0), ("-10", -10), ("-1", -1), ("+1", 1), ("+10", 10)] {
             let button = NSButton(title: title, target: self, action: #selector(applyWeightStep(_:)))
             button.tag = delta
             button.bezelStyle = .rounded
@@ -530,12 +589,22 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         }
         weightField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         weightField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let row = NSStackView(views: [weightField, steps])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-        steps.setContentHuggingPriority(.required, for: .horizontal)
-        return row
+        placementLabel.font = .systemFont(ofSize: 12)
+        placementLabel.textColor = .secondaryLabelColor
+        placementLabel.setContentHuggingPriority(.required, for: .horizontal)
+        placementLabel.toolTip = "按当前权重，在同编码词里的名次。留空按 0 算。"
+        // 输入框和名次在上一行，加减按钮单独换行，避免和输入框挤在一起。
+        let fieldRow = NSStackView(views: [weightField, placementLabel])
+        fieldRow.orientation = .horizontal
+        fieldRow.alignment = .centerY
+        fieldRow.spacing = 8
+        let column = NSStackView(views: [fieldRow, steps])
+        column.orientation = .vertical
+        column.alignment = .leading
+        column.spacing = 6
+        fieldRow.translatesAutoresizingMaskIntoConstraints = false
+        fieldRow.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
+        return column
     }
 
     // Command+A / C / V / X / Z。输入法进程没有编辑菜单时，这些快捷键不会自动生效。
@@ -563,7 +632,11 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         return true
     }
 
-    private func labeled(_ title: String, _ field: NSView) -> NSView {
+    private func labeled(
+        _ title: String,
+        _ field: NSView,
+        alignment: NSLayoutConstraint.Attribute = .centerY
+    ) -> NSView {
         let caption = NSTextField(labelWithString: title)
         caption.font = .systemFont(ofSize: 12)
         caption.alignment = .right
@@ -576,7 +649,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let row = NSStackView(views: [caption, field])
         row.orientation = .horizontal
-        row.alignment = .centerY
+        row.alignment = alignment
         row.distribution = .fill
         row.spacing = 8
         return row

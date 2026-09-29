@@ -58,6 +58,11 @@ final class RimeEngineLibrime: RimeEngine {
         bridge.currentContext()
     }
 
+    // 原始按键序列。反查的 preedit 可能已经去掉前缀 z，不能用来判断是不是反查。
+    func rawInput() -> String {
+        bridge.rawInput() ?? ""
+    }
+
     func selectCandidate(index: Int) -> Bool {
         bridge.selectCandidate(at: Int32(index))
     }

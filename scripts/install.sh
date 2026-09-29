@@ -44,7 +44,7 @@ if [[ -e "$IME_SYSTEM" ]]; then
 fi
 
 mkdir -p "$HOME/Library/Input Methods"
-[[ -e "$IME_DEST" ]] && "$LSREG" -u "$IME_DEST" 2>/dev/null || true
+# 不要先 lsregister -u 用户目录的包。-u 会把它标成 launch-disabled，正在运行的输入法服务要到下次登录才重新扫到。
 rm -rf "$IME_DEST"
 cp -R "$IME_SRC" "$IME_DEST"
 
@@ -59,15 +59,13 @@ fi
 # 系统设置开着时改输入源容易叠出幽灵行
 osascript -e 'tell application "System Settings" to quit' >/dev/null 2>&1 || true
 
-# 先注册用户目录输入法，再打开宿主（打开宿主会扫到包内 payload）
+# refresh 会先注销幽灵路径，再登记用户目录副本。已启用时不再 disable / enable，避免多弹允许窗口。
 xcrun swiftc "$ROOT/scripts/check_tis.swift" -o /tmp/check_tis_meifeng \
   -framework Foundation -framework Carbon
-/tmp/check_tis_meifeng
-
+# 先登记用户目录副本，再打开宿主。宿主启动时可能把包内 payload 登记进来，后面再清掉并重新登记用户目录。
+/tmp/check_tis_meifeng refresh
 open "$APP"
-# 宿主启动后又会把 .payload 注册进来，再清一次并启用用户目录副本
 sleep 1
-# 宿主包内 payload + Applications 旧名幽灵路径
 for p in \
   "$APP/Contents/Resources/MeifengWubiIME.payload" \
   "/Applications/MeifengWubi.app/Contents/Resources/MeifengWubiIME.payload" \
@@ -76,13 +74,9 @@ for p in \
 do
   "$LSREG" -u "$p" 2>/dev/null || true
 done
-/tmp/check_tis_meifeng
-# 再杀一次，避免仍挂着系统目录旧进程；下次切换输入法时由系统拉起用户目录副本
+/tmp/check_tis_meifeng refresh
+# 只结束输入法自己。菜单进程继续跑，下次切换时会拉起刚换上的二进制。
 killall MeifengWubiIME 2>/dev/null || true
-# 这两个进程忽略 SIGTERM，killall 杀不掉，会把登录时的输入法列表一直留到重启
-for pid in $(ps -ax -o pid=,command= | awk '/TextInputMenuAgent.app\/Contents\/MacOS\/TextInputMenuAgent|TextInputSwitcher.app\/Contents\/MacOS\/TextInputSwitcher/ {print $1}'); do
-  kill -9 "$pid" 2>/dev/null || true
-done
 
 echo "已安装到: $IME_DEST"
 if [[ -e "$IME_SYSTEM" ]]; then
@@ -92,7 +86,7 @@ echo "菜单栏应显示「玫枫」；设置里名称为「玫枫五笔」。�
 echo "若仍看不到，关掉系统设置后重跑本脚本；重复项请在「键盘 → 输入法 → 编辑…」用「-」删到一条。"
 # 确认当前没有系统目录进程
 if pgrep -lf '/Library/Input Methods/MeifengWubiIME' >/dev/null 2>&1; then
-  echo "警告: 仍有进程来自 /Library/Input Methods/MeifengWubiIME.app，请删掉该目录后注销重登或重跑本脚本。"
+  echo "警告: 仍有进程来自 /Library/Input Methods/MeifengWubiIME.app，请删掉该目录后重跑本脚本。"
 fi
 # 确认 LS 不再指向 payload
 if "$LSREG" -dump 2>/dev/null | rg -q 'MeifengWubiIME\.payload'; then

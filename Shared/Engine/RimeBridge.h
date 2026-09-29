@@ -39,6 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)changePage:(BOOL)backward;
 - (void)clearComposition;
 - (nullable RimeContextSnapshot *)currentContext;
+// 尚未被方案格式化的原始输入，反查时仍带前缀 z。
+- (nullable NSString *)rawInput;
 /// 拉取当前输入的全部候选（跨页）
 - (NSArray<RimeCandidateInfo *> *)allCandidates;
 - (BOOL)deploy;

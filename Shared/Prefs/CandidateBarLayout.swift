@@ -25,7 +25,7 @@ enum CandidateBarLayout {
         _ stack: NSStackView,
         padding: (top: NSLayoutConstraint, bottom: NSLayoutConstraint, leading: NSLayoutConstraint, trailing: NSLayoutConstraint),
         candidates: [String],
-        preedit: String,
+        codes: [String],
         colors: CandidateSkin.Colors,
         onSelect: ((Int) -> Void)?
     ) {
@@ -35,7 +35,9 @@ enum CandidateBarLayout {
         let dotsOnly = IMEAppearancePrefs.showCountDotsOnly
         let vertical = IMEAppearancePrefs.orientation == .vertical && !dotsOnly
         let fontSize = CGFloat(skin.candidateFontSize)
-        let rowHeight = ceil(max(fontSize, CGFloat(skin.indexFontSize)) * 1.35)
+        let showCode = IMEAppearancePrefs.showPreeditInPanel
+        let codeSize = CGFloat(skin.codeFontSize)
+        let rowHeight = ceil(max(fontSize, CGFloat(skin.indexFontSize), showCode ? codeSize : 0) * 1.35)
 
         stack.edgeInsets = .init()
         stack.orientation = vertical ? .vertical : .horizontal
@@ -50,13 +52,11 @@ enum CandidateBarLayout {
             padding.leading.constant = dotBarHeight / 2
             padding.trailing.constant = -dotBarHeight / 2
             for i in candidates.indices {
-                let highlighted = skin.highlightEnabled && i == 0
-                let dot = countDot(
-                    index: i,
-                    color: highlighted ? colors.highlightBackground.nsColor : colors.candidateText.nsColor,
-                    onSelect: onSelect
-                )
-                dot.isHighlighted = highlighted
+                // 第一个圆点用珊瑚红，其余跟候选文字色并略透明。
+                let color: NSColor = i == 0
+                    ? firstDotColor
+                    : colors.candidateText.nsColor.withAlphaComponent(0.85)
+                let dot = countDot(index: i, color: color, onSelect: onSelect)
                 stack.addArrangedSubview(dot)
             }
             return
@@ -67,28 +67,12 @@ enum CandidateBarLayout {
         padding.leading.constant = CGFloat(skin.paddingLeft)
         padding.trailing.constant = -CGFloat(skin.paddingRight)
 
-        if IMEAppearancePrefs.showPreeditInPanel, !preedit.isEmpty {
-            let field = textField(preedit, size: fontSize, weight: .semibold, color: colors.candidateText.nsColor, tag: 2)
-            stack.addArrangedSubview(row([field], height: rowHeight, index: -1, onSelect: nil, alignment: skin.verticalAlignment))
-            let sep = NSBox()
-            sep.boxType = .separator
-            sep.translatesAutoresizingMaskIntoConstraints = false
-            if vertical {
-                sep.heightAnchor.constraint(equalToConstant: 1).isActive = true
-                sep.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
-            } else {
-                sep.widthAnchor.constraint(equalToConstant: 1).isActive = true
-                sep.heightAnchor.constraint(equalToConstant: max(12, rowHeight - 4)).isActive = true
-            }
-            stack.addArrangedSubview(sep)
-        }
-
         let indexStyle = IMEAppearancePrefs.indexStyle
         let highlightOn = skin.highlightEnabled
         let inset = skin.highlightInsets
         for (i, text) in candidates.enumerated() {
             let highlighted = highlightOn && i == 0
-            var fields: [NSTextField] = []
+            var fields: [NSView] = []
             if let indexLabel = indexStyle.label(forOneBased: i + 1) {
                 fields.append(textField(
                     indexLabel,
@@ -98,13 +82,33 @@ enum CandidateBarLayout {
                     tag: highlighted ? 3 : 1
                 ))
             }
-            fields.append(textField(
+            let word = textField(
                 text,
                 size: fontSize,
                 weight: highlighted ? skin.highlightWeight : skin.candidateWeight,
                 color: highlighted ? colors.highlightText.nsColor : colors.candidateText.nsColor,
                 tag: highlighted ? 4 : 2
-            ))
+            )
+            let code = codes.indices.contains(i) ? codes[i] : ""
+            if showCode, !code.isEmpty {
+                let codeField = textField(
+                    code,
+                    size: codeSize,
+                    weight: .regular,
+                    color: highlighted ? colors.highlightCodeText.nsColor : colors.codeText.nsColor,
+                    tag: highlighted ? 6 : 5
+                )
+                // 编码紧跟词条，间距固定，不跟序号间距走。
+                let pair = NSStackView(views: [word, codeField])
+                pair.orientation = .horizontal
+                pair.alignment = skin.verticalAlignment.textAlignment
+                pair.spacing = 4
+                pair.setContentHuggingPriority(.required, for: .horizontal)
+                pair.setContentCompressionResistancePriority(.required, for: .horizontal)
+                fields.append(pair)
+            } else {
+                fields.append(word)
+            }
             let box = row(
                 fields,
                 height: rowHeight,
@@ -129,7 +133,7 @@ enum CandidateBarLayout {
         }
     }
 
-    // 切换亮暗外观时只刷新颜色：tag 1/2 为普通序号/候选词，tag 3/4 为首选序号/候选词。
+    // 切换亮暗外观时只刷新颜色：1/2 普通序号和词，3/4 首选序号和词，5/6 普通和首选编码。
     static func updateTextColors(in view: NSView, colors: CandidateSkin.Colors) {
         for child in view.subviews {
             if let field = child as? NSTextField {
@@ -137,6 +141,8 @@ enum CandidateBarLayout {
                 case 1: field.textColor = colors.indexText.nsColor
                 case 3: field.textColor = colors.highlightIndexText.nsColor
                 case 4: field.textColor = colors.highlightText.nsColor
+                case 5: field.textColor = colors.codeText.nsColor
+                case 6: field.textColor = colors.highlightCodeText.nsColor
                 default: field.textColor = colors.candidateText.nsColor
                 }
             } else if let box = child as? CandidateHitView, box.isHighlighted {
@@ -149,7 +155,7 @@ enum CandidateBarLayout {
     // 单个候选行：序号与候选词按皮肤的纵向对齐排列，行高固定，整行可点击。
     // inset 为四边留白（行高 = 文字行高 + 上下留白）；fillsWidth 时行宽由外部约束决定，文字靠左。
     private static func row(
-        _ fields: [NSTextField],
+        _ fields: [NSView],
         height: CGFloat,
         index: Int,
         onSelect: ((Int) -> Void)?,
@@ -225,12 +231,14 @@ enum CandidateBarLayout {
     static let dotDiameter: CGFloat = 4
     static let dotSpacing: CGFloat = 2.5
     static let dotBarHeight: CGFloat = 8
+    // 仅圆点时第一个点固定珊瑚红，与珊瑚红主题高亮同一色。
+    static let firstDotColor = NSColor(srgbRed: 0.96, green: 0.377, blue: 0.377, alpha: 1)
 
     // 数量圆点：直径 4pt，占位与圆点等大，保持整条尽量小；可点击选中对应候选。
     private static func countDot(index: Int, color: NSColor, onSelect: ((Int) -> Void)?) -> CandidateHitView {
         let box = CandidateHitView(frame: .zero)
         box.wantsLayer = true
-        box.layer?.backgroundColor = color.withAlphaComponent(0.85).cgColor
+        box.layer?.backgroundColor = color.cgColor
         box.layer?.cornerRadius = dotDiameter / 2
         box.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([

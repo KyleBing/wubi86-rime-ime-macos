@@ -47,22 +47,23 @@ enum IMESettingsControls {
 
 /// 左侧栏目保持稳定，后续可直接增加登录、同步等设置页。
 private final class SettingsRootView: NSView {
+    // 用户词和词库目录放最上面。帮助单独钉在侧栏底部，不进这个顺序。
     private enum Section: Int, CaseIterable {
-        case appearance
-        case keyboard
         case userLexicon
         case lexiconDirectory
+        case appearance
+        case keyboard
         case account
         case help
 
         var title: String {
             switch self {
-            case .appearance: return "外观配置"
-            case .keyboard: return "按键"
             case .userLexicon: return "用户词"
             case .lexiconDirectory: return "词库目录"
-            case .help: return "帮助"
+            case .appearance: return "外观配置"
+            case .keyboard: return "按键"
             case .account: return "账户"
+            case .help: return "帮助"
             }
         }
 
@@ -80,14 +81,14 @@ private final class SettingsRootView: NSView {
 
     private let content = NSView()
     private var sectionButtons: [SidebarSectionButton] = []
-    private var currentSection = Section.appearance
+    private var currentSection = Section.userLexicon
     // 缓存各页，避免每次点侧栏都重建整页导致卡顿。
     private var pageCache: [Section: NSView] = [:]
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         build()
-        show(.appearance)
+        show(.userLexicon)
     }
 
     required init?(coder: NSCoder) {
@@ -416,9 +417,20 @@ private final class SettingsRootView: NSView {
             action: #selector(ToggleTarget.preeditChanged(_:))
         )
         preedit.state = IMEAppearancePrefs.showPreeditInPanel ? .on : .off
+        preedit.toolTip = "在候选词后面显示五笔编码；反查时显示单字的五笔编码"
+        let codeDetail = NSSegmentedControl(
+            labels: IMEAppearancePrefs.CodeDetail.allCases.map(\.title),
+            trackingMode: .selectOne,
+            target: CodeDetailTarget.shared,
+            action: #selector(CodeDetailTarget.changed(_:))
+        )
+        codeDetail.selectedSegment = IMEAppearancePrefs.CodeDetail.allCases.firstIndex(
+            of: IMEAppearancePrefs.codeDetail
+        ) ?? 0
+        codeDetail.toolTip = "补码：只显示还没打出来的字母；完整：显示词条的全部编码"
         let preeditRow = equalTwoColumns(
             formRow("显示编码", preedit),
-            NSView()
+            formRow("编码范围", codeDetail)
         )
         settings.addArrangedSubview(preeditRow)
         preeditRow.widthAnchor.constraint(equalTo: settings.widthAnchor).isActive = true
@@ -551,7 +563,7 @@ private final class SettingsRootView: NSView {
             ("选词与翻页", "与普通候选相同：数字键、空格、; ' 选词，翻页键按「按键」页设置")
         ])
         let lookup = helpList([
-            ("z + 拼音", "拼音反查：不会五笔拆字时，以 z 开头输入拼音，候选中选字上屏"),
+            ("z + 拼音", "拼音反查：不会五笔拆字时，以 z 开头输入拼音，候选中选字上屏。单字后面会标出词库里的五笔编码，词组不现造编码"),
             ("'", "反查结束符，拼音输完可按 ' 结束反查")
         ])
         let keys = helpList([
@@ -828,6 +840,13 @@ private final class AppearancePreviewHost: NSView {
     private let preview = CandidateInlinePreviewView()
     private let testField = NSTextField()
     private let bottomBorder = NSBox()
+    // 亮暗切换盖在整块预览（候选窗 + 输入框）的最左上角。
+    private let appearanceSwitch = NSSegmentedControl(
+        labels: ["亮色", "暗色"],
+        trackingMode: .selectOne,
+        target: nil,
+        action: nil
+    )
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -839,9 +858,16 @@ private final class AppearancePreviewHost: NSView {
         testField.setContentCompressionResistancePriority(.required, for: .horizontal)
         bottomBorder.boxType = .separator
         bottomBorder.translatesAutoresizingMaskIntoConstraints = false
+        appearanceSwitch.controlSize = .small
+        appearanceSwitch.target = self
+        appearanceSwitch.action = #selector(previewAppearanceChanged(_:))
+        appearanceSwitch.selectedSegment = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? 1 : 0
+        appearanceSwitch.translatesAutoresizingMaskIntoConstraints = false
         addSubview(preview)
         addSubview(testField)
         addSubview(bottomBorder)
+        // 最后加入，保证压在预览和输入框之上。
+        addSubview(appearanceSwitch)
         NSLayoutConstraint.activate([
             preview.leadingAnchor.constraint(equalTo: leadingAnchor),
             preview.trailingAnchor.constraint(equalTo: testField.leadingAnchor, constant: -12),
@@ -854,28 +880,28 @@ private final class AppearancePreviewHost: NSView {
             bottomBorder.leadingAnchor.constraint(equalTo: leadingAnchor, constant: -20),
             bottomBorder.trailingAnchor.constraint(equalTo: trailingAnchor, constant: 24),
             bottomBorder.bottomAnchor.constraint(equalTo: bottomAnchor),
-            bottomBorder.heightAnchor.constraint(equalToConstant: 1)
+            bottomBorder.heightAnchor.constraint(equalToConstant: 1),
+            // 贴齐整块预览区的左上角，不跟左侧候选条走。
+            appearanceSwitch.topAnchor.constraint(equalTo: topAnchor),
+            appearanceSwitch.leadingAnchor.constraint(equalTo: leadingAnchor)
         ])
+        preview.setPreviewAppearance(dark: appearanceSwitch.selectedSegment == 1)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    @objc private func previewAppearanceChanged(_ sender: NSSegmentedControl) {
+        preview.setPreviewAppearance(dark: sender.selectedSegment == 1)
+    }
 }
 
-/// 嵌入设置页右侧的候选栏预览。
-/// 布局等同 ZStack：底层候选条完全居中，上层亮暗切换贴左上角。
+/// 嵌入设置页右侧的候选栏预览。候选条在区域内水平垂直居中。
 final class CandidateInlinePreviewView: NSView {
     private let chrome = RoundedChromeView(frame: .zero)
     private let candidates = NSStackView()
     private let hiddenHint = NSTextField(labelWithString: "候选框已隐藏，仅显示编码")
-    private let appearanceSwitchHost = NSView()
-    private let appearanceSwitch = NSSegmentedControl(
-        labels: ["亮色", "暗色"],
-        trackingMode: .selectOne,
-        target: nil,
-        action: nil
-    )
     private var heightConstraint: NSLayoutConstraint!
     // 相对 chrome 背景的内边距约束，避免 edgeInsets 只撑开外层容器。
     private var paddingConstraints: (top: NSLayoutConstraint, bottom: NSLayoutConstraint, leading: NSLayoutConstraint, trailing: NSLayoutConstraint)!
@@ -890,18 +916,6 @@ final class CandidateInlinePreviewView: NSView {
         layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
         layer?.cornerRadius = 8
 
-        // 亮暗切换：小尺寸控件外包一层内边距，避免上下显得挤。
-        appearanceSwitch.controlSize = .small
-        appearanceSwitch.target = self
-        appearanceSwitch.action = #selector(previewAppearanceChanged(_:))
-        appearanceSwitch.selectedSegment = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? 1 : 0
-        appearanceSwitch.translatesAutoresizingMaskIntoConstraints = false
-        appearanceSwitchHost.wantsLayer = true
-        appearanceSwitchHost.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.92).cgColor
-        appearanceSwitchHost.layer?.cornerRadius = 7
-        appearanceSwitchHost.translatesAutoresizingMaskIntoConstraints = false
-        appearanceSwitchHost.addSubview(appearanceSwitch)
-
         // 预览也预留阴影外扩，与真实候选窗一致，才能看见阴影。
         chrome.reservesShadowSpace = true
         chrome.clipsToBounds = false
@@ -914,9 +928,7 @@ final class CandidateInlinePreviewView: NSView {
         // 与实际候选窗共用同一套内边距约束。
         paddingConstraints = CandidateBarLayout.pin(candidates, in: chrome)
 
-        // ZStack：先加候选条（底层居中），再加按钮（上层左上角）。
         addSubview(chrome)
-        addSubview(appearanceSwitchHost)
 
         // 「不显示」模式下替代候选条的提示文字。
         hiddenHint.font = .systemFont(ofSize: 12)
@@ -937,15 +949,7 @@ final class CandidateInlinePreviewView: NSView {
             chrome.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 8),
             chrome.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
             chrome.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 8),
-            chrome.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8),
-
-            // 亮暗切换容器内边距，让分段控件上下留白更协调。
-            appearanceSwitch.leadingAnchor.constraint(equalTo: appearanceSwitchHost.leadingAnchor, constant: 5),
-            appearanceSwitch.trailingAnchor.constraint(equalTo: appearanceSwitchHost.trailingAnchor, constant: -5),
-            appearanceSwitch.topAnchor.constraint(equalTo: appearanceSwitchHost.topAnchor, constant: 5),
-            appearanceSwitch.bottomAnchor.constraint(equalTo: appearanceSwitchHost.bottomAnchor, constant: -5),
-            appearanceSwitchHost.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-            appearanceSwitchHost.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8)
+            chrome.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8)
         ])
 
         let center = DistributedNotificationCenter.default()
@@ -954,7 +958,13 @@ final class CandidateInlinePreviewView: NSView {
                 [weak self] _ in self?.reload()
             })
         }
-        applyPreviewAppearance()
+        reload()
+    }
+
+    // 由外层预览块的亮暗按钮调用，只改候选条外观。
+    func setPreviewAppearance(dark: Bool) {
+        let name: NSAppearance.Name = dark ? .darkAqua : .aqua
+        chrome.appearance = NSAppearance(named: name)
         reload()
     }
 
@@ -970,23 +980,15 @@ final class CandidateInlinePreviewView: NSView {
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
-        appearanceSwitchHost.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.92).cgColor
-    }
-
-    @objc private func previewAppearanceChanged(_ sender: NSSegmentedControl) {
-        applyPreviewAppearance()
-        reload()
-    }
-
-    private func applyPreviewAppearance() {
-        let name: NSAppearance.Name = appearanceSwitch.selectedSegment == 1 ? .darkAqua : .aqua
-        chrome.appearance = NSAppearance(named: name)
     }
 
     private func reload() {
         let skin = IMEAppearancePrefs.skin
         let colors = skin.colors(for: chrome.effectiveAppearance)
         let sample = ["五", "吾", "伍", "捂", "梧", "妩", "坞", "晤", "勿"]
+        let fullCodes = ["gghg", "ggg", "wgg", "rgkg", "sgkg", "vntg", "fggy", "jgkg", "qre"]
+        let restCodes = ["hg", "g", "gg", "kg", "g", "tg", "gy", "kg", "re"]
+        let sampleCodes = IMEAppearancePrefs.codeDetail == .full ? fullCodes : restCodes
         let hidden = IMEAppearancePrefs.hideCandidatePanel
         chrome.isHidden = hidden
         hiddenHint.isHidden = !hidden
@@ -996,7 +998,7 @@ final class CandidateInlinePreviewView: NSView {
             candidates,
             padding: paddingConstraints,
             candidates: Array(sample.prefix(RimeBehaviorPrefs.pageSize)),
-            preedit: "ww",
+            codes: Array(sampleCodes.prefix(RimeBehaviorPrefs.pageSize)),
             colors: colors,
             onSelect: nil
         )
@@ -1062,6 +1064,15 @@ private final class ToggleTarget: NSObject {
     static let shared = ToggleTarget()
     @objc func preeditChanged(_ sender: NSButton) {
         IMEAppearancePrefs.showPreeditInPanel = sender.state == .on
+    }
+}
+
+private final class CodeDetailTarget: NSObject {
+    static let shared = CodeDetailTarget()
+    @objc func changed(_ sender: NSSegmentedControl) {
+        let choices = IMEAppearancePrefs.CodeDetail.allCases
+        guard choices.indices.contains(sender.selectedSegment) else { return }
+        IMEAppearancePrefs.codeDetail = choices[sender.selectedSegment]
     }
 }
 

@@ -135,6 +135,19 @@ final class DictLexiconIndex {
         return byText[text] ?? []
     }
 
+    // 候选条词后要标的编码。普通输入只标还没打的后几码；z 反查标词库里单字的五笔全码。
+    func displayCodes(texts: [String], preedit: String) -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        reloadIfNeeded()
+        let reverse = Self.isReverseLookup(preedit)
+        let prefix = preedit.lowercased().filter { $0.isASCII && $0.isLetter }
+        let showFull = IMEAppearancePrefs.codeDetail == .full
+        return texts.map {
+            displayCodeUnlocked(text: $0, prefix: prefix, reverse: reverse, showFull: showFull)
+        }
+    }
+
     /// 当前输入下，这个候选最可能对应的码，以及同词的其它编码。
     func match(text: String, preedit: String) -> (hits: [DictLexiconHit], otherCodes: [String]) {
         lock.lock()
@@ -197,6 +210,31 @@ final class DictLexiconIndex {
         try out.write(to: hit.fileURL, atomically: true, encoding: .utf8)
         UserDictWriter.markNeedsDeploy()
         invalidateUnlocked()
+    }
+
+    // z 开头、后面只有字母或结束符 '，与方案里的反查规则一致。
+    private static func isReverseLookup(_ preedit: String) -> Bool {
+        let compact = preedit.lowercased().filter { $0.isASCII && ($0.isLetter || $0 == "'") }
+        return compact.range(of: #"^z[a-z]*'?$"#, options: .regularExpression) != nil
+    }
+
+    // 反查输入的是拼音，不能拿来对五笔码；词组没有对应五笔码时留空，不按拆字规则现造。
+    private func displayCodeUnlocked(text: String, prefix: String, reverse: Bool, showFull: Bool) -> String {
+        let all = byText[text] ?? []
+        if reverse {
+            guard text.count == 1 else { return "" }
+            return all.max { $0.entry.code.count < $1.entry.code.count }?.entry.code ?? ""
+        }
+        let matched = all.filter { prefix.isEmpty || $0.entry.code.hasPrefix(prefix) }
+        guard let code = matched.min(by: { a, b in
+            if a.entry.code.count != b.entry.code.count {
+                return a.entry.code.count < b.entry.code.count
+            }
+            return (a.entry.weight ?? 0) > (b.entry.weight ?? 0)
+        })?.entry.code, code.hasPrefix(prefix) else { return "" }
+        // 补码时已经打过的字母不再重复显示。反查输入的是拼音，单字始终给全码。
+        if showFull || prefix.isEmpty { return code }
+        return String(code.dropFirst(prefix.count))
     }
 
     private func invalidateUnlocked() {

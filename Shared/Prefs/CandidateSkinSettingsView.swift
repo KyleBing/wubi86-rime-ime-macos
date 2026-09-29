@@ -7,7 +7,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case paddingTop, paddingBottom, paddingLeft, paddingRight
         case offsetTop, offsetLeft
         case cornerRadius, spacing, indexSpacing
-        case candidateSize, indexSize, borderWidth
+        case candidateSize, indexSize, codeSize, borderWidth
         case shadowRadius, shadowX, shadowY
         case highlightRadius
         case highlightTop, highlightBottom, highlightLeft, highlightRight
@@ -88,7 +88,8 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         ])
         let sizeCol = form([
             numberRow("候选字号", value: skin.candidateFontSize, field: .candidateSize),
-            numberRow("序号字号", value: skin.indexFontSize, field: .indexSize)
+            numberRow("序号字号", value: skin.indexFontSize, field: .indexSize),
+            numberRow("编码字号", value: skin.codeFontSize, field: .codeSize)
         ])
         let weightCol = form([
             weightRow("候选粗细", fontName: skin.fontName, value: skin.candidateWeight, tag: 200),
@@ -451,6 +452,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
             ("背景", light.background, dark.background, 0),
             ("候选词", light.candidateText, dark.candidateText, 1),
             ("序号", light.indexText, dark.indexText, 2),
+            ("编码", light.codeText, dark.codeText, 8),
             ("边框", light.border, dark.border, 3),
             ("阴影", light.shadow, dark.shadow, 4)
         ])
@@ -461,7 +463,8 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         colorColumns([
             ("高亮背景", skin.light.highlightBackground, skin.dark.highlightBackground, 5),
             ("首选文字", skin.light.highlightText, skin.dark.highlightText, 6),
-            ("首选序号", skin.light.highlightIndexText, skin.dark.highlightIndexText, 7)
+            ("首选序号", skin.light.highlightIndexText, skin.dark.highlightIndexText, 7),
+            ("首选编码", skin.light.highlightCodeText, skin.dark.highlightCodeText, 9)
         ])
     }
 
@@ -647,6 +650,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case .offsetLeft: return -80...80
         case .cornerRadius: return 0...30
         case .indexSpacing: return 0...20
+        case .codeSize: return 8...32
         case .highlightRadius, .highlightTop, .highlightBottom, .highlightLeft, .highlightRight:
             return 0...20
         default: return 0...100
@@ -703,6 +707,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
             case .indexSpacing: $0.indexSpacing = value
             case .candidateSize: $0.candidateFontSize = value
             case .indexSize: $0.indexFontSize = value
+            case .codeSize: $0.codeFontSize = value
             case .borderWidth: $0.borderWidth = value
             case .shadowRadius: $0.shadowRadius = value
             case .shadowX: $0.shadowOffsetX = value
@@ -813,6 +818,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case .indexSpacing: return skin.indexSpacing
         case .candidateSize: return skin.candidateFontSize
         case .indexSize: return skin.indexFontSize
+        case .codeSize: return skin.codeFontSize
         case .borderWidth: return skin.borderWidth
         case .shadowRadius: return skin.shadowRadius
         case .shadowX: return skin.shadowOffsetX
@@ -839,6 +845,8 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case 5: colors.highlightBackground = value
         case 6: colors.highlightText = value
         case 7: colors.highlightIndexText = value
+        case 8: colors.codeText = value
+        case 9: colors.highlightCodeText = value
         default: break
         }
     }

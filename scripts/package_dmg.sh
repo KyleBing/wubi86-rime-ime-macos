@@ -2,10 +2,9 @@
 # 打出可分发的 DMG：Release 通用二进制、Developer ID 签名、拖到「应用程序」安装。
 # 不安装、不结束本机输入法进程。
 #
-# 公证（发给别人、避免 Gatekeeper 拦截）需要先存一次凭据：
-#   xcrun notarytool store-credentials meifeng \
-#     --apple-id "你的 Apple ID" --team-id 4J6QFDHMK2
-#   NOTARY_KEYCHAIN_PROFILE=meifeng ./scripts/package_dmg.sh
+# 公证（发给别人、避免 Gatekeeper 拦截）使用钥匙串里已保存的凭据。
+# 本机配置名是 meifeng-notary。未设置 NOTARY_KEYCHAIN_PROFILE 时会自动用它。
+# 也可临时传入：NOTARY_KEYCHAIN_PROFILE、或 APPLE_ID + APPLE_APP_PASSWORD。
 #
 # 也可临时传入：APPLE_ID、APPLE_APP_PASSWORD（App 专用密码）、APPLE_TEAM_ID。
 # 指定证书：SIGN_IDENTITY="Developer ID Application: …"
@@ -202,11 +201,22 @@ notarize() {
   echo "公证并装订完成。"
 }
 
+# 未指定时，用钥匙串里已经存好的公证配置。没有该配置时 notarytool 会立刻报错，不会联网。
+if [[ -z "${NOTARY_KEYCHAIN_PROFILE:-}" && -z "${APPLE_ID:-}" ]]; then
+  for candidate in meifeng-notary meifeng; do
+    err="$(xcrun notarytool history --keychain-profile "$candidate" 2>&1 >/dev/null || true)"
+    [[ "$err" == *"No Keychain password item found"* ]] && continue
+    NOTARY_KEYCHAIN_PROFILE="$candidate"
+    echo "使用已保存的公证凭据: $candidate"
+    break
+  done
+fi
+
 if [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" || -n "${APPLE_ID:-}" ]]; then
   notarize "$DMG"
 else
   echo "尚未公证。本机已用 Developer ID 签名，但别人的 Mac 仍会被 Gatekeeper 拦截。"
-  echo "存好凭据后重跑本脚本即可公证："
-  echo "  xcrun notarytool store-credentials meifeng --apple-id \"你的 Apple ID\" --team-id ${TEAM_ID}"
-  echo "  NOTARY_KEYCHAIN_PROFILE=meifeng ./scripts/package_dmg.sh"
+  echo "钥匙串里没有 meifeng-notary / meifeng。存好凭据后重跑本脚本即可公证："
+  echo "  xcrun notarytool store-credentials meifeng-notary --apple-id \"你的 Apple ID\" --team-id ${TEAM_ID}"
+  echo "  ./scripts/package_dmg.sh"
 fi

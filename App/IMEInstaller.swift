@@ -42,8 +42,8 @@ enum IMEInstaller {
         try? kill.run()
         kill.waitUntilExit()
 
-        // 普通更新只处理已知安装路径；扫描全部构建目录留给“修复 / 清理重复项”。
-        unregisterPaths([embedded.path, installedIMEURL.path, legacySystemIMEURL.path])
+        // 只注销包内 payload 和系统目录旧副本。用户目录那份不能先 -u，否则会被标成 launch-disabled。
+        unregisterPaths([embedded.path, legacySystemIMEURL.path])
 
         if fm.fileExists(atPath: installedIMEURL.path) {
             try fm.removeItem(at: installedIMEURL)
@@ -53,7 +53,8 @@ enum IMEInstaller {
 
     static func finishInstallOnMain() {
         precondition(Thread.isMainThread, "finishInstallOnMain 必须在主线程")
-        registerInputSource(at: installedIMEURL)
+        // 点「安装 / 更新」时换的是正在用的包，需要把旧进程换掉。
+        adoptInstalledBundle(restartIME: true)
         // 词库部署可能要几十秒，留在主线程会让整个窗口点不了。
         DispatchQueue.global(qos: .userInitiated).async {
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
@@ -61,35 +62,6 @@ enum IMEInstaller {
             case .success: NSLog("[MeifengWubi] pre-deploy ok")
             case .failure(let err): NSLog("[MeifengWubi] pre-deploy failed: %@", err)
             }
-        }
-    }
-
-    /// TextInputSwitcher / MenuAgent 忽略普通退出，killall 无效，会一直用登录时的输入法列表。
-    /// 必须 kill -9，系统会马上拉起新进程并重读注册信息，否则只有重启电脑才生效。
-    static func restartInputMenuAgents() {
-        let markers = [
-            "/TextInputMenuAgent.app/Contents/MacOS/TextInputMenuAgent",
-            "/TextInputSwitcher.app/Contents/MacOS/TextInputSwitcher",
-        ]
-        let listed = Process()
-        listed.executableURL = URL(fileURLWithPath: "/bin/ps")
-        listed.arguments = ["-ax", "-o", "pid=,command="]
-        let pipe = Pipe()
-        listed.standardOutput = pipe
-        try? listed.run()
-        // 先把输出读完。管道写满后 ps 会停住，再 waitUntilExit 就会和它一起卡死，安装界面也就没反应了。
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        listed.waitUntilExit()
-        let text = String(data: data, encoding: .utf8) ?? ""
-        for line in text.split(separator: "\n") {
-            let row = line.trimmingCharacters(in: .whitespaces)
-            guard markers.contains(where: { row.contains($0) }) else { continue }
-            guard let pid = row.split(separator: " ").first else { continue }
-            let kill = Process()
-            kill.executableURL = URL(fileURLWithPath: "/bin/kill")
-            kill.arguments = ["-9", String(pid)]
-            try? kill.run()
-            kill.waitUntilExit()
         }
     }
 
@@ -173,19 +145,47 @@ enum IMEInstaller {
         unregisterPaths([legacySystemIMEURL.path])
     }
 
-    /// 打开宿主时调用：已启用就不要再 disable / 重注册，否则刚选中的输入法会立刻掉线。
+    /// 打开宿主时调用：已启用只刷新登记，不 disable，避免刚选中的输入法掉线。
     static func ensureEnabledOnMain() {
         precondition(Thread.isMainThread, "TIS 必须在主线程")
-        guard FileManager.default.fileExists(atPath: installedIMEURL.path) else { return }
-        if isModeEnabled() { return }
-        registerInputSource(at: installedIMEURL)
+        // 打开宿主时不杀正在打字的输入法进程，只把登记刷新到用户目录副本。
+        adoptInstalledBundle(restartIME: false)
     }
 
     /// 安装或手动刷新后，把用户目录输入法重新登记为当前项。调用前应已在后台清完幽灵路径。
     static func reassertInstalledIME() {
         precondition(Thread.isMainThread, "TIS 必须在主线程")
+        adoptInstalledBundle(restartIME: false)
+    }
+
+    // 已启用时只重新登记用户目录的包，不 disable、不杀菜单进程。首次安装才走完整启用。
+    private static func adoptInstalledBundle(restartIME: Bool) {
+        precondition(Thread.isMainThread, "adoptInstalledBundle 必须在主线程")
         guard FileManager.default.fileExists(atPath: installedIMEURL.path) else { return }
+        registerBundleWithLaunchServices(installedIMEURL)
+        if isModeEnabled() {
+            _ = TISRegisterInputSource(installedIMEURL as CFURL)
+            postInputSourcesChanged()
+            if restartIME { restartRunningIME() }
+            return
+        }
         registerInputSource(at: installedIMEURL)
+    }
+
+    // 强制刷新 Launch Services 里这一条，清掉以前 -u 留下的 launch-disabled。
+    private static func registerBundleWithLaunchServices(_ url: URL) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: lsregisterPath)
+        task.arguments = ["-f", "-R", url.path]
+        try? task.run()
+        task.waitUntilExit()
+    }
+
+    private static func postInputSourcesChanged() {
+        DistributedNotificationCenter.default().post(
+            name: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
+            object: nil
+        )
     }
 
     private static func registerInputSource(at url: URL) {
@@ -212,11 +212,7 @@ enum IMEInstaller {
             Thread.sleep(forTimeInterval: 0.05)
         }
 
-        // mode 依赖父输入法已启用
-        if let method = sources.first(where: { inputSourceID($0) == bundleId }) {
-            _ = TISEnableInputSource(method)
-            NSLog("[MeifengWubi] enabled method %@", bundleId)
-        }
+        // 只启用输入模式。启用模式时系统会带上父项；父子各启用一次会弹出两个允许窗口。
         if let mode = sources.first(where: { inputSourceID($0) == modeId }) {
             _ = TISEnableInputSource(mode)
             NSLog("[MeifengWubi] enabled mode %@", modeId)
@@ -230,10 +226,9 @@ enum IMEInstaller {
             name: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
             object: nil
         )
-        // 重启输入法菜单会跑 ps。放后台，避免安装时把宿主界面卡在主线程上。
+        // 只结束输入法自己。菜单进程继续跑，下次切换时会拉起新包。
         DispatchQueue.global(qos: .userInitiated).async {
             restartRunningIME()
-            restartInputMenuAgents()
         }
     }
 

@@ -70,6 +70,8 @@ final class MeifengInputController: IMKInputController {
     override func deactivateServer(_ sender: Any!) {
         commitOrClearPending()
         panel.hide()
+        // 输入框失焦后提示不再属于当前会话，立刻收掉，避免残留在别的窗口上。
+        modeHint.hide()
         clearMarkedText()
         super.deactivateServer(sender)
         log("deactivateServer")
@@ -77,6 +79,7 @@ final class MeifengInputController: IMKInputController {
 
     override func hidePalettes() {
         panel.hide()
+        modeHint.hide()
         super.hidePalettes()
     }
 
@@ -355,9 +358,20 @@ final class MeifengInputController: IMKInputController {
             let start = min(specialPage * pageSize, max(texts.count - 1, 0))
             page = Array(texts[start..<min(start + pageSize, texts.count)])
         }
-        panel.show(candidates: page, preedit: preedit, caretRect: caret) { [weak self] idx in
+        let codes = candidateCodes(for: page, preedit: preedit)
+        panel.show(candidates: page, codes: codes, caretRect: caret) { [weak self] idx in
             _ = self?.selectCandidate(index: idx)
         }
+    }
+
+    // 词后编码：普通输入只显示还没打完的后几码；z 反查显示单字五笔码。预置候选没有五笔码。
+    private func candidateCodes(for texts: [String], preedit: String) -> [String] {
+        guard IMEAppearancePrefs.showPreeditInPanel, DateTimeCandidates.candidates(for: preedit) == nil else {
+            return []
+        }
+        let typed = RimeSession.shared.bridgeEngine.rawInput()
+        let input = typed.isEmpty ? preedit : typed
+        return DictLexiconIndex.shared.displayCodes(texts: texts, preedit: input)
     }
 
     /// 当前插入点的屏幕矩形，供模式提示贴在光标旁。
@@ -534,6 +548,7 @@ final class MeifengInputController: IMKInputController {
         if currentId != bundleId {
             commitOrClearPending(forceCommitRaw: true)
             panel.hide()
+            modeHint.hide()
             clearMarkedText()
         }
     }

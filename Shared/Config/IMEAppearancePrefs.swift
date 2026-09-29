@@ -30,7 +30,13 @@ enum IMEAppearancePrefs {
             else {
                 return migratedDefaultSkin()
             }
-            return decoded.normalized()
+            let value = decoded.normalized()
+            let corrected = correctedCoralHighlightCode(value)
+            if corrected != value, let data = try? JSONEncoder().encode(corrected) {
+                // 已套用的珊瑚红仍带着旧的灰色首选编码，读到时改成白色。
+                defaults.set(data, forKey: Keys.skin)
+            }
+            return corrected
         }
         set {
             let value = newValue.normalized()
@@ -189,7 +195,35 @@ enum IMEAppearancePrefs {
         return NSFont.systemFont(ofSize: sz, weight: weight.nsWeight)
     }
 
-    // 是否在候选条显示编码（preedit）
+    // 编码显示范围：补码只显示还没打的字母，完整显示词条的全部编码。
+    enum CodeDetail: String, CaseIterable {
+        case remainder
+        case full
+
+        var title: String {
+            switch self {
+            case .remainder: return "补码"
+            case .full: return "完整"
+            }
+        }
+    }
+
+    static var codeDetail: CodeDetail {
+        get {
+            if let raw = defaults.string(forKey: Keys.codeDetail),
+               let detail = CodeDetail(rawValue: raw)
+            {
+                return detail
+            }
+            return .remainder
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: Keys.codeDetail)
+            notify()
+        }
+    }
+
+    // 是否在每个候选词后面显示它的五笔编码
     static var showPreeditInPanel: Bool {
         get {
             if defaults.object(forKey: Keys.showPreedit) == nil { return true }
@@ -303,6 +337,28 @@ enum IMEAppearancePrefs {
         }
     }
 
+    // 珊瑚红首选底是红色，灰色编码看不清。只改还停在那组灰色上的首选编码。
+    private static func correctedCoralHighlightCode(_ skin: CandidateSkin) -> CandidateSkin {
+        guard skin.name == "珊瑚红" else { return skin }
+        let grayLight = CandidateSkin.RGBAColor(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493)
+        let grayDark = CandidateSkin.RGBAColor(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042)
+        let white = CandidateSkin.RGBAColor(red: 1, green: 1, blue: 1)
+        var value = skin
+        if nearly(value.light.highlightCodeText, grayLight) {
+            value.light.highlightCodeText = white
+        }
+        if nearly(value.dark.highlightCodeText, grayDark) {
+            value.dark.highlightCodeText = white
+        }
+        return value
+    }
+
+    private static func nearly(_ lhs: CandidateSkin.RGBAColor, _ rhs: CandidateSkin.RGBAColor) -> Bool {
+        abs(lhs.red - rhs.red) < 0.002
+            && abs(lhs.green - rhs.green) < 0.002
+            && abs(lhs.blue - rhs.blue) < 0.002
+    }
+
     private static func notify() {
         defaults.synchronize()
         DistributedNotificationCenter.default().post(
@@ -392,6 +448,7 @@ enum IMEAppearancePrefs {
         static let fontSize = "candidate.fontSize"
         static let fontName = "candidate.fontName"
         static let showPreedit = "candidate.showPreedit"
+        static let codeDetail = "candidate.codeDetail"
         static let showIndex = "candidate.showIndex"
         static let indexStyle = "candidate.indexStyle"
         static let showCountDotsOnly = "candidate.showCountDotsOnly"

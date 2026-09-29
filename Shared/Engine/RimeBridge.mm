@@ -178,6 +178,13 @@
     return list;
 }
 
+- (NSString *)rawInput {
+    if (!_started || !_sessionId || !_api->get_input) { return nil; }
+    const char *input = _api->get_input(_sessionId);
+    if (!input) { return nil; }
+    return [NSString stringWithUTF8String:input];
+}
+
 - (RimeContextSnapshot *)currentContext {
     if (!_started || !_sessionId) { return nil; }
 

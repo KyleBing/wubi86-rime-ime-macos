@@ -1,6 +1,12 @@
 import Carbon
 import Foundation
 
+// cleanup：只注销幽灵路径，不 disable / enable。安装脚本用它，避免每次都弹「允许输入法」。
+// refresh：同样先清幽灵路径，再把用户目录的包重新登记给正在运行的输入法服务，不杀菜单进程。
+let args = CommandLine.arguments.dropFirst()
+let cleanupOnly = args.contains("cleanup")
+let refreshOnly = args.contains("refresh")
+
 let path = NSString(string: "~/Library/Input Methods/MeifengWubiIME.app").expandingTildeInPath
 let systemPath = "/Library/Input Methods/MeifengWubiIME.app"
 let bundleId = "cn.kylebing.inputmethod.meifengwubi"
@@ -49,6 +55,47 @@ print("kept:", path)
 guard FileManager.default.fileExists(atPath: path) else {
     print("skip TIS refresh: IME not installed")
     exit(0)
+}
+
+if cleanupOnly {
+    print("cleanup only, skip enable")
+    exit(0)
+}
+
+if refreshOnly {
+    refreshInstalledIME()
+    exit(0)
+}
+
+// 覆盖安装后通知当前登录会话：路径不变，只换了包内容。已启用则不再 disable / enable。
+func refreshInstalledIME() {
+    let register = Process()
+    register.executableURL = URL(fileURLWithPath: lsregister)
+    register.arguments = ["-f", "-R", path]
+    try? register.run()
+    register.waitUntilExit()
+    print("lsregister:", path)
+
+    _ = TISRegisterInputSource(URL(fileURLWithPath: path) as CFURL)
+    var enabled = sources(includeAll: false)
+    if !enabled.contains(where: { property($0, kTISPropertyInputSourceID) == modeId }) {
+        let all = sources(includeAll: true)
+        if let mode = all.first(where: { property($0, kTISPropertyInputSourceID) == modeId }) {
+            _ = TISEnableInputSource(mode)
+            print("enable mode:", modeId)
+        } else {
+            print("mode not found after register")
+            exit(1)
+        }
+        enabled = sources(includeAll: false)
+    } else {
+        print("already enabled, skip enable")
+    }
+    DistributedNotificationCenter.default().post(
+        name: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
+        object: nil
+    )
+    print("enabled now:", enabled.map { property($0, kTISPropertyInputSourceID) }.joined(separator: ", "))
 }
 
 func property(_ source: TISInputSource, _ key: CFString) -> String {
@@ -108,10 +155,7 @@ for _ in 0..<20 {
     Thread.sleep(forTimeInterval: 0.05)
 }
 
-if let method = all.first(where: { property($0, kTISPropertyInputSourceID) == bundleId }) {
-    _ = TISEnableInputSource(method)
-    print("enable method:", bundleId)
-}
+// 只启用输入模式。系统会一并启用父项；再对父项调用一次会多弹一个允许窗口。
 if let mode = all.first(where: { property($0, kTISPropertyInputSourceID) == modeId }) {
     _ = TISEnableInputSource(mode)
     _ = TISSelectInputSource(mode)
