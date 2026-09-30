@@ -15,6 +15,12 @@ enum AppGroupPaths {
         containerURL?.appendingPathComponent("rime", isDirectory: true)
     }
 
+    /// 鼠须管等 Rime 前端的用户目录：~/Library/Rime
+    static var libraryRimeUserDataURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Rime", isDirectory: true)
+    }
+
     /// 实际使用的 Rime 目录：用户改选过则用自定义目录，否则为默认目录
     static var rimeUserDataURL: URL? {
         customRimeUserDataURL ?? defaultRimeUserDataURL

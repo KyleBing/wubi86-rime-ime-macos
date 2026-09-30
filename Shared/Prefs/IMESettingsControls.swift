@@ -11,6 +11,8 @@ enum IMESettingsControls {
         var reset: () -> (ok: Bool, message: String)
         var changeDataDirectory: (URL?) -> (ok: Bool, message: String)
         var restartIME: () -> Void
+        // 为真时重启会结束当前进程，设置窗口会一起关掉。
+        var restartQuitsSettings: Bool
     }
 
     static var lexiconActions: LexiconActions?
@@ -87,6 +89,7 @@ private final class SettingsRootView: NSView {
     private var currentSection = Section.userLexicon
     // 缓存各页，避免每次点侧栏都重建整页导致卡顿。
     private var pageCache: [Section: NSView] = [:]
+    private var keyObserver: NSObjectProtocol?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -96,6 +99,30 @@ private final class SettingsRootView: NSView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        if let keyObserver {
+            NotificationCenter.default.removeObserver(keyObserver)
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let keyObserver {
+            NotificationCenter.default.removeObserver(keyObserver)
+            self.keyObserver = nil
+        }
+        guard let window else { return }
+        // 设置窗口再次成为当前窗口时，用户词页重新读文件。
+        keyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.currentSection == .userLexicon else { return }
+            self.refreshUserLexiconPage()
+        }
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -218,6 +245,9 @@ private final class SettingsRootView: NSView {
     private func show(_ section: Section) {
         guard section != currentSection || pageCache[section] == nil else {
             updateSidebarSelection(section)
+            if section == .userLexicon {
+                refreshUserLexiconPage()
+            }
             return
         }
         currentSection = section
@@ -254,6 +284,26 @@ private final class SettingsRootView: NSView {
 
         for (cached, view) in pageCache {
             view.isHidden = cached != section
+        }
+        if section == .userLexicon {
+            refreshUserLexiconPage()
+        }
+    }
+
+    // 进入或再次显示用户词页时，词条表和同步说明都按磁盘重读。
+    private func refreshUserLexiconPage() {
+        guard let page = pageCache[.userLexicon] else { return }
+        refreshLexiconViews(in: page)
+    }
+
+    private func refreshLexiconViews(in view: NSView) {
+        if let lexicon = view as? UserLexiconSettingsView {
+            lexicon.reload()
+        } else if let cloud = view as? UserLexiconCloudBar {
+            cloud.refreshForDisplay()
+        }
+        for subview in view.subviews {
+            refreshLexiconViews(in: subview)
         }
     }
 
@@ -495,8 +545,15 @@ private final class SettingsRootView: NSView {
             action: #selector(ToggleTarget.caretModeHintChanged(_:))
         )
         caretHint.state = IMEAppearancePrefs.showCaretModeHint ? .on : .off
-        caretHint.toolTip = "输入光标出现时，在旁边显示当前是中文还是英文"
-        settings.addArrangedSubview(formRow("光标提示", caretHint))
+        // 开关旁边写明用途：聚焦后在光标旁短暂显示中文或英文。
+        let caretNote = NSTextField(labelWithString: "输入框出现光标时，在旁边显示当前是中文还是英文")
+        caretNote.font = .systemFont(ofSize: 11)
+        caretNote.textColor = .secondaryLabelColor
+        caretNote.lineBreakMode = .byWordWrapping
+        caretNote.maximumNumberOfLines = 2
+        caretNote.preferredMaxLayoutWidth = 360
+        caretHint.toolTip = caretNote.stringValue
+        settings.addArrangedSubview(formRow("光标提示", caretHint, caretNote))
 
         let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
         settings.addArrangedSubview(formRow("造词", quickAdd))
@@ -623,7 +680,8 @@ private final class SettingsRootView: NSView {
             card(title: "常用按键", subtitle: nil, content: keys),
             card(title: "快捷开关", subtitle: nil, content: switches),
             card(title: "特殊显示", subtitle: nil, content: appearance),
-            card(title: "反馈与联系", subtitle: "使用问题、建议或词库错误，欢迎联系作者。", content: contactHelp())
+            card(title: "反馈与联系", subtitle: "使用问题、建议或词库错误，欢迎联系作者。", content: contactHelp()),
+            card(title: "开源声明", subtitle: "输入法使用了下列开源组件，版权归原作者所有。", content: openSourceHelp())
         ])
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -636,6 +694,16 @@ private final class SettingsRootView: NSView {
             subtitle: "预置输入功能与特殊按键说明。",
             content: stack
         )
+    }
+
+    // 随输入法分发的开源组件。许可与 NOTICE、头文件中的声明一致。
+    private func openSourceHelp() -> NSView {
+        helpList([
+            ("librime", "BSD 3-Clause License。中州韵输入法引擎，Copyright © RIME Developers。https://github.com/rime/librime"),
+            ("Rime prelude", "BSD 3-Clause License。共享预设 default.yaml、key_bindings.yaml、punctuation.yaml、symbols.yaml。https://github.com/rime/rime-prelude"),
+            ("OpenCC", "Apache License 2.0。简繁转换用到的配置和词典。https://github.com/BYVoid/OpenCC"),
+            ("极点码表", "内置五笔方案与词库 rime-wubi86-jidian。https://github.com/KyleBing/rime-wubi86-jidian")
+        ])
     }
 
     // 帮助页联系方式：邮箱 / QQ 群均可一键复制。

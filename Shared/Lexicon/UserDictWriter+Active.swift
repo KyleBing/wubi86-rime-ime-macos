@@ -21,6 +21,8 @@ extension UserDictWriter {
 
     static func saveActiveDocument(_ document: UserDictDocument) throws {
         try saveDocument(document, to: activeURL)
+        // 自动同步自己写回时不要再排一次。
+        UserDictAutoSync.noteLocalEdit()
     }
 
     /// 键盘造词：写入首个分组；无分组时建未命名组（对齐「全部」下添加）

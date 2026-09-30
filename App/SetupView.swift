@@ -160,6 +160,7 @@ struct SetupView: View {
         .frame(width: 420)
         .fixedSize(horizontal: true, vertical: true)
         .onAppear {
+            UserDictAutoSync.install()
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
             status = IMEInstaller.statusText()
             if preferOpenCandidatePrefs {

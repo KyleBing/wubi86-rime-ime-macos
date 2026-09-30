@@ -10,6 +10,7 @@ enum WubiCloudAPI {
         case decodeFailed
         case contentTooLarge
         case emptyResponse
+        case revisionConflict(Int)
 
         var errorDescription: String? {
             switch self {
@@ -20,6 +21,7 @@ enum WubiCloudAPI {
             case .decodeFailed: return "响应解析失败"
             case .contentTooLarge: return "同步内容超过 \(WubiCloudConfig.syncMaxContentLength) 字"
             case .emptyResponse: return "服务器无返回"
+            case .revisionConflict: return "版本已变化"
             }
         }
     }
@@ -68,9 +70,48 @@ enum WubiCloudAPI {
         return info
     }
 
+    struct DictMeta: Decodable {
+        let revision: Int
+        let content_hash: String?
+        let word_count: Int?
+        let date_update: String?
+    }
+
     struct PullData: Decodable {
         let title: String?
         let content: String?
+        let revision: Int?
+    }
+
+    private struct PushData: Decodable {
+        let revision: Int?
+        let conflict: Bool?
+    }
+
+    // GET wubi/dict/meta。没有备份时返回 nil。
+    static func fetchMeta(
+        title: String = WubiCloudConfig.syncDictFileName,
+        userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
+        baseURL: String = WubiCloudConfig.baseURL
+    ) async throws -> DictMeta? {
+        guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
+        var components = URLComponents(url: try makeURL(base: baseURL, path: "wubi/dict/meta"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "title", value: title)]
+        guard let url = components.url else { throw APIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        applyAuth(userInfo, to: &request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTP(response)
+        applyRenewedToken(from: response)
+        let envelope = try JSONDecoder().decode(Envelope<DictMeta>.self, from: data)
+        guard envelope.success else {
+            let msg = envelope.message ?? ""
+            if msg.contains("不存在") || msg.contains("未") { return nil }
+            throw APIError.serverMessage(msg.isEmpty ? "读取版本失败" : msg)
+        }
+        guard let meta = envelope.data, meta.revision > 0 else { return nil }
+        return meta
     }
 
     // GET wubi/dict/pull；云端无备份时返回 nil
@@ -78,7 +119,7 @@ enum WubiCloudAPI {
         title: String = WubiCloudConfig.syncDictFileName,
         userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
         baseURL: String = WubiCloudConfig.baseURL
-    ) async throws -> (title: String, yaml: String)? {
+    ) async throws -> (title: String, yaml: String, revision: Int)? {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
         var components = URLComponents(url: try makeURL(base: baseURL, path: "wubi/dict/pull"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "title", value: title)]
@@ -102,17 +143,19 @@ enum WubiCloudAPI {
         guard let payload = envelope.data, let yaml = payload.content, !yaml.isEmpty else {
             return nil
         }
-        return (payload.title ?? title, yaml)
+        return (payload.title ?? title, yaml, payload.revision ?? 0)
     }
 
-    // PUT wubi/dict/push，正文为 YAML 原文
+    // PUT wubi/dict/push。baseRevision 为空时按旧客户端整份覆盖。返回写入后的版本。
+    @discardableResult
     static func pushDict(
         title: String = WubiCloudConfig.syncDictFileName,
         yaml: String,
         wordCount: Int,
+        baseRevision: Int? = nil,
         userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
         baseURL: String = WubiCloudConfig.baseURL
-    ) async throws {
+    ) async throws -> Int {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
         guard yaml.count < WubiCloudConfig.syncMaxContentLength else {
             throw APIError.contentTooLarge
@@ -122,22 +165,29 @@ enum WubiCloudAPI {
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyAuth(userInfo, to: &request)
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "title": title,
             "content": yaml,
             "contentSize": yaml.count,
             "wordCount": wordCount
         ]
+        if let baseRevision {
+            body["baseRevision"] = baseRevision
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTP(response)
         applyRenewedToken(from: response)
-        let envelope = try JSONDecoder().decode(Envelope<EmptyData>.self, from: data)
+        let envelope = try JSONDecoder().decode(Envelope<PushData>.self, from: data)
+        if envelope.data?.conflict == true || (envelope.message ?? "").contains("版本已变化") {
+            throw APIError.revisionConflict(envelope.data?.revision ?? 0)
+        }
         guard envelope.success else {
             throw APIError.serverMessage(envelope.message ?? "上传失败")
         }
         WubiCloudConfig.lastSyncAt = Date()
+        return envelope.data?.revision ?? 0
     }
 
     /// 扩展词库词条（POST wubi/word/export-extra）

@@ -21,13 +21,16 @@ final class RimeSession {
         defer { lock.unlock() }
         let force = forceFullCheck || needsFullBuild
         if started, engine.isReady {
-            if UserDictWriter.consumeNeedsDeploy() || needsFullBuild {
+            // 正在打字时先不部署，避免清掉当前编码。标记留到编码结束。
+            let composing = engine.snapshot()?.isComposing == true
+            if !composing, UserDictWriter.consumeNeedsDeploy() || needsFullBuild {
                 NSLog("[MeifengWubi] redeploy rime (needsFull=%d)", needsFullBuild)
                 if !engine.redeploy() {
                     NSLog("[MeifengWubi] automatic redeploy failed, restarting")
                     started = false
                     return startLocked(forceFullCheck: force)
                 }
+                UserDictAutoSync.noteEngineDidReload()
             }
             return true
         }
@@ -35,6 +38,7 @@ final class RimeSession {
             // 首次或无 build 产物时强制全量编译
             try engine.start(forceFullCheck: force)
             started = true
+            UserDictAutoSync.noteEngineDidReload()
             NSLog("[MeifengWubi] rime started forceFull=%d user=%@", force, RimeResourceDeployer.resolveUserDataURL().path)
             return true
         } catch {
@@ -60,6 +64,7 @@ final class RimeSession {
         if started, engine.isReady {
             if engine.redeploy() {
                 NSLog("[MeifengWubi] user dict reloaded")
+                UserDictAutoSync.noteEngineDidReload()
                 return true
             }
             NSLog("[MeifengWubi] user dict redeploy failed, restarting")
@@ -96,6 +101,7 @@ final class RimeSession {
         do {
             try engine.start(forceFullCheck: forceFullCheck)
             started = true
+            UserDictAutoSync.noteEngineDidReload()
             NSLog("[MeifengWubi] rime restarted forceFull=%d", forceFullCheck ? 1 : 0)
             return true
         } catch {

@@ -35,6 +35,12 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         }
     }
 
+    // 从别的栏目切回来，或所在页面从隐藏变为显示。
+    override func viewDidUnhide() {
+        super.viewDidUnhide()
+        reload()
+    }
+
     deinit {
         if let userDictObserver {
             NotificationCenter.default.removeObserver(userDictObserver)

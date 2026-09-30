@@ -9,6 +9,18 @@ enum DictSyncDiff {
         let priority: String
         let note: String
         let groupName: String
+
+        // 词和编码，用来在差异列表里认这一条。
+        var brief: String { "\(word)  \(code)" }
+
+        // 权重、备注、分组里有内容的才写出来。
+        var detail: String {
+            var parts: [String] = []
+            if !priority.isEmpty { parts.append("权重 \(priority)") }
+            if !note.isEmpty { parts.append("备注 \(note)") }
+            if !groupName.isEmpty { parts.append(groupName) }
+            return parts.isEmpty ? "无权重、备注" : parts.joined(separator: "  ")
+        }
     }
 
     struct ChangedPair: Equatable {
@@ -38,6 +50,43 @@ enum DictSyncDiff {
             }
             return "本地 \(localCount) 条，云端 \(remoteCount) 条。仅本地 \(onlyLocal.count)，仅云端 \(onlyRemote.count)，内容不同 \(changed.count)。"
         }
+
+        // 弹窗列表只写逐条差异。摘要已经显示在标题下，这里不再重复。
+        func detailReport(maxPerSection: Int = 800) -> String {
+            if !hasRemote || isIdentical { return "" }
+            var lines: [String] = []
+            appendSection("仅本地（\(onlyLocal.count)）", items: onlyLocal, into: &lines, limit: maxPerSection)
+            appendSection("仅云端（\(onlyRemote.count)）", items: onlyRemote, into: &lines, limit: maxPerSection)
+            if !changed.isEmpty {
+                lines.append("内容不同（\(changed.count)）")
+                let shown = changed.prefix(maxPerSection)
+                for pair in shown {
+                    lines.append("  " + pair.local.brief)
+                    lines.append("    本地  " + pair.local.detail)
+                    lines.append("    云端  " + pair.remote.detail)
+                }
+                let rest = changed.count - shown.count
+                if rest > 0 {
+                    lines.append("  …还有 \(rest) 条")
+                }
+                lines.append("")
+            }
+            return lines.joined(separator: "\n").trimmingCharacters(in: .newlines)
+        }
+
+        private func appendSection(_ title: String, items: [WordItem], into lines: inout [String], limit: Int) {
+            guard !items.isEmpty else { return }
+            lines.append(title)
+            let shown = items.prefix(limit)
+            for item in shown {
+                lines.append("  " + item.brief + "  " + item.detail)
+            }
+            let rest = items.count - shown.count
+            if rest > 0 {
+                lines.append("  …还有 \(rest) 条")
+            }
+            lines.append("")
+        }
     }
 
     static func flatten(_ document: UserDictDocument) -> [WordItem] {
@@ -45,7 +94,8 @@ enum DictSyncDiff {
         for group in document.groups {
             for entry in group.entries {
                 list.append(WordItem(
-                    key: "\(entry.text)\t\(entry.code)",
+                    // 同一词条可以出现在不同分组，键必须带上分组名。
+                    key: "\(group.name)\t\(entry.text)\t\(entry.code)",
                     word: entry.text,
                     code: entry.code,
                     priority: entry.weight.map(String.init) ?? "",
@@ -158,5 +208,175 @@ enum DictSyncDiff {
             }
         }
         return (result, added)
+    }
+
+    /// 对照上次同步快照做三方合并。返回的 nextBase 只推进双方已经一致的词条。
+    struct ThreeWayMerge: Equatable {
+        var merged: UserDictDocument
+        var nextBase: UserDictDocument
+        var conflicts: [WordItem]
+        var tookRemote: Int
+        var dropped: Int
+        var needsUpload: Bool
+        var localChanged: Bool
+    }
+
+    static func threeWayMerge(base: UserDictDocument?, local: UserDictDocument, remote: UserDictDocument) -> ThreeWayMerge {
+        let baseMap = base.map(indexMap) ?? [:]
+        let localMap = indexMap(local)
+        let remoteMap = indexMap(remote)
+        let keys = Set(baseMap.keys).union(localMap.keys).union(remoteMap.keys)
+
+        var chosen: [String: WordItem] = [:]
+        var conflictKeys = Set<String>()
+        var conflicts: [WordItem] = []
+        var tookRemote = 0
+        var dropped = 0
+
+        for key in keys.sorted() {
+            let decision = pick(base: baseMap[key], local: localMap[key], remote: remoteMap[key])
+            switch decision {
+            case .use(let item):
+                chosen[key] = item
+                if let remoteItem = remoteMap[key], sameContent(item, remoteItem) {
+                    if let localItem = localMap[key] {
+                        if !sameContent(localItem, remoteItem) { tookRemote += 1 }
+                    } else {
+                        tookRemote += 1
+                    }
+                }
+            case .drop:
+                if localMap[key] != nil { dropped += 1 }
+            case .conflict(let item):
+                conflicts.append(item)
+                conflictKeys.insert(key)
+                // 冲突时文件里先留本地版本，避免未上传就把云端改掉。
+                if let localItem = localMap[key] {
+                    chosen[key] = localItem
+                }
+            }
+        }
+
+        let merged = document(from: chosen, template: local)
+        let mergedMap = indexMap(merged)
+        var baseNext: [String: WordItem] = [:]
+        if conflictKeys.isEmpty {
+            baseNext = mergedMap
+        } else {
+            for (key, item) in remoteMap {
+                if conflictKeys.contains(key) {
+                    if let old = baseMap[key] { baseNext[key] = old }
+                    continue
+                }
+                if let kept = chosen[key], sameContent(kept, item) {
+                    baseNext[key] = item
+                }
+            }
+            for key in conflictKeys {
+                if let old = baseMap[key] { baseNext[key] = old }
+            }
+        }
+
+        return ThreeWayMerge(
+            merged: merged,
+            nextBase: document(from: baseNext, template: local),
+            conflicts: conflicts,
+            tookRemote: tookRemote,
+            dropped: dropped,
+            needsUpload: conflictKeys.isEmpty && !mapsEqual(mergedMap, remoteMap),
+            localChanged: !mapsEqual(mergedMap, localMap)
+        )
+    }
+
+    private enum Pick {
+        case use(WordItem)
+        case drop
+        case conflict(WordItem)
+    }
+
+    // 有快照时：只一边改过就采用那边；两边都改且内容不同则冲突。没有快照时，单边出现视为新增。
+    private static func pick(base: WordItem?, local: WordItem?, remote: WordItem?) -> Pick {
+        switch (base, local, remote) {
+        case let (_, local?, remote?) where sameContent(local, remote):
+            return .use(local)
+        case (nil, let local?, .some(_)):
+            return .conflict(local)
+        case let (base?, local?, remote?):
+            let localChanged = !sameContent(local, base)
+            let remoteChanged = !sameContent(remote, base)
+            if localChanged && remoteChanged { return .conflict(local) }
+            if remoteChanged { return .use(remote) }
+            return .use(local)
+        case let (base?, local?, nil):
+            if sameContent(local, base) { return .drop }
+            return .conflict(local)
+        case let (base?, nil, remote?):
+            if sameContent(remote, base) { return .drop }
+            return .conflict(remote)
+        case (_, let local?, nil):
+            return .use(local)
+        case (_, nil, let remote?):
+            return .use(remote)
+        default:
+            return .drop
+        }
+    }
+
+    private static func indexMap(_ document: UserDictDocument) -> [String: WordItem] {
+        var map: [String: WordItem] = [:]
+        for item in flatten(document) {
+            map[item.key] = item
+        }
+        return map
+    }
+
+    private static func sameContent(_ lhs: WordItem, _ rhs: WordItem) -> Bool {
+        lhs.priority == rhs.priority && lhs.note == rhs.note && lhs.groupName == rhs.groupName
+    }
+
+    private static func mapsEqual(_ lhs: [String: WordItem], _ rhs: [String: WordItem]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        for (key, item) in lhs {
+            guard let other = rhs[key], sameContent(item, other) else { return false }
+        }
+        return true
+    }
+
+    // 按本地分组顺序放回词条；分组变了或是云端新词则追加到对应组。
+    private static func document(from chosen: [String: WordItem], template: UserDictDocument) -> UserDictDocument {
+        var result = template
+        var used = Set<String>()
+        for index in result.groups.indices {
+            var kept: [UserDictEntry] = []
+            for entry in result.groups[index].entries {
+                let key = "\(result.groups[index].name)\t\(entry.text)\t\(entry.code)"
+                guard let item = chosen[key] else { continue }
+                var updated = entry
+                updated.weight = Int(item.priority)
+                updated.note = item.note
+                kept.append(updated)
+                used.insert(key)
+            }
+            result.groups[index].entries = kept
+        }
+        let extras = chosen.keys.filter { !used.contains($0) }.sorted()
+        for key in extras {
+            guard let item = chosen[key] else { continue }
+            let entry = UserDictEntry(
+                code: item.code,
+                text: item.word,
+                weight: Int(item.priority),
+                note: item.note
+            )
+            if let index = result.groups.firstIndex(where: { $0.name == item.groupName }) {
+                result.groups[index].entries.append(entry)
+            } else {
+                result.groups.append(UserDictGroup(name: item.groupName, entries: [entry]))
+                if !item.groupName.isEmpty {
+                    result.isGroupMode = true
+                }
+            }
+        }
+        return result
     }
 }

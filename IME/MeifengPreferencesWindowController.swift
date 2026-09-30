@@ -67,12 +67,14 @@ final class MeifengPreferencesWindowController: NSWindowController, NSWindowDele
                 }
             },
             restartIME: {
+                // 设置窗口属于这个进程，killall 会把窗口一起关掉。
                 let kill = Process()
                 kill.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
                 kill.arguments = ["MeifengWubiIME"]
                 try? kill.run()
                 kill.waitUntilExit()
-            }
+            },
+            restartQuitsSettings: true
         )
         let size = IMESettingsControls.preferredWindowSize
         let form = IMESettingsControls.makeFormView(size: size)

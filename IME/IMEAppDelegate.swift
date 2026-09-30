@@ -3,6 +3,47 @@ import Carbon
 import InputMethodKit
 import os.log
 
+/// 自动同步发现用户词文件更新后，输入法做增量部署。全量部署不走定时器。
+enum UserDictEngineReload {
+    private static var installed = false
+
+    static func install() {
+        guard !installed else { return }
+        installed = true
+        // 输入法在后台也要立刻收到，不能等窗口激活再投递。
+        UserDictReloadBridge.shared.install()
+    }
+
+    // 没有未上屏编码时才加载。正在打字则留着标记，等 handle 结束再试。
+    static func flushIfIdle() {
+        if RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
+            return
+        }
+        guard UserDictWriter.peekNeedsDeploy() else { return }
+        _ = RimeSession.shared.reloadUserDictionary()
+    }
+}
+
+private final class UserDictReloadBridge: NSObject {
+    static let shared = UserDictReloadBridge()
+
+    func install() {
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(reload(_:)),
+            name: .meifengUserDictNeedsReload,
+            object: nil,
+            suspensionBehavior: .deliverImmediately
+        )
+    }
+
+    @objc private func reload(_ notification: Notification) {
+        DispatchQueue.main.async {
+            UserDictEngineReload.flushIfIdle()
+        }
+    }
+}
+
 private let log = Logger(subsystem: "cn.kylebing.inputmethod.meifengwubi", category: "IME")
 
 /// 显式入口：部分系统上 @main AppDelegate 不会进 didFinishLaunching，导致 IMKServer 未创建、打不出字
@@ -19,6 +60,8 @@ enum MeifengIMEMain {
         _ = RimeSession.shared.ensureStarted(forceFullCheck: false)
         IMEAppDelegate.installEditingMenu()
         QuickAddHotKey.install()
+        UserDictAutoSync.install()
+        UserDictEngineReload.install()
         // 各软件会记住自己的输入法；选中玫枫后再点别的输入框，要跟着过去
         MeifengInputSourceLock.install()
         IMEAppDelegate.appendLaunchLog("main entered, server+rime ready")

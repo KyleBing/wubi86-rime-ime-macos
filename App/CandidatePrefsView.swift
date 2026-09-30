@@ -44,7 +44,8 @@ enum CandidateSettingsWindow {
             },
             restartIME: {
                 IMEInstaller.restartRunningIME()
-            }
+            },
+            restartQuitsSettings: false
         )
     }
 

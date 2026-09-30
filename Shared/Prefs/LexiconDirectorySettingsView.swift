@@ -5,7 +5,8 @@ final class LexiconDirectorySettingsView: NSView {
     private let dirCaption = NSTextField(labelWithString: "")
     private let dirPathLabel = NSTextField(wrappingLabelWithString: "")
     private let userFileLabel = NSTextField(labelWithString: "")
-    private let restoreDefaultButton = NSButton(title: "恢复默认", target: nil, action: nil)
+    private let useDefaultButton = NSButton(title: "切回默认目录", target: nil, action: nil)
+    private let useRimeButton = NSButton(title: "切到 Rime 目录", target: nil, action: nil)
     private let bannerIcon = NSImageView()
     private let bannerLabel = NSTextField(labelWithString: "")
     private let bannerRow = NSStackView()
@@ -34,14 +35,22 @@ final class LexiconDirectorySettingsView: NSView {
         let copyPath = smallButton("复制路径", #selector(copyDataDirPath))
         let reveal = smallButton("在访达中显示", #selector(revealInFinder))
         let changeDir = smallButton("更改目录…", #selector(chooseDataDir))
-        restoreDefaultButton.target = self
-        restoreDefaultButton.action = #selector(restoreDefaultDir)
-        restoreDefaultButton.controlSize = .small
+        useDefaultButton.target = self
+        useDefaultButton.action = #selector(restoreDefaultDir)
+        useDefaultButton.controlSize = .small
+        useRimeButton.target = self
+        useRimeButton.action = #selector(useLibraryRimeDir)
+        useRimeButton.controlSize = .small
 
-        let pathButtons = NSStackView(views: [copyPath, reveal, changeDir, restoreDefaultButton])
+        let pathButtons = NSStackView(views: [copyPath, reveal, changeDir])
         pathButtons.orientation = .horizontal
         pathButtons.spacing = 8
         pathButtons.alignment = .centerY
+
+        let switchButtons = NSStackView(views: [useDefaultButton, useRimeButton])
+        switchButtons.orientation = .horizontal
+        switchButtons.spacing = 8
+        switchButtons.alignment = .centerY
 
         let deploy = smallButton("部署当前配置", #selector(deployConfig))
         let reset = smallButton("复位原始配置", #selector(resetConfig))
@@ -64,17 +73,18 @@ final class LexiconDirectorySettingsView: NSView {
         deployRow.alignment = .centerY
         deployRow.spacing = 8
 
-        let hint = NSTextField(wrappingLabelWithString: "选择已有的 Rime 配置目录即可使用其中的方案和词库，不会改写已有文件。空目录才会补上内置五笔。标点在「标点」页设置，不使用 Rime 的符号表。")
+        let hint = NSTextField(wrappingLabelWithString: "「切到 Rime 目录」使用 \(AppGroupPaths.libraryRimeUserDataURL.path)，与鼠须管等前端相同。「切回默认目录」回到本输入法自己的目录。已有方案的目录不会被改写，空目录才会补上内置五笔。")
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .secondaryLabelColor
         hint.preferredMaxLayoutWidth = 560
 
-        let root = NSStackView(views: [dirCaption, dirPathLabel, userFileLabel, pathButtons, deployRow, hint])
+        let root = NSStackView(views: [dirCaption, dirPathLabel, userFileLabel, pathButtons, switchButtons, deployRow, hint])
         root.orientation = .vertical
         root.alignment = .leading
         root.spacing = 6
         root.setCustomSpacing(10, after: userFileLabel)
-        root.setCustomSpacing(10, after: pathButtons)
+        root.setCustomSpacing(8, after: pathButtons)
+        root.setCustomSpacing(10, after: switchButtons)
         root.setCustomSpacing(12, after: deployRow)
         root.translatesAutoresizingMaskIntoConstraints = false
         addSubview(root)
@@ -84,6 +94,7 @@ final class LexiconDirectorySettingsView: NSView {
             root.topAnchor.constraint(equalTo: topAnchor),
             root.bottomAnchor.constraint(equalTo: bottomAnchor),
             pathButtons.widthAnchor.constraint(lessThanOrEqualTo: root.widthAnchor),
+            switchButtons.widthAnchor.constraint(lessThanOrEqualTo: root.widthAnchor),
             deployRow.widthAnchor.constraint(lessThanOrEqualTo: root.widthAnchor)
         ])
     }
@@ -95,12 +106,22 @@ final class LexiconDirectorySettingsView: NSView {
     }
 
     private func refreshDirectoryInfo() {
-        let custom = AppGroupPaths.customRimeUserDataURL != nil
-        let path = RimeResourceDeployer.resolveUserDataURL().path
-        dirCaption.stringValue = custom ? "词库目录（自定义）：" : "词库目录："
-        dirPathLabel.stringValue = path
+        let current = RimeResourceDeployer.resolveUserDataURL().standardizedFileURL
+        let library = AppGroupPaths.libraryRimeUserDataURL.standardizedFileURL
+        let onDefault = AppGroupPaths.customRimeUserDataURL == nil
+        if onDefault {
+            dirCaption.stringValue = "词库目录（输入法默认）："
+        } else if current == library {
+            dirCaption.stringValue = "词库目录（Rime）："
+        } else {
+            dirCaption.stringValue = "词库目录（自定义）："
+        }
+        dirPathLabel.stringValue = current.path
         userFileLabel.stringValue = "用户词库文件：\(UserDictWriter.activeURL.lastPathComponent)"
-        restoreDefaultButton.isHidden = !custom
+        useDefaultButton.isEnabled = !onDefault
+        useRimeButton.isEnabled = current != library
+        useDefaultButton.toolTip = AppGroupPaths.defaultRimeUserDataURL?.path
+        useRimeButton.toolTip = library.path
     }
 
     private func showBanner(success: Bool, text: String) {
@@ -150,17 +171,47 @@ final class LexiconDirectorySettingsView: NSView {
         changeDataDir(to: nil, actions: actions)
     }
 
+    @objc private func useLibraryRimeDir() {
+        guard let actions = requireActions(), !isBusy else { return }
+        changeDataDir(to: AppGroupPaths.libraryRimeUserDataURL, actions: actions)
+    }
+
     private func changeDataDir(to url: URL?, actions: IMESettingsControls.LexiconActions) {
         isBusy = true
         let oldPath = RimeResourceDeployer.resolveUserDataURL().path
         let result = actions.changeDataDirectory(url)
         let newPath = RimeResourceDeployer.resolveUserDataURL().path
-        if newPath != oldPath {
-            actions.restartIME()
-        }
         refreshDirectoryInfo()
-        showBanner(success: result.ok, text: result.message)
+        if result.ok, newPath != oldPath {
+            // 单字字典和用户词表都按目录现读，先丢掉旧缓存。
+            WubiDictEncoder.clearCache()
+            NotificationCenter.default.post(name: .meifengUserDictDidChange, object: nil)
+            NotificationCenter.default.post(name: .meifengRimeDirectoryDidChange, object: nil)
+            if actions.restartQuitsSettings {
+                promptKeepSettingsOrRestart(actions: actions, message: result.message)
+            } else {
+                actions.restartIME()
+                showBanner(success: true, text: result.message + "。输入法已重启")
+            }
+        } else {
+            showBanner(success: result.ok, text: result.message)
+        }
         isBusy = false
+    }
+
+    // 设置窗口开在输入法进程里时，直接重启会把窗口关掉。先问用户。
+    private func promptKeepSettingsOrRestart(actions: IMESettingsControls.LexiconActions, message: String) {
+        let alert = NSAlert()
+        alert.messageText = "词库目录已切换"
+        alert.informativeText = "\(message)。当前输入法已经改用新目录，设置窗口可以继续留着。若现在重启输入法，这个窗口会关掉，系统会在下次输入时再打开输入法。"
+        alert.addButton(withTitle: "保持打开")
+        alert.addButton(withTitle: "重启输入法")
+        let restart = alert.runModal() != .alertFirstButtonReturn
+        if restart {
+            actions.restartIME()
+            return
+        }
+        showBanner(success: true, text: message + "。设置窗口保持打开")
     }
 
     @objc private func deployConfig() {
@@ -191,6 +242,7 @@ final class LexiconDirectorySettingsView: NSView {
 final class CharMapSettingsView: NSView {
     private let dictPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
+    private var directoryObserver: NSObjectProtocol?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -220,6 +272,19 @@ final class CharMapSettingsView: NSView {
             root.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
         reloadDictPopup()
+        directoryObserver = NotificationCenter.default.addObserver(
+            forName: .meifengRimeDirectoryDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.reloadDictPopup()
+        }
+    }
+
+    deinit {
+        if let directoryObserver {
+            NotificationCenter.default.removeObserver(directoryObserver)
+        }
     }
 
     required init?(coder: NSCoder) {

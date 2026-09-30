@@ -29,7 +29,8 @@ enum UserDictWriter {
         return parseDocument(data)
     }
 
-    static func saveDocument(_ document: UserDictDocument, to url: URL) throws {
+    // markDeploy 为假时只写快照，不通知输入法重载。
+    static func saveDocument(_ document: UserDictDocument, to url: URL, markDeploy: Bool = true) throws {
         let version = ISO8601DateFormatter().string(from: Date())
         // 只要还有分组信息（多组 / 有组名 / 分组模式），落盘必须保留 ##，不可压成扁平表
         let hasGroupInfo = document.shouldPreserveGroupHeaders
@@ -78,7 +79,9 @@ enum UserDictWriter {
             }
             try yaml.write(to: url, atomically: true, encoding: .utf8)
         }
-        markNeedsDeploy()
+        if markDeploy {
+            markNeedsDeploy()
+        }
     }
 
     /// 解析 yaml：对齐 dictParseCore.parseGroupMode / parseNormalMode
@@ -232,17 +235,31 @@ enum UserDictWriter {
     }
 
     static func consumeNeedsDeploy() -> Bool {
+        let needed = peekNeedsDeploy()
+        guard needed else { return false }
+        clearNeedsDeploy()
+        return true
+    }
+
+    // 只查看，不清标记。输入法正在打字时先留着，等编码结束再部署。
+    static func peekNeedsDeploy() -> Bool {
         let url = deployFlagURL()
-        let fileNeeded = FileManager.default.fileExists(atPath: url.path)
-        if fileNeeded {
+        if FileManager.default.fileExists(atPath: url.path) {
+            return true
+        }
+        let defaults = UserDefaults(suiteName: AppGroupPaths.appGroupId) ?? .standard
+        return defaults.bool(forKey: needsDeployKey)
+    }
+
+    private static func clearNeedsDeploy() {
+        let url = deployFlagURL()
+        if FileManager.default.fileExists(atPath: url.path) {
             try? FileManager.default.removeItem(at: url)
         }
         let defaults = UserDefaults(suiteName: AppGroupPaths.appGroupId) ?? .standard
-        let defaultsNeeded = defaults.bool(forKey: needsDeployKey)
-        if defaultsNeeded {
+        if defaults.bool(forKey: needsDeployKey) {
             defaults.set(false, forKey: needsDeployKey)
         }
-        return fileNeeded || defaultsNeeded
     }
 
     private static func deployFlagURL() -> URL {

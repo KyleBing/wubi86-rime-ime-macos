@@ -110,6 +110,8 @@ final class MeifengInputController: IMKInputController {
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event else { return false }
+        // 这次按键若结束了编码，再加载自动同步写回的用户词。
+        defer { UserDictEngineReload.flushIfIdle() }
         currentClient = (sender as? IMKTextInput) ?? currentClient
         Self.activeController = self
 
