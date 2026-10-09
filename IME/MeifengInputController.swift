@@ -756,10 +756,11 @@ final class MeifengInputController: IMKInputController {
         deploy.target = self
         deploy.isEnabled = true
         menu.addItem(deploy)
+        // ⌘, 是各 App 打开自己设置的系统默认键，输入法菜单不能占用。
         let prefs = NSMenuItem(
             title: "玫枫五笔设置…",
             action: #selector(openPreferences(_:)),
-            keyEquivalent: ","
+            keyEquivalent: ""
         )
         prefs.target = self
         prefs.isEnabled = true
