@@ -112,11 +112,33 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
     }
 
     // 输入控制器提交的候选只写入词条框，不写回原来的应用。
+    // replacingUTF16Length > 0 时替换光标前同样长度的文字（再按一次把半角标点换成中文）。
     @discardableResult
-    func insertComposedText(_ text: String) -> Bool {
+    func insertComposedText(_ text: String, replacingUTF16Length: Int = 0) -> Bool {
         guard acceptsComposedText, let editor = ensureFieldEditor() else { return false }
+        if replacingUTF16Length > 0 {
+            let selected = editor.selectedRange()
+            if selected.length == 0, selected.location >= replacingUTF16Length {
+                let range = NSRange(location: selected.location - replacingUTF16Length, length: replacingUTF16Length)
+                editor.insertText(text, replacementRange: range)
+                return true
+            }
+        }
         editor.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
         return true
+    }
+
+    // 词条框光标前的文字。没有光标或读不到时返回 nil；光标在开头或有选区时返回空串。
+    func plainTextBeforeCaret(limit: Int) -> String? {
+        guard acceptsComposedText, let editor = panel.firstResponder as? NSTextView else { return nil }
+        let selected = editor.selectedRange()
+        guard selected.location != NSNotFound else { return nil }
+        if selected.length > 0 || selected.location == 0 {
+            return ""
+        }
+        let length = min(max(limit, 0), selected.location)
+        let range = NSRange(location: selected.location - length, length: length)
+        return (editor.string as NSString).substring(with: range)
     }
 
     @discardableResult

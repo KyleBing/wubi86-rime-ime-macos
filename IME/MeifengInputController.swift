@@ -22,6 +22,8 @@ final class MeifengInputController: IMKInputController {
     // 输入法自己的标点候选，不交给 Rime。
     private var punctSymbols: [String] = []
     private var punctPage = 0
+    // 光标前最近上屏或直通的字符。有的客户端读不到插入点前的文字时，用它判断半角标点。
+    private var caretTail = ""
     // 强引用，避免设置窗口闪一下被释放
     private var preferencesWindowController: MeifengPreferencesWindowController?
     // 菜单交给另一个进程绘制，必须自己留着，否则项会被释放掉
@@ -83,6 +85,7 @@ final class MeifengInputController: IMKInputController {
         caretHintArmedUntil = nil
         commitOrClearPending()
         clearPunctuation()
+        caretTail = ""
         panel.hide()
         // 输入框失焦后提示不再属于当前会话，立刻收掉，避免残留在别的窗口上。
         modeHint.hide()
@@ -112,6 +115,9 @@ final class MeifengInputController: IMKInputController {
         guard let event else { return false }
         // 这次按键若结束了编码，再加载自动同步写回的用户词。
         defer { UserDictEngineReload.flushIfIdle() }
+        // 按键最终交给当前软件时记下，供读不到光标前文字的客户端判断数字后的句号。
+        var passToClient = false
+        defer { if passToClient { noteKeyPassedToClient(event) } }
         currentClient = (sender as? IMKTextInput) ?? currentClient
         Self.activeController = self
 
@@ -153,6 +159,7 @@ final class MeifengInputController: IMKInputController {
 
         guard RimeSession.shared.ensureStarted() else {
             log("handle: rime not ready")
+            passToClient = true
             return false
         }
 
@@ -179,10 +186,12 @@ final class MeifengInputController: IMKInputController {
         }
 
         if asciiMode {
+            passToClient = true
             return false
         }
 
         guard let mapped = MacKeyMapper.map(event: event) else {
+            passToClient = true
             return false
         }
 
@@ -194,6 +203,7 @@ final class MeifengInputController: IMKInputController {
         if RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
             return true
         }
+        passToClient = true
         return false
     }
 
@@ -363,6 +373,11 @@ final class MeifengInputController: IMKInputController {
     private func applyPunctuation(_ item: PunctuationPrefs.Item) {
         let symbols = PunctuationPrefs.symbols(for: item.key)
         let mode = PunctuationPrefs.mode(for: item.key)
+        // 数字后的半角标点单独处理，不走候选列表。
+        if let decision = halfWidthPunctuationDecision(primary: symbols.first ?? item.key) {
+            commitPunctuation(decision.text, replacingUTF16Length: decision.replaceUTF16)
+            return
+        }
         if mode == .direct {
             commitPunctuation(symbols.first ?? item.key)
             return
@@ -384,9 +399,126 @@ final class MeifengInputController: IMKInputController {
         }
     }
 
-    private func commitPunctuation(_ text: String) {
-        insertText(text)
+    private func commitPunctuation(_ text: String, replacingUTF16Length: Int = 0) {
+        insertText(text, replacingUTF16Length: replacingUTF16Length)
         clearPunctuation()
+    }
+
+    private struct PunctuationCommit {
+        let text: String
+        let replaceUTF16: Int
+    }
+
+    // 紧挨着数字时，第一次上屏半角；再按一次，把这个半角换回中文标点。
+    // 句号是「.」，逗号是「,」，冒号是「:」。
+    private func halfWidthPunctuationDecision(primary: String) -> PunctuationCommit? {
+        let rules: [(chinese: String, ascii: String)] = [
+            ("。", "."),
+            ("，", ","),
+            ("：", ":")
+        ]
+        guard let rule = rules.first(where: { $0.chinese == primary }) else { return nil }
+        let prefix: String
+        switch contextBeforeCaret(limit: 2) {
+        case .text(let text):
+            caretTail = String(text.suffix(8))
+            prefix = text
+        case .unknown:
+            prefix = String(caretTail.suffix(2))
+        }
+        guard let last = prefix.last else { return nil }
+        if isPlainDigit(last) {
+            return PunctuationCommit(text: rule.ascii, replaceUTF16: 0)
+        }
+        // 半角标点紧挨着数字时，再按同一个键换回中文。
+        if String(last) == rule.ascii, prefix.count >= 2 {
+            let previous = prefix[prefix.index(prefix.endIndex, offsetBy: -2)]
+            if isPlainDigit(previous) {
+                return PunctuationCommit(text: rule.chinese, replaceUTF16: last.utf16.count)
+            }
+        }
+        return nil
+    }
+
+    private enum CaretPrefix {
+        case text(String)
+        case unknown
+    }
+
+    // 光标前最多 limit 个 UTF-16 单元。选区或文档开头视为没有可判断的前缀。
+    private func contextBeforeCaret(limit: Int) -> CaretPrefix {
+        if QuickAddWordPanel.shared.acceptsComposedText {
+            if let text = QuickAddWordPanel.shared.plainTextBeforeCaret(limit: limit) {
+                return .text(text)
+            }
+            return .unknown
+        }
+        guard let client = currentClient ?? (client() as? IMKTextInput) else { return .unknown }
+        let selected = client.selectedRange()
+        guard selected.location != NSNotFound else { return .unknown }
+        if selected.length > 0 || selected.location == 0 {
+            return .text("")
+        }
+        let length = min(max(limit, 0), selected.location)
+        let range = NSRange(location: selected.location - length, length: length)
+        guard let raw = client.attributedSubstring(from: range)?.string else {
+            return .unknown
+        }
+        return .text(raw)
+    }
+
+    private func isPlainDigit(_ ch: Character) -> Bool {
+        (ch >= "0" && ch <= "9") || (ch >= "０" && ch <= "９")
+    }
+
+    // 直通给当前软件的按键会改光标前的文字，但不会经过 insertText。
+    private func noteKeyPassedToClient(_ event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags.contains(.command) || flags.contains(.control) || flags.contains(.option) {
+            return
+        }
+        switch Int(event.keyCode) {
+        case kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow,
+             kVK_Home, kVK_End, kVK_PageUp, kVK_PageDown:
+            caretTail = ""
+            return
+        case kVK_Delete:
+            if !caretTail.isEmpty { caretTail.removeLast() }
+            return
+        case kVK_ForwardDelete:
+            caretTail = ""
+            return
+        default:
+            break
+        }
+        guard let ch = event.characters, ch.utf16.count == 1 else { return }
+        if ch.first?.isNewline == true {
+            caretTail = ""
+            return
+        }
+        caretTail = String((caretTail + ch).suffix(8))
+    }
+
+    private func noteTailAppend(_ string: String) {
+        guard !string.isEmpty else { return }
+        caretTail = String((caretTail + string).suffix(8))
+    }
+
+    // 用新文本换掉光标前 utf16Length 个单元，同步本地尾部。
+    private func noteTailReplacingLast(with string: String, utf16Length: Int) {
+        var drop = 0
+        var units = 0
+        for ch in caretTail.reversed() {
+            if units >= utf16Length { break }
+            units += ch.utf16.count
+            drop += 1
+        }
+        if units == utf16Length, drop > 0 {
+            caretTail.removeLast(drop)
+        } else {
+            caretTail = ""
+        }
+        noteTailAppend(string)
     }
 
     private func clearPunctuation() {
@@ -670,8 +802,13 @@ final class MeifengInputController: IMKInputController {
         _ = consumeRimeUpdate()
     }
 
-    private func insertText(_ string: String) {
-        if QuickAddWordPanel.shared.insertComposedText(string) {
+    private func insertText(_ string: String, replacingUTF16Length: Int = 0) {
+        if QuickAddWordPanel.shared.insertComposedText(string, replacingUTF16Length: replacingUTF16Length) {
+            if replacingUTF16Length > 0 {
+                noteTailReplacingLast(with: string, utf16Length: replacingUTF16Length)
+            } else {
+                noteTailAppend(string)
+            }
             return
         }
         QuickAddWordPanel.noteCommittedWord(string)
@@ -679,7 +816,17 @@ final class MeifengInputController: IMKInputController {
             log("insertText FAILED no client: \(string)")
             return
         }
+        if replacingUTF16Length > 0 {
+            let selected = client.selectedRange()
+            if selected.location != NSNotFound, selected.length == 0, selected.location >= replacingUTF16Length {
+                let range = NSRange(location: selected.location - replacingUTF16Length, length: replacingUTF16Length)
+                client.insertText(string, replacementRange: range)
+                noteTailReplacingLast(with: string, utf16Length: replacingUTF16Length)
+                return
+            }
+        }
         client.insertText(string, replacementRange: NSRange(location: NSNotFound, length: NSNotFound))
+        noteTailAppend(string)
     }
 
     private func setMarkedText(_ string: String) {
