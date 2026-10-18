@@ -1,7 +1,7 @@
 import Foundation
 
 /// 标点由输入法处理，不走 Rime 的标点表。
-/// 默认与 default.custom.yaml 的 half_shape 一致：单项或 commit 直接上屏，多项或成对引号用候选列表。
+/// 符号内容与 default.custom.yaml 的 half_shape 一致。默认全部直接上屏第一项。
 enum PunctuationPrefs {
     enum Mode: String, CaseIterable {
         case direct
@@ -21,7 +21,7 @@ enum PunctuationPrefs {
         let defaultMode: Mode
     }
 
-    // 与 Resources/Rime/default.custom.yaml 的 half_shape 一致。
+    // 符号表与 Resources/Rime/default.custom.yaml 的 half_shape 一致。方式默认全部直接上屏第一项。
     static let items: [Item] = [
         Item(key: ",", symbols: ["，"], defaultMode: .direct),
         Item(key: ".", symbols: ["。"], defaultMode: .direct),
@@ -31,8 +31,8 @@ enum PunctuationPrefs {
         Item(key: "?", symbols: ["？"], defaultMode: .direct),
         Item(key: ";", symbols: ["；"], defaultMode: .direct),
         Item(key: ":", symbols: ["："], defaultMode: .direct),
-        Item(key: "'", symbols: ["‘", "’"], defaultMode: .candidates),
-        Item(key: "\"", symbols: ["“", "”"], defaultMode: .candidates),
+        Item(key: "'", symbols: ["‘", "’"], defaultMode: .direct),
+        Item(key: "\"", symbols: ["“", "”"], defaultMode: .direct),
         Item(key: "\\", symbols: ["、"], defaultMode: .direct),
         Item(key: "|", symbols: ["|"], defaultMode: .direct),
         Item(key: "`", symbols: ["`"], defaultMode: .direct),
@@ -40,7 +40,7 @@ enum PunctuationPrefs {
         Item(key: "!", symbols: ["！"], defaultMode: .direct),
         Item(key: "@", symbols: ["@"], defaultMode: .direct),
         Item(key: "#", symbols: ["#"], defaultMode: .direct),
-        Item(key: "%", symbols: ["%", "％", "°", "℃"], defaultMode: .candidates),
+        Item(key: "%", symbols: ["%", "％", "°", "℃"], defaultMode: .direct),
         Item(key: "$", symbols: ["￥"], defaultMode: .direct),
         Item(key: "^", symbols: ["……"], defaultMode: .direct),
         Item(key: "&", symbols: ["&"], defaultMode: .direct),
@@ -89,7 +89,7 @@ enum PunctuationPrefs {
         return item(for: key)?.symbols ?? [key]
     }
 
-    // 丢掉已保存的输出和方式，下次读取回到 half_shape 默认。
+    // 丢掉已保存的输出和方式，下次读取回到默认：每键直接上屏第一项。
     static func restoreDefaults() {
         defaults.removeObject(forKey: storageKey)
         defaults.removeObject(forKey: symbolsKey)

@@ -61,7 +61,7 @@ struct UserLexiconMacView: View {
             return
         }
         do {
-            try UserDictWriter.addEntry(UserDictEntry(code: c, text: t, weight: 100_000))
+            try UserDictWriter.addEntry(UserDictEntry(code: c, text: t))
             UserDictWriter.markNeedsDeploy()
             _ = RimeConfigDeploy.deployNow()
             code = ""

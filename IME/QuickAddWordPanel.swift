@@ -128,19 +128,6 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
         return true
     }
 
-    // 词条框光标前的文字。没有光标或读不到时返回 nil；光标在开头或有选区时返回空串。
-    func plainTextBeforeCaret(limit: Int) -> String? {
-        guard acceptsComposedText, let editor = panel.firstResponder as? NSTextView else { return nil }
-        let selected = editor.selectedRange()
-        guard selected.location != NSNotFound else { return nil }
-        if selected.length > 0 || selected.location == 0 {
-            return ""
-        }
-        let length = min(max(limit, 0), selected.location)
-        let range = NSRange(location: selected.location - length, length: length)
-        return (editor.string as NSString).substring(with: range)
-    }
-
     @discardableResult
     func setComposition(_ text: NSAttributedString, selectionRange: NSRange) -> Bool {
         guard acceptsComposedText, let editor = ensureFieldEditor() else { return false }
@@ -532,8 +519,7 @@ final class QuickAddWordPanel: NSObject, NSTextFieldDelegate, NSWindowDelegate {
             // 留空的权重不写进 yaml；有值才写出第三列。
             try UserDictWriter.addEntry(
                 UserDictEntry(code: code, text: text, weight: weight),
-                toGroupIndex: groupIndex,
-                boostWeight: false
+                toGroupIndex: groupIndex
             )
             QuickAddPrefs.selectedGroupIndex = groupIndex
             // 不要走 deployNow：它会 finalize 正在用的 librime，菜单还在但按键全部失效

@@ -62,8 +62,8 @@ targets:
         WRAPPER_EXTENSION: prefPane
         INFOPLIST_FILE: IME/PrefsPane/Info.plist
         GENERATE_INFOPLIST_FILE: NO
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: "8"
         SKIP_INSTALL: YES
         DEFINES_MODULE: YES
     dependencies:
@@ -101,8 +101,8 @@ targets:
         PRODUCT_NAME: MeifengWubiIME
         INFOPLIST_FILE: IME/Info.plist
         GENERATE_INFOPLIST_FILE: NO
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: "8"
         SKIP_INSTALL: YES
         # 输入法为 UIElement，Dock 不显示；仍带 icns 供 Finder 识别
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
@@ -155,8 +155,8 @@ targets:
         PRODUCT_NAME: 玫枫五笔
         INFOPLIST_FILE: App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: "8"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LIBRARY_SEARCH_PATHS:
           - "$(inherited)"

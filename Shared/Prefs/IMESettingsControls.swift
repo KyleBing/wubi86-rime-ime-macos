@@ -558,7 +558,7 @@ private final class SettingsRootView: NSView {
         let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
         settings.addArrangedSubview(formRow("造词", quickAdd))
 
-        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选。")
+        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选，加 0（默认 ⌃⌥0）可拖动排序。排序只改被拖动词条的权重，幅度为 5 或 10。")
         note.textColor = .secondaryLabelColor
         note.font = .systemFont(ofSize: 11)
         note.preferredMaxLayoutWidth = 420
@@ -575,7 +575,7 @@ private final class SettingsRootView: NSView {
         let body = PunctuationSettingsView(frame: .zero)
         return page(
             title: "标点",
-            subtitle: "标点由输入法处理。输出用空格分开多项，可直接修改。直接上屏只输出第一项；候选列表弹出全部符号供选择。",
+            subtitle: "标点由输入法处理。默认每键直接上屏第一项。输出用空格分开多项，可直接修改。改成候选列表后会弹出全部符号供选择。",
             content: card(title: "标点输出", subtitle: nil, content: body)
         )
     }
@@ -649,6 +649,7 @@ private final class SettingsRootView: NSView {
         let keys = helpList([
             ("造词快捷键", "默认 ⌃⌥N，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组；两分钟内刚上屏的词会自动填入，并列出同编码词来自哪个词库"),
             ("删除候选", "候选出现时，按与造词相同的修饰键加数字（默认 ⌃⌥1–9）。确认框会显示词库、权重、备注和同编码词，确认后从该词库删除"),
+            ("候选排序", "候选出现时，按与造词相同的修饰键加 0（默认 ⌃⌥0）。拖动调整顺序，只改被拖动词条的权重，幅度可选 5 或 10。关闭窗口后重新加载词库"),
             ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
             ("光标提示", "输入框出现光标时，在旁边显示当前是中文还是英文。可在「按键」页关闭"),
             ("空格", "上屏第一个候选"),

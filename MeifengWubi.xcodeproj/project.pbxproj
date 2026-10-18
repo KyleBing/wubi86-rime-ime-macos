@@ -113,6 +113,7 @@
 		B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		BAC4E278D39E26725815C7E9 /* DeleteCandidatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */; };
+		C4A1E7B29D0F4A6E8B3C1D55 /* CandidateRankPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */; };
 		C1FD11772FF7E1924A7B8850 /* PunctuationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */; };
 		C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
@@ -222,6 +223,7 @@
 		98C6A2B34E367C393E89B872 /* MeifengWubiIME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeifengWubiIME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0FD460C13C268F780AD30C2 /* SettingsLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SettingsLogo.png; sourceTree = "<group>"; };
 		A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteCandidatePanel.swift; sourceTree = "<group>"; };
+		B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateRankPanel.swift; sourceTree = "<group>"; };
 		AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengWubiApp.swift; sourceTree = "<group>"; };
 		AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengPreferencesWindowController.swift; sourceTree = "<group>"; };
 		B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppDelegate.swift; sourceTree = "<group>"; };
@@ -310,6 +312,7 @@
 				F0CF3F6662273519E251BADF /* InfoPlist.strings */,
 				46A2085C3B99ED28ED427D7B /* PrefsPane */,
 				6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */,
+				B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */,
 				A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */,
 				8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */,
 				B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */,
@@ -750,6 +753,7 @@
 				565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */,
 				4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */,
 				B22E4FDA10C39DFB2FF4060B /* CandidatePanelController.swift in Sources */,
+				C4A1E7B29D0F4A6E8B3C1D55 /* CandidateRankPanel.swift in Sources */,
 				1DEAABE28CECE6AEDDBFC240 /* CandidatePreviewPanelController.swift in Sources */,
 				524BECCB61835EF647986BE0 /* CandidateSkin.swift in Sources */,
 				696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */,
@@ -894,7 +898,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -909,7 +913,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -927,7 +931,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -942,7 +946,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -959,7 +963,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
@@ -967,7 +971,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.inputmethod.meifengwubi.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
@@ -981,7 +985,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -996,7 +1000,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -1014,7 +1018,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
@@ -1022,7 +1026,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.inputmethod.meifengwubi.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
@@ -1036,7 +1040,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1051,7 +1055,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",

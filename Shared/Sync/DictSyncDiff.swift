@@ -1,6 +1,6 @@
 import Foundation
 
-/// 对比本地与线上用户词库。唯一键是词 + 编码，权重或备注不同算内容变更。
+/// 对比本地与线上用户词库。同一条看分组 + 词 + 编码，权重和备注用来判断是否一致。
 enum DictSyncDiff {
     struct WordItem: Equatable {
         let key: String
@@ -94,8 +94,7 @@ enum DictSyncDiff {
         for group in document.groups {
             for entry in group.entries {
                 list.append(WordItem(
-                    // 同一词条可以出现在不同分组，键必须带上分组名。
-                    key: "\(group.name)\t\(entry.text)\t\(entry.code)",
+                    key: identityKey(group: group.name, text: entry.text, code: entry.code),
                     word: entry.text,
                     code: entry.code,
                     priority: entry.weight.map(String.init) ?? "",
@@ -151,7 +150,7 @@ enum DictSyncDiff {
         )
     }
 
-    // 把云端独有词条并入本地，同词同码但权重不同时再追加一份
+    // 把云端没有的词条并入本地。编码和词相同就是同一条，权重不同也不另加一份。
     static func mergeRemoteIntoLocal(_ local: UserDictDocument, remote: UserDictDocument) -> (document: UserDictDocument, added: Int) {
         var result = local
         var added = 0
@@ -163,20 +162,15 @@ enum DictSyncDiff {
             }
             for remoteGroup in remote.groups {
                 if let idx = groupIndexByName[remoteGroup.name] {
-                    var existingKeys = Set(result.groups[idx].entries.map { "\($0.text)\t\($0.code)" })
+                    var existingKeys = Set(result.groups[idx].entries.map {
+                        identityKey(group: result.groups[idx].name, text: $0.text, code: $0.code)
+                    })
                     for entry in remoteGroup.entries {
-                        let key = "\(entry.text)\t\(entry.code)"
-                        if existingKeys.contains(key) {
-                            if let localEntry = result.groups[idx].entries.first(where: { $0.text == entry.text && $0.code == entry.code }),
-                               localEntry.weight != entry.weight {
-                                result.groups[idx].entries.append(entry)
-                                added += 1
-                            }
-                        } else {
-                            result.groups[idx].entries.append(entry)
-                            existingKeys.insert(key)
-                            added += 1
-                        }
+                        let key = identityKey(group: remoteGroup.name, text: entry.text, code: entry.code)
+                        guard !existingKeys.contains(key) else { continue }
+                        result.groups[idx].entries.append(entry)
+                        existingKeys.insert(key)
+                        added += 1
                     }
                 } else {
                     result.groups.append(remoteGroup)
@@ -188,23 +182,18 @@ enum DictSyncDiff {
                 result.isGroupMode = true
             }
         } else {
-            var existingKeys = Set(result.allEntries.map { "\($0.text)\t\($0.code)" })
+            var existingKeys = Set(result.allEntries.map {
+                identityKey(group: "", text: $0.text, code: $0.code)
+            })
             if result.groups.isEmpty {
                 result.groups = [UserDictGroup(name: "", entries: [])]
             }
             for entry in remote.allEntries {
-                let key = "\(entry.text)\t\(entry.code)"
-                if existingKeys.contains(key) {
-                    if let localEntry = result.allEntries.first(where: { $0.text == entry.text && $0.code == entry.code }),
-                       localEntry.weight != entry.weight {
-                        result.groups[0].entries.append(entry)
-                        added += 1
-                    }
-                } else {
-                    result.groups[0].entries.append(entry)
-                    existingKeys.insert(key)
-                    added += 1
-                }
+                let key = identityKey(group: "", text: entry.text, code: entry.code)
+                guard !existingKeys.contains(key) else { continue }
+                result.groups[0].entries.append(entry)
+                existingKeys.insert(key)
+                added += 1
             }
         }
         return (result, added)
@@ -322,6 +311,11 @@ enum DictSyncDiff {
         }
     }
 
+    // 同一条是分组里的编码 + 词。权重不参与认词，只在 sameContent 里比较是否一致。
+    private static func identityKey(group: String, text: String, code: String) -> String {
+        "\(group)\t\(text)\t\(code)"
+    }
+
     private static func indexMap(_ document: UserDictDocument) -> [String: WordItem] {
         var map: [String: WordItem] = [:]
         for item in flatten(document) {
@@ -349,7 +343,11 @@ enum DictSyncDiff {
         for index in result.groups.indices {
             var kept: [UserDictEntry] = []
             for entry in result.groups[index].entries {
-                let key = "\(result.groups[index].name)\t\(entry.text)\t\(entry.code)"
+                let key = identityKey(
+                    group: result.groups[index].name,
+                    text: entry.text,
+                    code: entry.code
+                )
                 guard let item = chosen[key] else { continue }
                 var updated = entry
                 updated.weight = Int(item.priority)

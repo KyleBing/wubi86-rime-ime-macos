@@ -212,6 +212,60 @@ final class DictLexiconIndex {
         invalidateUnlocked()
     }
 
+    // 只改这一行的权重列，分组、备注和文件里的先后顺序保持不动。
+    func updateWeight(_ hit: DictLexiconHit, to weight: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        let raw = try String(contentsOf: hit.fileURL, encoding: .utf8)
+        let normalized = raw
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        var lines = normalized.components(separatedBy: "\n")
+        var group = ""
+        var updated = false
+        for index in lines.indices {
+            let line = lines[index]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("##") {
+                group = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+                continue
+            }
+            guard !updated, let entry = UserDictWriter.parseEntryLine(line) else { continue }
+            guard entry.text == hit.entry.text, entry.code == hit.entry.code, group == hit.groupName else { continue }
+            lines[index] = Self.lineReplacingWeight(line, weight: weight)
+            updated = true
+        }
+        guard updated else {
+            throw NSError(domain: "DictLexiconIndex", code: 2, userInfo: [
+                NSLocalizedDescriptionKey: "词库里已经没有「\(hit.entry.text)」。"
+            ])
+        }
+        var out = lines.joined(separator: "\n")
+        if normalized.hasSuffix("\n"), !out.hasSuffix("\n") {
+            out += "\n"
+        }
+        try out.write(to: hit.fileURL, atomically: true, encoding: .utf8)
+        UserDictWriter.markNeedsDeploy()
+        invalidateUnlocked()
+    }
+
+    // 第三列是权重。有备注或词根时留在后面，不整行重写。
+    private static func lineReplacingWeight(_ line: String, weight: Int) -> String {
+        let value = String(weight)
+        if line.contains("\t") {
+            var parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            while parts.count < 3 { parts.append("") }
+            parts[2] = value
+            return parts.joined(separator: "\t")
+        }
+        var parts = line.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        if parts.count >= 3 {
+            parts[2] = value
+            return parts.joined(separator: " ")
+        }
+        return line + "\t" + value
+    }
+
     // z 开头、后面只有字母或结束符 '，与方案里的反查规则一致。
     private static func isReverseLookup(_ preedit: String) -> Bool {
         let compact = preedit.lowercased().filter { $0.isASCII && ($0.isLetter || $0 == "'") }

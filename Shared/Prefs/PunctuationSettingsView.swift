@@ -84,7 +84,7 @@ final class PunctuationSettingsView: NSView {
     @objc private func restoreDefaults() {
         let alert = NSAlert()
         alert.messageText = "恢复默认标点？"
-        alert.informativeText = "输出内容和输出方式都会回到半角默认方案。"
+        alert.informativeText = "输出内容和输出方式都会回到默认，每键直接上屏第一项。"
         alert.addButton(withTitle: "恢复默认")
         alert.addButton(withTitle: "取消")
         guard alert.runModal() == .alertFirstButtonReturn else { return }

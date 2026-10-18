@@ -415,7 +415,7 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
         }
         let index = selectedGroupIndex
         do {
-            try UserDictWriter.addEntry(UserDictEntry(code: code, text: text), toGroupIndex: index, boostWeight: false)
+            try UserDictWriter.addEntry(UserDictEntry(code: code, text: text), toGroupIndex: index)
             UserDictWriter.markNeedsDeploy()
             codeField.stringValue = ""
             textField.stringValue = ""
