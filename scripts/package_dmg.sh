@@ -7,8 +7,19 @@
 # 也可临时传入：NOTARY_KEYCHAIN_PROFILE、或 APPLE_ID + APPLE_APP_PASSWORD。
 #
 # 也可临时传入：APPLE_ID、APPLE_APP_PASSWORD（App 专用密码）、APPLE_TEAM_ID。
-# 指定证书：SIGN_IDENTITY="Developer ID Application: …"
+# 指定证书：SIGN_IDENTITY="Developer ID Application: …"，或直接给 40 位 SHA-1。
 set -euo pipefail
+
+# 登录会话的 __CF_USER_TEXT_ENCODING 常是 MacRoman（0x0）。
+# 证书显示名含中文时，codesign 会把 UTF-8 当成 MacRoman，报 no identity found。
+if [[ -n "${__CF_USER_TEXT_ENCODING:-}" ]]; then
+  _cf_uid="${__CF_USER_TEXT_ENCODING%%:*}"
+  # 0x08000100 = kCFStringEncodingUTF8
+  export __CF_USER_TEXT_ENCODING="${_cf_uid}:0x8000100:0x0"
+  unset _cf_uid
+fi
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DD="$ROOT/build/DerivedDataDist"
@@ -22,17 +33,39 @@ if [[ ! -d MeifengWubi.xcodeproj ]]; then
   exit 1
 fi
 
-SIGN_IDENTITY="${SIGN_IDENTITY:-}"
-if [[ -z "$SIGN_IDENTITY" ]]; then
-  SIGN_IDENTITY="$(security find-identity -v -p codesigning \
-    | awk -F '"' '/Developer ID Application/ { print $2; exit }')"
-fi
-if [[ -z "$SIGN_IDENTITY" ]]; then
+# 用证书 SHA-1 签名。显示名里的中文即使修正了编码，哈希也不受本地化影响。
+SIGN_WANT="${SIGN_IDENTITY:-}"
+SIGN_HASH=""
+SIGN_LABEL=""
+while IFS=$'\t' read -r hash label; do
+  [[ -z "$hash" ]] && continue
+  if [[ -n "$SIGN_WANT" ]]; then
+    if [[ "$SIGN_WANT" == "$hash" || "$SIGN_WANT" == "$label" || "$label" == *"$SIGN_WANT"* ]]; then
+      SIGN_HASH="$hash"
+      SIGN_LABEL="$label"
+      break
+    fi
+  elif [[ "$label" == *"($TEAM_ID)"* ]]; then
+    SIGN_HASH="$hash"
+    SIGN_LABEL="$label"
+    break
+  fi
+done < <(security find-identity -v -p codesigning | awk '
+  /Developer ID Application/ {
+    hash = $2
+    label = $0
+    sub(/^[^"]*"/, "", label)
+    sub(/"$/, "", label)
+    print hash "\t" label
+  }
+')
+if [[ -z "$SIGN_HASH" ]]; then
   echo "未找到 Developer ID Application 证书。开发证书打出的包不能分发给别人。"
   exit 1
 fi
+SIGN_IDENTITY="$SIGN_HASH"
 
-echo "签名身份: $SIGN_IDENTITY"
+echo "签名身份: $SIGN_LABEL"
 echo "正在编译 Release（arm64 + x86_64）…"
 xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi \
   -configuration Release \
