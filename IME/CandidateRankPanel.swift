@@ -148,16 +148,9 @@ final class CandidateRankPanel: NSObject, NSTableViewDataSource, NSTableViewDele
         }
     }
 
-    // 造词那组修饰键加上 0，例如默认的 ⌃⌥0。
+    // 设置里的排序快捷键，例如默认的 ⌃⌥0。
     private static func shortcutLabel() -> String {
-        var prefix = ""
-        let mods = QuickAddPrefs.modifiers
-        if mods & 4096 != 0 { prefix += "⌃" }
-        if mods & 2048 != 0 { prefix += "⌥" }
-        if mods & 512 != 0 { prefix += "⇧" }
-        if mods & 256 != 0 { prefix += "⌘" }
-        if prefix.isEmpty { prefix = "⌃⌥" }
-        return prefix + "0"
+        RankShortcutPrefs.display
     }
 
     private func show() {

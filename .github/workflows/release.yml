@@ -1,0 +1,128 @@
+# 打 Release 包并发布到本仓库的 Releases。
+# 推送 v1.0.4 这类标签时自动打包 DMG 并发布；手动运行只打包，产物留在 Actions 里。
+#
+# 附件名固定为 MeifengWubi-macOS.dmg，不带版本号，说明站因此可以一直用
+#   https://github.com/KyleBing/wubi86-rime-macos-ime/releases/latest/download/MeifengWubi-macOS.dmg
+# 这条链接，发新版本只换附件，不用改文档。版本号看 Release 标题。
+#
+# 需要的 Secrets（都可选，不配时打自签名包、跳过公证）：
+#   MACOS_CERT_P12        Developer ID Application 证书的 base64（务必包含私钥）
+#   MACOS_CERT_PASSWORD   导出 p12 时设置的密码
+#   APPLE_ID              公证用的 Apple ID
+#   APPLE_APP_PASSWORD    App 专用密码
+#   APPLE_TEAM_ID         团队 ID，留空用脚本里的默认值
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # 固定附件名：releases/latest/download/<这个名字> 是稳定地址
+  ASSET_NAME: MeifengWubi-macOS.dmg
+
+jobs:
+  macos:
+    name: 打包 DMG
+    runs-on: macos-14
+    timeout-minutes: 60
+    env:
+      # 没有证书时让脚本走自签名，避免 xcodebuild 因缺少签名身份失败
+      HAS_CERT: ${{ secrets.MACOS_CERT_P12 != '' }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 版本号以 project.yml 为准，发版前先改版本再打标签
+      - name: 读取版本
+        id: version
+        run: |
+          VERSION=$(grep -m1 -oE 'MARKETING_VERSION: "[0-9]+\.[0-9]+\.[0-9]+"' project.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          if [ -z "$VERSION" ]; then
+            echo "project.yml 里读不到 MARKETING_VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "版本 $VERSION，标签 ${GITHUB_REF_NAME}"
+
+      - name: 校验标签与版本一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          EXPECT="v${{ steps.version.outputs.version }}"
+          if [ "${GITHUB_REF_NAME}" != "$EXPECT" ]; then
+            echo "标签 ${GITHUB_REF_NAME} 与 project.yml 里的 $EXPECT 不一致，先改版本号再打标签"
+            exit 1
+          fi
+
+      # 证书和私钥一起导入临时钥匙串，签完随 runner 一起销毁
+      - name: 导入 Developer ID 证书
+        if: env.HAS_CERT == 'true'
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p actions "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p actions "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: 打包 DMG
+        env:
+          ADHOC_SIGN: ${{ env.HAS_CERT == 'true' && '0' || '1' }}
+        run: |
+          ./scripts/package_dmg.sh
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+          # 固定附件名，避免各端下载链接带版本号
+          cp "build/dist/玫枫五笔-${VERSION}.dmg" "dist/${ASSET_NAME}"
+          ls -lh dist
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeifengWubi-${{ steps.version.outputs.version }}-macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
+      # 更新说明直接取 CHANGELOG.md 里对应版本的那一段
+      - name: 生成更新说明
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v head="## v$VERSION" 'index($0, head) == 1 { show = 1; next } /^## v/ { show = 0 } show' CHANGELOG.md > notes.md || true
+          if [ ! -s notes.md ]; then
+            echo "v$VERSION" > notes.md
+          fi
+          cat notes.md
+
+      - name: 发布 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          TITLE="v${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes-file notes.md --latest
+            gh release upload "$TAG" "dist/${ASSET_NAME}" --clobber
+          else
+            gh release create "$TAG" "dist/${ASSET_NAME}" --title "$TITLE" --notes-file notes.md --latest
+          fi
+          echo "已发布：https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          echo "固定下载：https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/${ASSET_NAME}"

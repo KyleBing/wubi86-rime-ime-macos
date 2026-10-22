@@ -14,6 +14,7 @@
 @property (nonatomic, assign) RimeSessionId sessionId;
 @property (nonatomic, assign) RimeApi *api;
 @property (nonatomic, copy) NSString *userDataDir;
+- (RimeContextSnapshot *)contextTakingCommit:(BOOL)takeCommit;
 @end
 
 @implementation RimeBridge
@@ -186,13 +187,22 @@
 }
 
 - (RimeContextSnapshot *)currentContext {
+    return [self contextTakingCommit:YES];
+}
+
+// 不取 commit，只读编码和候选
+- (RimeContextSnapshot *)currentContextPeeking {
+    return [self contextTakingCommit:NO];
+}
+
+- (RimeContextSnapshot *)contextTakingCommit:(BOOL)takeCommit {
     if (!_started || !_sessionId) { return nil; }
 
     RimeContextSnapshot *snap = [RimeContextSnapshot new];
     snap.candidates = @[];
 
     RIME_STRUCT(RimeCommit, commit);
-    if (_api->get_commit(_sessionId, &commit)) {
+    if (takeCommit && _api->get_commit(_sessionId, &commit)) {
         if (commit.text) {
             snap.commitText = [NSString stringWithUTF8String:commit.text];
         }

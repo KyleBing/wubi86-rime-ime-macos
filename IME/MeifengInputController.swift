@@ -16,6 +16,8 @@ final class MeifengInputController: IMKInputController {
     private var caretHintArmedUntil: Date?
     private var shiftIsSticky = false
     private var sawOtherKeyWithShift = false
+    // 大写锁定状态；提示里大写优先于中英
+    private var capsLockOn = false
     // 预置候选（date / time）由输入法自行分页，记录当前页与所属编码。
     private var specialPage = 0
     private var specialPreedit = ""
@@ -80,6 +82,8 @@ final class MeifengInputController: IMKInputController {
         Self.activeController = self
         let ok = RimeSession.shared.ensureStarted()
         log("activateServer rime=\(ok) client=\(currentClient != nil)")
+        // 记录当前大小写状态，光标提示要优先显示「大写」
+        capsLockOn = NSEvent.modifierFlags.contains(.capsLock)
         // 光标出现时先标出当前中/英，避免打字后才发现要切换。可在设置里关闭。
         if IMEAppearancePrefs.showCaretModeHint {
             scheduleModeHintAtCaret()
@@ -180,6 +184,20 @@ final class MeifengInputController: IMKInputController {
             return false
         }
 
+        // 回车清码：编码中按回车只清掉编码，不把字母上屏。放在标点之前，避免被 Rime 当作上屏处理。
+        if !asciiMode, RimeBehaviorPrefs.enterClearsCode,
+           event.keyCode == UInt16(kVK_Return) || event.keyCode == UInt16(kVK_ANSI_KeypadEnter),
+           event.modifierFlags.intersection([.control, .option]).isEmpty,
+           RimeSession.shared.bridgeEngine.peekSnapshot()?.isComposing == true {
+            RimeSession.shared.bridgeEngine.clearComposition()
+            clearPunctuation()
+            clearMarkedText()
+            specialPreedit = ""
+            specialPage = 0
+            recentInput = .other
+            return true
+        }
+
         // 标点在输入法里处理。编码过程中仍交给 Rime，避免打断翻页和选词。
         if !asciiMode, let handled = handlePunctuationKey(event) {
             return handled
@@ -215,6 +233,7 @@ final class MeifengInputController: IMKInputController {
         let handled = RimeSession.shared.bridgeEngine.processKey(mapped.keyCode, modifiers: mapped.modifiers)
         log("key=\(mapped.keyCode) handled=\(handled) chars=\(event.characters ?? "")")
         if handled {
+            applyEmptyCodeClear()
             return consumeRimeUpdate()
         }
         if RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
@@ -513,6 +532,12 @@ final class MeifengInputController: IMKInputController {
 
     private func handleFlagsChanged(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        // 大写锁定变化：按中英提示同样的样式显示，锁定时优先显示「大写」
+        let caps = flags.contains(.capsLock)
+        if caps != capsLockOn {
+            capsLockOn = caps
+            modeHint.show(asciiMode: asciiMode, capsLock: caps, caretRect: insertionCaretRect())
+        }
         let shiftDown = flags.contains(.shift)
         if shiftDown {
             sawOtherKeyWithShift = false
@@ -528,12 +553,35 @@ final class MeifengInputController: IMKInputController {
                 panel.hide()
                 clearMarkedText()
             }
-            modeHint.show(asciiMode: asciiMode, caretRect: caret)
+            modeHint.show(asciiMode: asciiMode, capsLock: capsLockOn, caretRect: caret)
             shiftIsSticky = false
             return true
         }
         shiftIsSticky = false
         return false
+    }
+
+    // 空码清空：四码打完仍没有候选时清空编码
+    private func applyEmptyCodeClear() {
+        guard RimeBehaviorPrefs.clearEmptyCode else { return }
+        let engine = RimeSession.shared.bridgeEngine
+        guard let snap = engine.peekSnapshot(), snap.isComposing else { return }
+        let preedit = snap.preedit ?? ""
+        guard Self.isFullFourCode(code(for: preedit)), snap.candidates.isEmpty else { return }
+        guard DateTimeCandidates.candidates(for: preedit) == nil else { return }
+        engine.clearComposition()
+    }
+
+    // 当前实际输入的编码
+    private func code(for preedit: String) -> String {
+        let typed = RimeSession.shared.bridgeEngine.rawInput()
+        return typed.isEmpty ? preedit : typed
+    }
+
+    // 恰好四码字母且不以 z 开头（z 是反查前缀）
+    private static func isFullFourCode(_ code: String) -> Bool {
+        guard code.count == 4, code.first?.lowercased() != "z" else { return false }
+        return code.allSatisfy { $0.isASCII && $0.isLetter }
     }
 
     @discardableResult
@@ -625,7 +673,10 @@ final class MeifengInputController: IMKInputController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
             guard let self, token == self.caretHintToken else { return }
             if let caret = self.focusedInsertionCaretRect() {
-                self.modeHint.show(asciiMode: self.asciiMode, caretRect: caret)
+                // 读当前按键状态，聚焦后才按下的 Caps Lock 也能反映出来
+                let caps = NSEvent.modifierFlags.contains(.capsLock)
+                self.capsLockOn = caps
+                self.modeHint.show(asciiMode: self.asciiMode, capsLock: caps, caretRect: caret)
                 return
             }
             guard attemptsLeft > 1 else { return }
@@ -757,17 +808,11 @@ final class MeifengInputController: IMKInputController {
         return true
     }
 
-    // 造词修饰键 + 0：弹出当前候选的排序窗口。
+    // 排序快捷键（默认 ⌃⌥0，可在设置里单独改）：弹出当前候选的排序窗口。
     private func handleRankCandidatesShortcut(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let carbon = QuickAddPrefs.carbonModifiers(from: flags)
-        guard carbon != 0, carbon == QuickAddPrefs.modifiers else { return false }
-        switch Int(event.keyCode) {
-        case kVK_ANSI_0, kVK_ANSI_Keypad0:
-            break
-        default:
-            return false
-        }
+        guard RankShortcutPrefs.matches(keyCode: event.keyCode, carbonModifiers: carbon) else { return false }
         if QuickAddWordPanel.shared.isOpen || DeleteCandidatePanel.shared.isOpen {
             return false
         }
@@ -962,6 +1007,6 @@ final class MeifengInputController: IMKInputController {
             panel.hide()
             clearMarkedText()
         }
-        modeHint.show(asciiMode: asciiMode, caretRect: caret)
+        modeHint.show(asciiMode: asciiMode, capsLock: capsLockOn, caretRect: caret)
     }
 }

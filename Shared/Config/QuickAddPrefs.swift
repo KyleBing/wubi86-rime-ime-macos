@@ -112,3 +112,81 @@ enum QuickAddPrefs {
         AppGroupPaths.containerURL?.appendingPathComponent(fileName)
     }
 }
+
+/// 候选排序快捷键，默认与造词同一组修饰键加 0（⌃⌥0），可在设置里单独修改
+enum RankShortcutPrefs {
+    static let changedNotification = Notification.Name("cn.kylebing.inputmethod.meifengwubi.rankHotkeyChanged")
+
+    // Carbon：kVK_ANSI_0 = 29，controlKey | optionKey = 6144
+    static let defaultKeyCode: UInt32 = 29
+    static let defaultModifiers: UInt32 = 6144
+
+    private static let fileName = "rankshortcut.json"
+    private static let lock = NSLock()
+
+    private struct Store: Codable {
+        var keyCode: UInt32 = RankShortcutPrefs.defaultKeyCode
+        var modifiers: UInt32 = RankShortcutPrefs.defaultModifiers
+        var display: String = "⌃⌥0"
+    }
+
+    static var keyCode: UInt32 { load().keyCode }
+
+    static var modifiers: UInt32 { load().modifiers }
+
+    static var display: String { load().display }
+
+    // 至少带一个修饰键，避免把单个数字键吃掉
+    static func saveShortcut(keyCode: UInt32, modifiers: UInt32, display: String) {
+        guard modifiers != 0 else { return }
+        update {
+            $0.keyCode = keyCode
+            $0.modifiers = modifiers
+            $0.display = display
+        }
+        DistributedNotificationCenter.default().post(name: changedNotification, object: nil)
+    }
+
+    // 数字键盘的 0 与小键盘上的同一颗键都认
+    static func matches(keyCode eventKeyCode: UInt16, carbonModifiers carbon: UInt32) -> Bool {
+        let store = load()
+        guard store.modifiers != 0, carbon == store.modifiers else { return false }
+        let code = UInt32(eventKeyCode)
+        if code == store.keyCode { return true }
+        // kVK_ANSI_0 = 29，kVK_ANSI_Keypad0 = 82
+        return store.keyCode == 29 && code == 82
+    }
+
+    private static func update(_ body: (inout Store) -> Void) {
+        lock.lock()
+        defer { lock.unlock() }
+        var store = readUnlocked()
+        body(&store)
+        writeUnlocked(store)
+    }
+
+    private static func load() -> Store {
+        lock.lock()
+        defer { lock.unlock() }
+        return readUnlocked()
+    }
+
+    private static func readUnlocked() -> Store {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url),
+              let store = try? JSONDecoder().decode(Store.self, from: data) else {
+            return Store()
+        }
+        return store
+    }
+
+    private static func writeUnlocked(_ store: Store) {
+        guard let url = fileURL, let data = try? JSONEncoder().encode(store) else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: url, options: .atomic)
+    }
+
+    private static var fileURL: URL? {
+        AppGroupPaths.containerURL?.appendingPathComponent(fileName)
+    }
+}

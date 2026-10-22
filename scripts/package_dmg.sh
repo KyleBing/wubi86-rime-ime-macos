@@ -8,6 +8,7 @@
 #
 # 也可临时传入：APPLE_ID、APPLE_APP_PASSWORD（App 专用密码）、APPLE_TEAM_ID。
 # 指定证书：SIGN_IDENTITY="Developer ID Application: …"，或直接给 40 位 SHA-1。
+# ADHOC_SIGN=1：没有 Developer ID 证书时（如 CI 未配密钥）打出自签名包，跳过公证。
 set -euo pipefail
 
 # 登录会话的 __CF_USER_TEXT_ENCODING 常是 MacRoman（0x0）。
@@ -60,19 +61,31 @@ done < <(security find-identity -v -p codesigning | awk '
   }
 ')
 if [[ -z "$SIGN_HASH" ]]; then
-  echo "未找到 Developer ID Application 证书。开发证书打出的包不能分发给别人。"
-  exit 1
+  # CI 或没有证书的机器：允许退化成自签名，打出的包只适合自用或测试
+  if [[ "${ADHOC_SIGN:-0}" == "1" ]]; then
+    ADHOC="1"
+    SIGN_IDENTITY="-"
+    SIGN_LABEL="自签名（未配置 Developer ID 证书）"
+    echo "未找到 Developer ID Application 证书，按 ADHOC_SIGN=1 自签名，跳过公证。"
+  else
+    echo "未找到 Developer ID Application 证书。开发证书打出的包不能分发给别人。"
+    exit 1
+  fi
+else
+  SIGN_IDENTITY="$SIGN_HASH"
 fi
-SIGN_IDENTITY="$SIGN_HASH"
+ADHOC="${ADHOC:-0}"
 
 echo "签名身份: $SIGN_LABEL"
 echo "正在编译 Release（arm64 + x86_64）…"
+# 交给下面的 codesign 统一签，避免 xcodebuild 在 CI 上找不到签名证书而失败
 xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi \
   -configuration Release \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "$DD" \
   ARCHS="arm64 x86_64" \
   ONLY_ACTIVE_ARCH=NO \
+  CODE_SIGNING_ALLOWED=NO \
   build
 
 BUILT="$DD/Build/Products/Release/${APP_NAME}.app"
@@ -98,7 +111,12 @@ xattr -cr "$STAGE/${APP_NAME}.app"
 # 由内向外签。不要带上 get-task-allow，公证会拒。
 sign_bundle() {
   local target="$1"
-  codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$target"
+  if [[ "$ADHOC" == "1" ]]; then
+    # 自签名没有时间戳服务，省掉 --timestamp
+    codesign --force --options runtime --sign "$SIGN_IDENTITY" "$target"
+  else
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$target"
+  fi
 }
 
 PAYLOAD="$STAGE/${APP_NAME}.app/Contents/Resources/MeifengWubiIME.payload"
@@ -210,7 +228,11 @@ MOUNT=""
 
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -ov -o "$DMG" >/dev/null
 rm -f "$RW_DMG"
-codesign --force --timestamp --sign "$SIGN_IDENTITY" "$DMG"
+if [[ "$ADHOC" == "1" ]]; then
+  codesign --force --sign "$SIGN_IDENTITY" "$DMG"
+else
+  codesign --force --timestamp --sign "$SIGN_IDENTITY" "$DMG"
+fi
 codesign --verify --verbose=2 "$DMG"
 
 echo "已生成: $DMG"
@@ -235,7 +257,8 @@ notarize() {
 }
 
 # 未指定时，用钥匙串里已经存好的公证配置。没有该配置时 notarytool 会立刻报错，不会联网。
-if [[ -z "${NOTARY_KEYCHAIN_PROFILE:-}" && -z "${APPLE_ID:-}" ]]; then
+# 自签名包不能公证，直接跳过。
+if [[ "$ADHOC" == "0" && -z "${NOTARY_KEYCHAIN_PROFILE:-}" && -z "${APPLE_ID:-}" ]]; then
   for candidate in meifeng-notary meifeng; do
     err="$(xcrun notarytool history --keychain-profile "$candidate" 2>&1 >/dev/null || true)"
     [[ "$err" == *"No Keychain password item found"* ]] && continue
@@ -245,7 +268,9 @@ if [[ -z "${NOTARY_KEYCHAIN_PROFILE:-}" && -z "${APPLE_ID:-}" ]]; then
   done
 fi
 
-if [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" || -n "${APPLE_ID:-}" ]]; then
+if [[ "$ADHOC" == "1" ]]; then
+  echo "自签名包未公证，其他人下载后需右键打开或 xattr 去除隔离属性。"
+elif [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" || -n "${APPLE_ID:-}" ]]; then
   notarize "$DMG"
 else
   echo "尚未公证。本机已用 Developer ID 签名，但别人的 Mac 仍会被 Gatekeeper 拦截。"

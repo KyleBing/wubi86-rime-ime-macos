@@ -23,20 +23,27 @@ enum RimeBehaviorPrefs {
             }
         }
 
-        /// 写入 Rime key_binder 的 include 列表
-        var bindingIncludes: [String] {
+        /// 写入 Rime key_binder.bindings 的绑定行。用原始绑定而不用预设 include，
+        /// 这样能直接追加到用户已有的 bindings 列表后面
+        var bindingLines: [String] {
             switch self {
             case .minusEqual:
-                return ["key_bindings:/paging_with_minus_equal"]
-            case .commaPeriod:
-                return ["key_bindings:/paging_with_comma_period"]
-            case .brackets:
-                return ["key_bindings:/paging_with_brackets"]
-            case .minusAndComma:
                 return [
-                    "key_bindings:/paging_with_minus_equal",
-                    "key_bindings:/paging_with_comma_period"
+                    "- { when: has_menu, accept: minus, send: Page_Up }",
+                    "- { when: has_menu, accept: equal, send: Page_Down }"
                 ]
+            case .commaPeriod:
+                return [
+                    "- { when: paging, accept: comma, send: Page_Up }",
+                    "- { when: has_menu, accept: period, send: Page_Down }"
+                ]
+            case .brackets:
+                return [
+                    "- { when: paging, accept: bracketleft, send: Page_Up }",
+                    "- { when: has_menu, accept: bracketright, send: Page_Down }"
+                ]
+            case .minusAndComma:
+                return PagingKeys.minusEqual.bindingLines + PagingKeys.commaPeriod.bindingLines
             }
         }
     }
@@ -55,18 +62,47 @@ enum RimeBehaviorPrefs {
             }
         }
 
-        var bindingIncludes: [String] {
+        var bindingLines: [String] {
             switch self {
             case .none:
                 return []
             case .semicolonApostrophe:
-                return ["key_bindings:/select_2nd_3rd_with_semicolon_apostrophe"]
+                return [
+                    "- { when: has_menu, accept: semicolon, send: 2 }",
+                    "- { when: has_menu, accept: apostrophe, send: 3 }"
+                ]
             }
         }
     }
 
     private static var defaults: UserDefaults {
         UserDefaults(suiteName: suiteName) ?? .standard
+    }
+
+    /// 空码清空：打满四码仍没有候选时清空编码。默认关，与方案里的 auto_clear 注释状态一致
+    static var clearEmptyCode: Bool {
+        get {
+            guard defaults.object(forKey: Keys.clearEmptyCode) != nil else { return false }
+            return defaults.bool(forKey: Keys.clearEmptyCode)
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.clearEmptyCode)
+            defaults.synchronize()
+            DistributedNotificationCenter.default().post(name: didChangeNotification, object: nil)
+        }
+    }
+
+    /// 回车清码：编码中按回车只清空编码，不把编码字母上屏。默认关，与 Rime 的默认回车行为一致
+    static var enterClearsCode: Bool {
+        get {
+            guard defaults.object(forKey: Keys.enterClearsCode) != nil else { return false }
+            return defaults.bool(forKey: Keys.enterClearsCode)
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.enterClearsCode)
+            defaults.synchronize()
+            DistributedNotificationCenter.default().post(name: didChangeNotification, object: nil)
+        }
     }
 
     // 每页候选数 → menu/page_size
@@ -126,15 +162,15 @@ enum RimeBehaviorPrefs {
         return nil
     }
 
-    /// 生成 / 覆盖 default.custom.yaml 中的 patch
+    /// 写入 default.custom.yaml 中由设置管理的部分：只改菜单每页候选数和按键绑定，
+    /// 文件里其他 patch（方案列表、标点、识别器、用户自己的绑定）原样保留
     static func writeCustomYAML() throws {
         _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
         let user = RimeResourceDeployer.resolveUserDataURL()
         try FileManager.default.createDirectory(at: user, withIntermediateDirectories: true)
         let url = user.appendingPathComponent("default.custom.yaml")
-        // 只更新玫枫自己生成过的 custom；上游或用户原文件保持不动
-        guard mayRewriteCustomYAML(at: url) else { return }
         let existingText = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        // 内置方案列表随文件保留；文件还不存在时补上内置方案
         var schemaIds = RimeExistingLexicon.schemaIds(in: existingText)
         for id in RimeExistingLexicon.requiredSchemaIds where !schemaIds.contains(id) {
             schemaIds.append(id)
@@ -142,35 +178,27 @@ enum RimeBehaviorPrefs {
         if schemaIds.isEmpty {
             schemaIds = RimeExistingLexicon.requiredSchemaIds
         }
-
-        var lines: [String] = []
-        lines.append("# 由玫枫五笔设置生成，修改「候选栏设置」会覆盖此文件中的 patch")
-        lines.append("patch:")
-        lines.append("  schema_list:")
-        for id in schemaIds {
-            lines.append("    - schema: \(id)")
-        }
-        lines.append("  \"menu/page_size\": \(pageSize)")
-        lines.append("  \"key_binder/bindings\":")
-        lines.append("    __patch:")
-        lines.append("      - key_bindings:/emacs_editing")
-        for inc in pagingKeys.bindingIncludes {
-            lines.append("      - \(inc)")
-        }
-        for inc in secondThirdKeys.bindingIncludes {
-            lines.append("      - \(inc)")
-        }
-        lines.append("      - key_bindings:/numbered_mode_switch")
-        lines.append("")
-
-        try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+        var bindings = pagingKeys.bindingLines
+        bindings += secondThirdKeys.bindingLines
+        // 数字键切换方案 / 中英等，与之前生成的配置保持一致
+        bindings += Self.numberedModeSwitchBindings
+        let text = RimeCustomPatchWriter.updated(
+            text: existingText,
+            schemaIds: schemaIds,
+            pageSize: pageSize,
+            bindingLines: bindings
+        )
+        try text.write(to: url, atomically: true, encoding: .utf8)
     }
 
-    // 只改写带玫枫标记的 default.custom.yaml，避免盖掉极点原配置
-    private static func mayRewriteCustomYAML(at url: URL) -> Bool {
-        guard let existing = try? String(contentsOf: url, encoding: .utf8) else { return false }
-        return existing.contains("由玫枫五笔设置生成")
-    }
+    // Control+Shift+1..5 切换方案 / 中英 / 全角 / 简体 / 扩展字集
+    private static let numberedModeSwitchBindings = [
+        "- { when: always, accept: Control+Shift+1, select: .next }",
+        "- { when: always, accept: Control+Shift+2, toggle: ascii_mode }",
+        "- { when: always, accept: Control+Shift+3, toggle: full_shape }",
+        "- { when: always, accept: Control+Shift+4, toggle: simplification }",
+        "- { when: always, accept: Control+Shift+5, toggle: extended_charset }"
+    ]
 
     /// 与 UserDictWriter.markNeedsDeploy 同路径，供 Prefs 在无词库模块时也能通知 IME
     private static func markSharedDeployFlag() {
@@ -187,5 +215,178 @@ enum RimeBehaviorPrefs {
         static let legacyPageSize = "candidate.pageSize"
         static let pagingKeys = "rime.pagingKeys"
         static let secondThirdKeys = "rime.secondThirdKeys"
+        static let clearEmptyCode = "rime.clearEmptyCode"
+        static let enterClearsCode = "rime.enterClearsCode"
+    }
+}
+
+/// default.custom.yaml 的增量改写：只改菜单每页候选数和按键绑定，文件里其他 patch 原样保留。
+/// 之前只在带玫枫标记的文件上整体重写，内置模板没有标记，导致设置一直写不进去。
+enum RimeCustomPatchWriter {
+    static let beginMarker = "# >>> 由玫枫五笔设置生成，改动设置会重写这一段"
+    static let endMarker = "# <<< 由玫枫五笔设置生成"
+
+    /// 返回改写后的全文。text 为空（还没有 custom 文件）时按内置方案列表新建
+    static func updated(text: String, schemaIds: [String], pageSize: Int, bindingLines: [String]) -> String {
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        var lines = normalized.isEmpty ? newFileLines(schemaIds: schemaIds) : normalized.components(separatedBy: "\n")
+        if lines.last == "" { lines.removeLast() }
+        // 没有顶层 patch 时补一个，设置才有地方写
+        if !lines.contains(where: { isKey($0, at: 0, key: "patch") }) {
+            if !lines.isEmpty { lines.append("") }
+            lines.append("patch:")
+        }
+        stripLegacyPathEntries(&lines)
+        setPageSize(pageSize, in: &lines)
+        setBindings(bindingLines, in: &lines)
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    // 旧版写的是 "menu/page_size" 这类路径键，改成嵌套段之前先删掉，避免同键两处值
+    private static func stripLegacyPathEntries(_ lines: inout [String]) {
+        guard let patch = lines.firstIndex(where: { isKey($0, at: 0, key: "patch") }) else { return }
+        let legacy = ["menu/page_size", "key_binder/bindings"]
+        var i = patch + 1
+        while i < lines.count {
+            guard let name = keyName(lines[i]), indent(lines[i]) == 2 else {
+                i += 1
+                continue
+            }
+            guard legacy.contains(name) else {
+                i += 1
+                continue
+            }
+            lines.removeSubrange(i..<blockEnd(lines, from: i, indentLimit: 2))
+        }
+    }
+
+    // 新建文件：内置方案列表 + 空的 patch，候选数与按键随后补进去
+    private static func newFileLines(schemaIds: [String]) -> [String] {
+        var lines = [
+            "# 由玫枫五笔设置生成：改动「设置」里的候选数量与按键会更新下面的 patch",
+            "patch:",
+            "  schema_list:"
+        ]
+        lines += schemaIds.map { "    - schema: \($0)" }
+        return lines
+    }
+
+    // 把 menu.page_size 改成指定值；已有 menu 段就只改 page_size 一行
+    private static func setPageSize(_ size: Int, in lines: inout [String]) {
+        guard let patch = lines.firstIndex(where: { isKey($0, at: 0, key: "patch") }) else { return }
+        let end = patchEnd(lines, from: patch)
+        let pageLine = "    page_size: \(size)"
+        if let menu = (patch + 1..<min(end, lines.count)).first(where: { isKey(lines[$0], at: 2, key: "menu") }) {
+            let menuEnd = blockEnd(lines, from: menu, indentLimit: 2)
+            if let child = (menu + 1..<menuEnd).first(where: { isKey(lines[$0], at: 4, key: "page_size") }) {
+                lines[child] = pageLine
+            } else {
+                lines.insert(pageLine, at: menu + 1)
+            }
+        } else {
+            lines.insert(contentsOf: ["  menu:", pageLine], at: patch + 1)
+        }
+    }
+
+    // 把按键绑定写进 key_binder.bindings 末尾的标记段，先清掉上一次写入的段和冲突的翻页 / 二三候选绑定
+    private static func setBindings(_ bindings: [String], in lines: inout [String]) {
+        stripManagedBlock(&lines)
+        guard let patch = lines.firstIndex(where: { isKey($0, at: 0, key: "patch") }) else { return }
+        let end = patchEnd(lines, from: patch)
+        let block = ["      \(beginMarker)"] + bindings.map { "      \($0)" } + ["      \(endMarker)"]
+
+        if let binder = (patch + 1..<min(end, lines.count)).first(where: { isKey(lines[$0], at: 2, key: "key_binder") }) {
+            let binderEnd = blockEnd(lines, from: binder, indentLimit: 2)
+            if let bindingsLine = (binder + 1..<binderEnd).first(where: { isKey(lines[$0], at: 4, key: "bindings") }) {
+                let bindingsEnd = blockEnd(lines, from: bindingsLine, indentLimit: 4)
+                let kept = (bindingsLine + 1..<bindingsEnd).map { lines[$0] }.filter { !isManagedBinding($0) }
+                lines.replaceSubrange((bindingsLine + 1)..<bindingsEnd, with: kept + block)
+            } else {
+                lines.insert(contentsOf: ["    bindings:"] + block, at: binder + 1)
+            }
+        } else {
+            lines.insert(contentsOf: ["  key_binder:", "    bindings:"] + block, at: patch + 1)
+        }
+    }
+
+    // 删掉上一次写入的标记段；没有结束标记时删到当前列表结束
+    private static func stripManagedBlock(_ lines: inout [String]) {
+        guard let start = lines.firstIndex(where: { trimmed($0) == beginMarker }) else { return }
+        var stop = lines.count
+        if let end = ((start + 1)..<lines.count).first(where: { trimmed(lines[$0]) == endMarker }) {
+            stop = end + 1
+        } else {
+            var i = start + 1
+            while i < lines.count {
+                let line = lines[i]
+                if !isBlank(line) && !isComment(line) && indent(line) <= 4 { break }
+                i += 1
+            }
+            stop = i
+        }
+        lines.removeSubrange(start..<stop)
+    }
+
+    // 翻页与二三候选的绑定由设置生成，写之前先去掉，避免和设置冲突
+    private static func isManagedBinding(_ line: String) -> Bool {
+        let t = trimmed(line)
+        guard t.hasPrefix("- "), t.contains("send:") else { return false }
+        let accepts = [
+            "accept: minus", "accept: equal", "accept: comma", "accept: period",
+            "accept: bracketleft", "accept: bracketright",
+            "accept: semicolon, send: 2", "accept: apostrophe, send: 3"
+        ]
+        return accepts.contains { t.contains($0) }
+    }
+
+    // patch 顶层键之后、下一个顶层键之前的行
+    private static func patchEnd(_ lines: [String], from start: Int) -> Int {
+        var i = start + 1
+        while i < lines.count {
+            let line = lines[i]
+            if !isBlank(line) && !isComment(line) && indent(line) == 0 { return i }
+            i += 1
+        }
+        return lines.count
+    }
+
+    // 某个键对应的子块结束位置：缩进回到 <= indentLimit 的第一行
+    private static func blockEnd(_ lines: [String], from start: Int, indentLimit: Int) -> Int {
+        var i = start + 1
+        while i < lines.count {
+            let line = lines[i]
+            if !isBlank(line) && !isComment(line) && indent(line) <= indentLimit { return i }
+            i += 1
+        }
+        return lines.count
+    }
+
+    private static func isKey(_ line: String, at depth: Int, key: String) -> Bool {
+        guard indent(line) == depth, let name = keyName(line) else { return false }
+        return name == key
+    }
+
+    // 行首的键名，去掉引号；列表项、注释和空行都不算键
+    private static func keyName(_ line: String) -> String? {
+        let t = trimmed(line)
+        guard !t.isEmpty, !t.hasPrefix("#"), !t.hasPrefix("-"), let colon = t.firstIndex(of: ":") else { return nil }
+        let name = String(t[..<colon]).trimmingCharacters(in: .whitespaces)
+        return name.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+    }
+
+    private static func indent(_ line: String) -> Int {
+        line.prefix { $0 == " " }.count
+    }
+
+    private static func trimmed(_ line: String) -> String {
+        line.trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func isBlank(_ line: String) -> Bool {
+        trimmed(line).isEmpty
+    }
+
+    private static func isComment(_ line: String) -> Bool {
+        trimmed(line).hasPrefix("#")
     }
 }

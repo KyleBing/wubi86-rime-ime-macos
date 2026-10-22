@@ -39,6 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)changePage:(BOOL)backward;
 - (void)clearComposition;
 - (nullable RimeContextSnapshot *)currentContext;
+/// 只读当前组字状态，不取待上屏文字；四码判定时用，避免吞掉 commit
+- (nullable RimeContextSnapshot *)currentContextPeeking;
 // 尚未被方案格式化的原始输入，反查时仍带前缀 z。
 - (nullable NSString *)rawInput;
 /// 拉取当前输入的全部候选（跨页）

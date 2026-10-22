@@ -64,7 +64,7 @@ private final class SettingsRootView: NSView {
             case .userLexicon: return "用户词"
             case .lexiconDirectory: return "词库目录"
             case .appearance: return "外观配置"
-            case .keyboard: return "按键"
+            case .keyboard: return "输入习惯"
             case .punctuation: return "标点"
             case .account: return "账户"
             case .help: return "帮助"
@@ -513,6 +513,25 @@ private final class SettingsRootView: NSView {
         settings.alignment = .leading
         settings.spacing = 14
 
+        // 空码清空 / 回车清码：输入法按键时直接判断，改完立即生效，不需要重新部署
+        let emptyCode = NSButton(
+            checkboxWithTitle: "",
+            target: ToggleTarget.shared,
+            action: #selector(ToggleTarget.clearEmptyCodeChanged(_:))
+        )
+        emptyCode.state = RimeBehaviorPrefs.clearEmptyCode ? .on : .off
+        emptyCode.toolTip = "打满四码仍无候选时清空编码"
+        settings.addArrangedSubview(formRow("空码清空", emptyCode, settingHint(emptyCode.toolTip ?? "")))
+
+        let enterCode = NSButton(
+            checkboxWithTitle: "",
+            target: ToggleTarget.shared,
+            action: #selector(ToggleTarget.enterClearsCodeChanged(_:))
+        )
+        enterCode.state = RimeBehaviorPrefs.enterClearsCode ? .on : .off
+        enterCode.toolTip = "编码中按回车只清空编码，不上屏字母"
+        settings.addArrangedSubview(formRow("回车清码", enterCode, settingHint(enterCode.toolTip ?? "")))
+
         let paging = NSPopUpButton(frame: .zero, pullsDown: false)
         for item in RimeBehaviorPrefs.PagingKeys.allCases {
             paging.addItem(withTitle: item.title)
@@ -546,29 +565,45 @@ private final class SettingsRootView: NSView {
         )
         caretHint.state = IMEAppearancePrefs.showCaretModeHint ? .on : .off
         // 开关旁边写明用途：聚焦后在光标旁短暂显示中文或英文。
-        let caretNote = NSTextField(labelWithString: "输入框出现光标时，在旁边显示当前是中文还是英文")
-        caretNote.font = .systemFont(ofSize: 11)
-        caretNote.textColor = .secondaryLabelColor
-        caretNote.lineBreakMode = .byWordWrapping
-        caretNote.maximumNumberOfLines = 2
-        caretNote.preferredMaxLayoutWidth = 360
+        let caretNote = settingHint("输入框出现光标时，在旁边显示当前是中文还是英文")
         caretHint.toolTip = caretNote.stringValue
         settings.addArrangedSubview(formRow("光标提示", caretHint, caretNote))
 
-        let quickAdd = QuickAddHotkeySettingsView(frame: .zero)
+        let quickAdd = HotkeyRecorderView(
+            display: { QuickAddPrefs.display },
+            save: { QuickAddPrefs.saveShortcut(keyCode: $0, modifiers: $1, display: $2) }
+        )
         settings.addArrangedSubview(formRow("造词", quickAdd))
 
-        let note = NSTextField(wrappingLabelWithString: "翻页与选词写入 Rime 配置，下次按键时生效。造词快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选，加 0（默认 ⌃⌥0）可拖动排序。排序只改被拖动词条的权重，幅度为 5 或 10。")
+        // 排序快捷键可以单独改，默认与造词同一组修饰键加 0
+        let rank = HotkeyRecorderView(
+            display: { RankShortcutPrefs.display },
+            save: { RankShortcutPrefs.saveShortcut(keyCode: $0, modifiers: $1, display: $2) }
+        )
+        settings.addArrangedSubview(formRow("排序", rank))
+
+        let note = NSTextField(wrappingLabelWithString: "空码清空和回车清码在按键时直接判断，改完立即生效；z 开头的拼音反查和 date / time 等预置编码不参与。翻页与选词写入 Rime 配置，下次按键时生效。造词与排序快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选。排序只改被拖动词条的权重，幅度为 5 或 10。")
         note.textColor = .secondaryLabelColor
         note.font = .systemFont(ofSize: 11)
-        note.preferredMaxLayoutWidth = 420
+        note.preferredMaxLayoutWidth = 460
         settings.addArrangedSubview(note)
 
         return page(
-            title: "按键",
-            subtitle: "设置翻页、快捷选词和全局造词快捷键。",
-            content: card(title: "候选按键", subtitle: nil, content: settings)
+            title: "输入习惯",
+            subtitle: "设置打码与回车清码、翻页、快捷选词、造词和排序快捷键。",
+            content: card(title: "打码与按键", subtitle: nil, content: settings)
         )
+    }
+
+    // 开关右侧的小字说明，统一字号与换行
+    private func settingHint(_ text: String) -> NSTextField {
+        let label = NSTextField(labelWithString: text)
+        label.font = .systemFont(ofSize: 11)
+        label.textColor = .secondaryLabelColor
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 2
+        label.preferredMaxLayoutWidth = 360
+        return label
     }
 
     private func makePunctuationPage() -> NSView {
@@ -640,25 +675,27 @@ private final class SettingsRootView: NSView {
             ("date", "当前日期：2026-09-23、2026年9月23日、星期三，翻页可见日期加时间"),
             ("time", "当前时间：11:22:05、11:22、秒级时间戳、11时22分，翻页可见毫秒时间戳"),
             ("week", "星期与周数：星期三、周三、第39周、2026年第39周、Wednesday 等"),
-            ("选词与翻页", "与普通候选相同：数字键、空格、; ' 选词，翻页键按「按键」页设置")
+            ("选词与翻页", "与普通候选相同：数字键、空格、; ' 选词，翻页键按「输入习惯」页设置")
         ])
         let lookup = helpList([
             ("z + 拼音", "拼音反查：不会五笔拆字时，以 z 开头输入拼音，候选中选字上屏。单字后面会标出词库里的五笔编码，词组不现造编码"),
             ("'", "反查结束符，拼音输完可按 ' 结束反查")
         ])
         let keys = helpList([
-            ("造词快捷键", "默认 ⌃⌥N，可在「按键」页修改。弹出窗口添加自造词，写入用户词当前分组；两分钟内刚上屏的词会自动填入，并列出同编码词来自哪个词库"),
+            ("造词快捷键", "默认 ⌃⌥N，可在「输入习惯」页修改。弹出窗口添加自造词，写入用户词当前分组；两分钟内刚上屏的词会自动填入，并列出同编码词来自哪个词库"),
             ("删除候选", "候选出现时，按与造词相同的修饰键加数字（默认 ⌃⌥1–9）。确认框会显示词库、权重、备注和同编码词，确认后从该词库删除"),
-            ("候选排序", "候选出现时，按与造词相同的修饰键加 0（默认 ⌃⌥0）。拖动调整顺序，只改被拖动词条的权重，幅度可选 5 或 10。关闭窗口后重新加载词库"),
+            ("候选排序", "候选出现时按排序快捷键（默认 ⌃⌥0，可在「输入习惯」页单独修改）。拖动调整顺序，只改被拖动词条的权重，幅度可选 5 或 10。关闭窗口后重新加载词库"),
             ("单按 Shift", "中 / 英文模式切换；英文模式下按键直接上屏"),
-            ("光标提示", "输入框出现光标时，在旁边显示当前是中文还是英文。可在「按键」页关闭"),
+            ("光标提示", "输入框出现光标时，在旁边显示当前是中文还是英文。可在「输入习惯」页关闭"),
             ("空格", "上屏第一个候选"),
             ("1 – 9", "选择对应序号的候选（仅数量圆点模式下同样有效）"),
-            ("; '", "选第二、第三候选（需在「按键」页开启）"),
-            ("- = / , .", "候选翻页，方式在「按键」页设置"),
+            ("; '", "选第二、第三候选（需在「输入习惯」页开启）"),
+            ("- = / , .", "候选翻页，方式在「输入习惯」页设置"),
             ("Esc", "清空当前编码"),
-            ("回车", "直接上屏已输入的编码字母"),
-            ("四码唯一", "输入满四码且只有一个候选时自动上屏")
+            ("回车", "默认直接上屏已输入的编码字母；开启回车清码后改为清空编码"),
+            ("四码唯一", "输入满四码且只有一个候选时自动上屏"),
+            ("空码清空", "打满四码仍无候选时自动清空编码。可在「输入习惯」页开启"),
+            ("回车清码", "编码中按回车只清空编码，不上屏字母。可在「输入习惯」页开启")
         ])
         let switches = helpList([
             ("Ctrl+Shift+1", "切换输入方案（五笔 / 拼音）"),
@@ -1161,6 +1198,14 @@ private final class ToggleTarget: NSObject {
 
     @objc func caretModeHintChanged(_ sender: NSButton) {
         IMEAppearancePrefs.showCaretModeHint = sender.state == .on
+    }
+
+    @objc func clearEmptyCodeChanged(_ sender: NSButton) {
+        RimeBehaviorPrefs.clearEmptyCode = sender.state == .on
+    }
+
+    @objc func enterClearsCodeChanged(_ sender: NSButton) {
+        RimeBehaviorPrefs.enterClearsCode = sender.state == .on
     }
 }
 

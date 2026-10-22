@@ -12,7 +12,7 @@ final class ModeHintController {
 
     init() {
         // 一开始就用胶囊尺寸，避免第一次显示从矮窗口拉高后圆角仍停在旧高度。
-        let size = chrome.preferredSize(ascii: false)
+        let size = chrome.preferredSize(label: Self.label(asciiMode: false, capsLock: false))
         panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -42,15 +42,22 @@ final class ModeHintController {
         panel.orderOut(nil)
     }
 
+    /// 胶囊文字：大写锁定优先于中英，锁定时一直显示「大写」。
+    static func label(asciiMode: Bool, capsLock: Bool) -> String {
+        if capsLock { return "大写" }
+        return asciiMode ? "英文" : "中文"
+    }
+
     /// 在光标旁显示当前模式，约一秒后淡出。左、上间距与候选条相同。
-    func show(asciiMode: Bool, caretRect: NSRect) {
+    func show(asciiMode: Bool, capsLock: Bool, caretRect: NSRect) {
         generation += 1
         let token = generation
         dismissWork?.cancel()
         forceHideWork?.cancel()
 
-        chrome.setMode(ascii: asciiMode)
-        let size = chrome.preferredSize(ascii: asciiMode)
+        let label = Self.label(asciiMode: asciiMode, capsLock: capsLock)
+        chrome.setMode(label: label)
+        let size = chrome.preferredSize(label: label)
         let origin = origin(width: size.width, height: size.height, near: caretRect)
 
         panel.setFrame(NSRect(origin: origin, size: size), display: false, animate: false)
@@ -184,8 +191,7 @@ private final class ModeHintChrome: NSView {
     }
 
     // 按文字实测宽度定窗口，避免外层约束把自适应尺寸算成 0。
-    func preferredSize(ascii: Bool) -> NSSize {
-        let label = ascii ? "英文" : "中文"
+    func preferredSize(label: String) -> NSSize {
         let textWidth = ceil((label as NSString).size(withAttributes: [.font: Self.labelFont]).width)
         let contentWidth = textWidth + 22
         let pad = shadowOutsetValue * 2
@@ -216,11 +222,11 @@ private final class ModeHintChrome: NSView {
         CATransaction.commit()
     }
 
-    func setMode(ascii: Bool) {
+    func setMode(label: String) {
         let colors = IMEAppearancePrefs.skin.colors(for: effectiveAppearance)
         let background = colors.background.nsColor
 
-        title.stringValue = ascii ? "英文" : "中文"
+        title.stringValue = label
         title.font = Self.labelFont
         title.textColor = colors.candidateText.nsColor
 

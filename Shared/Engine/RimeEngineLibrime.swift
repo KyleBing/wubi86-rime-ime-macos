@@ -61,6 +61,11 @@ final class RimeEngineLibrime: RimeEngine {
         bridge.currentContext()
     }
 
+    // 只读组字状态，不取待上屏文字；四码判定时不能吞掉 commit
+    func peekSnapshot() -> RimeContextSnapshot? {
+        bridge.currentContextPeeking()
+    }
+
     // 原始按键序列。反查的 preedit 可能已经去掉前缀 z，不能用来判断是不是反查。
     func rawInput() -> String {
         bridge.rawInput() ?? ""

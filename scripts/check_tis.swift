@@ -29,7 +29,7 @@ func unregister(_ item: String) {
 let home = FileManager.default.homeDirectoryForCurrentUser
 let roots = [
     home.appendingPathComponent("Library/Developer/Xcode/DerivedData"),
-    home.appendingPathComponent("Developer/wubi86-rime-macos-ime/build"),
+    home.appendingPathComponent("Developer/wubi86-rime-ime-macos/build"),
     URL(fileURLWithPath: "/Applications"),
 ]
 let names: Set<String> = ["MeifengWubiIME.app", "MeifengWubiIME.payload"]

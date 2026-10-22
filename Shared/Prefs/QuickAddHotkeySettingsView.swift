@@ -1,14 +1,19 @@
 import AppKit
 
-/// 按键页里的造词快捷键：点一下后按下新的组合键。
-final class QuickAddHotkeySettingsView: NSView {
+/// 按键页里的快捷键录制按钮：点一下后按下新的组合键。读取和保存由调用方提供，
+/// 造词和排序共用同一套录制界面。
+final class HotkeyRecorderView: NSView {
     private let button = NSButton(title: "", target: nil, action: nil)
     private let hint = NSTextField(labelWithString: "需包含 ⌃ ⌥ ⇧ ⌘ 之一。Esc 取消。")
     private var monitor: Any?
     private var recording = false
+    private let readDisplay: () -> String
+    private let save: (UInt32, UInt32, String) -> Void
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
+    init(display: @escaping () -> String, save: @escaping (UInt32, UInt32, String) -> Void) {
+        readDisplay = display
+        self.save = save
+        super.init(frame: .zero)
         button.target = self
         button.action = #selector(beginRecording)
         button.bezelStyle = .rounded
@@ -60,14 +65,14 @@ final class QuickAddHotkeySettingsView: NSView {
         let carbon = QuickAddPrefs.carbonModifiers(from: event.modifierFlags)
         guard carbon != 0 else { return }
         let display = QuickAddPrefs.displayString(for: event)
-        QuickAddPrefs.saveShortcut(keyCode: UInt32(event.keyCode), modifiers: carbon, display: display)
+        save(UInt32(event.keyCode), carbon, display)
         recording = false
         stop()
         showCurrent()
     }
 
     private func showCurrent() {
-        button.title = QuickAddPrefs.display
+        button.title = readDisplay()
         hint.isHidden = true
     }
 
