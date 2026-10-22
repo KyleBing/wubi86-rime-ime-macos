@@ -13,7 +13,7 @@
 
 ## 和手机、码表助手同步
 
-「设置 → 账户」登录 portal 账号，和码表助手、iOS 是同一个账号。默认地址是 `https://kylebing.cn/portal/`。
+「设置 → 账户」登录 portal 账号，和码表助手、iOS 是同一个账号。默认地址是 `https://kylebing.cn/wubi/`。
 
 登录后回到「用户词」页：
 

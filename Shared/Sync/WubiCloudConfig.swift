@@ -24,7 +24,7 @@ struct WubiCloudUserInfo: Codable, Equatable {
 }
 
 enum WubiCloudConfig {
-    static let defaultBaseURL = "https://kylebing.cn/portal/"
+    static let defaultBaseURL = "https://kylebing.cn/wubi/"
     static let syncDictFileName = "wubi86_jidian_user.dict.yaml"
     static let extraDictFileName = "wubi86_jidian_extra.dict.yaml"
     static let syncMaxContentLength = 40_000
@@ -44,6 +44,10 @@ enum WubiCloudConfig {
         if base.isEmpty { base = defaultBaseURL }
         if base.hasPrefix("http://kylebing.cn/") {
             base = "https://" + base.dropFirst("http://".count)
+        }
+        // 旧版默认指向 portal-go，拆分后自动切到五笔独立服务
+        if base == "https://kylebing.cn/portal/" || base == "https://kylebing.cn/portal" {
+            base = defaultBaseURL
         }
         if !base.hasSuffix("/") { base += "/" }
         return base

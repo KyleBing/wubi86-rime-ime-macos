@@ -95,7 +95,7 @@ enum WubiCloudAPI {
         baseURL: String = WubiCloudConfig.baseURL
     ) async throws -> DictMeta? {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
-        var components = URLComponents(url: try makeURL(base: baseURL, path: "wubi/dict/meta"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(url: try makeURL(base: baseURL, path: "dict/meta"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "title", value: title)]
         guard let url = components.url else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
@@ -121,7 +121,7 @@ enum WubiCloudAPI {
         baseURL: String = WubiCloudConfig.baseURL
     ) async throws -> (title: String, yaml: String, revision: Int)? {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
-        var components = URLComponents(url: try makeURL(base: baseURL, path: "wubi/dict/pull"), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(url: try makeURL(base: baseURL, path: "dict/pull"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "title", value: title)]
         guard let url = components.url else { throw APIError.invalidURL }
 
@@ -160,7 +160,7 @@ enum WubiCloudAPI {
         guard yaml.count < WubiCloudConfig.syncMaxContentLength else {
             throw APIError.contentTooLarge
         }
-        let url = try makeURL(base: baseURL, path: "wubi/dict/push")
+        let url = try makeURL(base: baseURL, path: "dict/push")
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -225,7 +225,7 @@ enum WubiCloudAPI {
         baseURL: String = WubiCloudConfig.baseURL
     ) async throws -> [ExtraWordItem] {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
-        let url = try makeURL(base: baseURL, path: "wubi/word/export-extra")
+        let url = try makeURL(base: baseURL, path: "word/export-extra")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
