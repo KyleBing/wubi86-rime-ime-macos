@@ -104,7 +104,10 @@ enum UpdateChecker {
                 let manifest = try? JSONDecoder().decode(UpdateManifest.self, from: data),
                 !manifest.version.isEmpty
             else {
-                let reason = error?.localizedDescription ?? "更新清单格式不正确"
+                let status = (response as? HTTPURLResponse)?.statusCode
+                let reason = status == 404
+                    ? "更新服务器上还没有发布版本"
+                    : (error?.localizedDescription ?? "更新清单格式不正确")
                 attempt(sources, index: index + 1, lastError: reason, completion: completion)
                 return
             }
