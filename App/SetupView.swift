@@ -6,6 +6,8 @@ struct SetupView: View {
     @State private var status = IMEInstaller.statusText()
     @State private var message = ""
     @State private var isBusy = false
+    // Sparkle 未启用时，由这个模型读 update.json 做轻量检查
+    @StateObject private var updates = UpdateModel()
 
     // 版本号取自 Info.plist：营销版本 + 构建号
     private static var versionText: String {
@@ -70,6 +72,51 @@ struct SetupView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(4)
+            }
+
+            GroupBox("程序更新") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(updateStatusText)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if AppUpdater.shared.isAvailable {
+                        // 正式包：Sparkle 负责下载、校验、替换与重启
+                        HStack(spacing: 12) {
+                            Button("检查更新…") { AppUpdater.shared.checkForUpdates() }
+                            Toggle("自动检查更新", isOn: Binding(
+                                get: { AppUpdater.shared.automaticallyChecksForUpdates },
+                                set: { AppUpdater.shared.automaticallyChecksForUpdates = $0 }
+                            ))
+                            .toggleStyle(.checkbox)
+                        }
+                    } else {
+                        // 开发包 / 未配 EdDSA 公钥：只提示版本并打开下载页
+                        HStack(spacing: 12) {
+                            Button("检查更新") { updates.check() }
+                                .disabled(updates.isChecking)
+                            Toggle("启动时自动检查", isOn: $updates.autoCheck)
+                                .toggleStyle(.checkbox)
+                        }
+                        if case .available(let manifest) = updates.state {
+                            if let notes = manifest.notes, !notes.isEmpty {
+                                ScrollView {
+                                    Text(notes)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxHeight: 96)
+                            }
+                            HStack(spacing: 8) {
+                                Button("打开发布页") { updates.openDownloadPage() }
+                                Button("以后再说") { updates.skip() }
+                            }
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -162,7 +209,13 @@ struct SetupView: View {
         .onAppear {
             UserDictAutoSync.install()
             _ = RimeResourceDeployer.syncBundledResourcesIfNeeded()
+            // Sparkle 更新宿主后，已安装的输入法副本还是旧版；没在打字时直接换掉
+            _ = IMEInstaller.applyComponentUpdateIfIdle()
             status = IMEInstaller.statusText()
+            // Sparkle 自己会按 24 小时间隔检查；只有它没启用时才跑清单检查
+            if !AppUpdater.shared.isAvailable {
+                updates.autoCheckOnLaunch()
+            }
             if preferOpenCandidatePrefs {
                 CandidateSettingsWindow.show()
                 preferOpenCandidatePrefs = false
@@ -181,6 +234,29 @@ struct SetupView: View {
                 CandidateSettingsWindow.show()
                 preferOpenCandidatePrefs = false
             }
+        }
+    }
+
+    // 更新区块的说明文字：Sparkle 启用时由它接管，否则显示清单检查结果
+    private var updateStatusText: String {
+        if AppUpdater.shared.isAvailable {
+            return "已启用自动更新，每 24 小时检查一次；也可以随时手动检查。"
+        }
+        switch updates.state {
+        case .idle:
+            return "每 24 小时最多自动检查一次。下载后请打开安装包手动安装。"
+        case .checking:
+            return "正在检查更新…"
+        case .upToDate(let version):
+            return "已是最新版本（v\(version)）。"
+        case .available(let manifest):
+            let mandatory = UpdateChecker.isNewer(
+                manifest.minimumVersion ?? "",
+                than: UpdateChecker.currentVersion
+            )
+            return "\(mandatory ? "需要更新到" : "发现新版本") v\(manifest.version)（当前 \(Self.versionText)）。"
+        case .failed(let message):
+            return "检查更新失败：\(message)"
         }
     }
 

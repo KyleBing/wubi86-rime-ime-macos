@@ -41,6 +41,9 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      # Sparkle：公钥编进 Info.plist，私钥只用来给 appcast 签名
+      SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+      HAS_SPARKLE: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' && secrets.SPARKLE_PUBLIC_ED_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,6 +67,24 @@ jobs:
             echo "标签 ${GITHUB_REF_NAME} 与 project.yml 里的 $EXPECT 不一致，先改版本号再打标签"
             exit 1
           fi
+
+      # Sparkle 用 CFBundleVersion 判断新旧：营销版本涨了但构建号没涨，用户收不到更新
+      - name: 校验构建号递增
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          BUILDS=$(grep -oE 'CURRENT_PROJECT_VERSION: "[0-9]+"' project.yml | grep -oE '[0-9]+' | sort -u)
+          if [ "$(printf '%s\n' "$BUILDS" | wc -l | tr -d ' ')" != "1" ]; then
+            echo "三个 target 的 CURRENT_PROJECT_VERSION 不一致：$BUILDS"
+            exit 1
+          fi
+          BUILD="$BUILDS"
+          FEED="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/appcast.xml"
+          PREV=$(curl -fsSL "$FEED" 2>/dev/null | grep -oE 'sparkle:version="[0-9]+"' | head -1 | grep -oE '[0-9]+' || true)
+          if [ -n "$PREV" ] && [ "$BUILD" -le "$PREV" ]; then
+            echo "CURRENT_PROJECT_VERSION=$BUILD 没有超过上一版的 $PREV；Sparkle 不会提示更新"
+            exit 1
+          fi
+          echo "构建号 $BUILD（上一版 ${PREV:-无}）"
 
       # 证书和私钥一起导入临时钥匙串，签完随 runner 一起销毁
       - name: 导入 Developer ID 证书
@@ -92,14 +113,9 @@ jobs:
           mkdir -p dist
           # 固定附件名，避免各端下载链接带版本号
           cp "build/dist/玫枫五笔-${VERSION}.dmg" "dist/${ASSET_NAME}"
+          # appcast 要按 tag 定位到具体文件，另存一份带版本号的
+          cp "build/dist/玫枫五笔-${VERSION}.dmg" "dist/MeifengWubi-${VERSION}.dmg"
           ls -lh dist
-
-      - name: 上传构建产物
-        uses: actions/upload-artifact@v4
-        with:
-          name: MeifengWubi-${{ steps.version.outputs.version }}-macos
-          path: dist/*.dmg
-          if-no-files-found: error
 
       # 更新说明直接取 CHANGELOG.md 里对应版本的那一段
       - name: 生成更新说明
@@ -111,18 +127,108 @@ jobs:
           fi
           cat notes.md
 
+      # 客户端只读这个附件：releases/latest/download/update.json
+      - name: 生成更新清单
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # 构建号以实际包为准，避免项目文件里三个 target 写得不一致
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "build/dist/stage/玫枫五笔.app/Contents/Info.plist")
+          HASH=$(shasum -a 256 "dist/${ASSET_NAME}" | awk '{print $1}')
+          SIZE=$(stat -f%z "dist/${ASSET_NAME}")
+          export VERSION BUILD HASH SIZE NOTES_FILE=notes.md
+          python3 - <<'PY'
+          import datetime, json, os
+
+          notes = open(os.environ["NOTES_FILE"], encoding="utf-8").read().strip()
+          repo = os.environ["GITHUB_REPOSITORY"]
+          asset = os.environ["ASSET_NAME"]
+          manifest = {
+              "schema": 1,
+              "platform": "macos",
+              "channel": "stable",
+              "version": os.environ["VERSION"],
+              "build": int(os.environ["BUILD"] or 0),
+              "published_at": datetime.date.today().isoformat(),
+              "download_url": f"https://github.com/{repo}/releases/latest/download/{asset}",
+              "fallback_url": "https://kylebing.cn/wubi/download/MeifengWubi-macOS.dmg",
+              "sha256": os.environ["HASH"],
+              "size": int(os.environ["SIZE"]),
+              "min_system": "13.0",
+              "minimum_version": "1.0.0",
+              "notes": notes,
+              "notes_url": f"https://github.com/{repo}/releases/tag/{os.environ['GITHUB_REF_NAME']}",
+          }
+          with open("dist/update.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          PY
+          cat dist/update.json
+
+      # 有 EdDSA 私钥时才生成 appcast；没有就只发 DMG，客户端退回清单检查
+      - name: 生成 Sparkle 更新源
+        if: env.HAS_SPARKLE == 'true'
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          APP="build/dist/stage/玫枫五笔.app"
+          APP_KEY=$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$APP/Contents/Info.plist")
+          APP_VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+          if [ "$APP_KEY" != "$SPARKLE_PUBLIC_ED_KEY" ]; then
+            echo "包里的 SUPublicEDKey 与 secret 不一致，Sparkle 无法验证更新"
+            exit 1
+          fi
+          if [ "$APP_VER" != "$VERSION" ]; then
+            echo "包内版本 $APP_VER 与 project.yml 的 $VERSION 不一致"
+            exit 1
+          fi
+          TOOL=$(find build/DerivedDataDist/SourcePackages/artifacts -type f -name generate_appcast 2>/dev/null | head -1)
+          if [ -z "$TOOL" ]; then
+            echo "找不到 generate_appcast（应随 Sparkle 的 SPM 产物一起下载）"
+            exit 1
+          fi
+          ROOT="$RUNNER_TEMP/sparkle"
+          rm -rf "$ROOT" && mkdir -p "$ROOT"
+          cp "dist/MeifengWubi-${VERSION}.dmg" "$ROOT/"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_ed_key"
+          "$TOOL" \
+            --ed-key-file "$RUNNER_TEMP/sparkle_ed_key" \
+            --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/" \
+            -o "$ROOT/appcast.xml" "$ROOT"
+          cp "$ROOT/appcast.xml" dist/
+          # 增量包也一并发布，地址同样指向本 tag
+          find "$ROOT" -name '*.delta' -exec cp {} dist/ \;
+          head -40 dist/appcast.xml
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeifengWubi-${{ steps.version.outputs.version }}-macos
+          path: dist/*
+          if-no-files-found: error
+
       - name: 发布 Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           TITLE="v${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          FILES=("dist/${ASSET_NAME}" "dist/MeifengWubi-${VERSION}.dmg" "dist/update.json")
+          [ -f dist/appcast.xml ] && FILES+=("dist/appcast.xml")
+          for f in dist/*.delta; do [ -e "$f" ] && FILES+=("$f"); done
+
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --title "$TITLE" --notes-file notes.md --latest
-            gh release upload "$TAG" "dist/${ASSET_NAME}" --clobber
+            gh release upload "$TAG" "${FILES[@]}" --clobber
           else
-            gh release create "$TAG" "dist/${ASSET_NAME}" --title "$TITLE" --notes-file notes.md --latest
+            gh release create "$TAG" "${FILES[@]}" --title "$TITLE" --notes-file notes.md --latest
           fi
           echo "已发布：https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
           echo "固定下载：https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/${ASSET_NAME}"
+          echo "更新清单：https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"
+          echo "Sparkle：https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/appcast.xml"

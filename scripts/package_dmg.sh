@@ -86,6 +86,7 @@ xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi \
   ARCHS="arm64 x86_64" \
   ONLY_ACTIVE_ARCH=NO \
   CODE_SIGNING_ALLOWED=NO \
+  SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}" \
   build
 
 BUILT="$DD/Build/Products/Release/${APP_NAME}.app"

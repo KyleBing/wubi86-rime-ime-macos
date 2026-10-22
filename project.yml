@@ -5,6 +5,11 @@ options:
     macOS: "13.0"
   createIntermediateGroups: true
   groupSortPosition: top
+packages:
+  # 自动更新；只在配置了 EdDSA 公钥的正式包里启用
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -157,6 +162,8 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         MARKETING_VERSION: "1.0.4"
         CURRENT_PROJECT_VERSION: "9"
+        # CI 用 xcodebuild SPARKLE_PUBLIC_ED_KEY=… 覆盖；留空时 AppUpdater 不启用 Sparkle
+        SPARKLE_PUBLIC_ED_KEY: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LIBRARY_SEARCH_PATHS:
           - "$(inherited)"
@@ -173,6 +180,7 @@ targets:
       - target: MeifengWubiIME
         embed: false
         link: false
+      - package: Sparkle
       - sdk: AppKit.framework
     postBuildScripts:
       - name: Embed IME into App Resources

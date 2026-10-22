@@ -42,5 +42,14 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Sparkle 自动更新。公钥由 CI 用 SPARKLE_PUBLIC_ED_KEY 注入，留空时 AppUpdater 不启用 -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/KyleBing/wubi86-rime-ime-macos/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 </dict>
 </plist>

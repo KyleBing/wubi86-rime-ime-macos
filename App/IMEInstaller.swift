@@ -18,13 +18,58 @@ enum IMEInstaller {
     static func statusText() -> String {
         let exists = FileManager.default.fileExists(atPath: installedIMEURL.path)
         let enabled = isModeEnabled()
+        let componentNote = hasNewerEmbeddedComponent ? "；输入法组件有新版本，点「安装 / 更新」应用" : ""
         if exists && enabled {
-            return "已安装且已启用（系统设置 → 键盘 → 输入法 → 简体中文 → 玫枫五笔）"
+            return "已安装且已启用（系统设置 → 键盘 → 输入法 → 简体中文 → 玫枫五笔）\(componentNote)"
         }
         if exists {
-            return "已安装到 ~/Library/Input Methods/，请点「安装 / 更新」启用（会自动加入菜单栏列表）"
+            return "已安装到 ~/Library/Input Methods/，请点「安装 / 更新」启用（会自动加入菜单栏列表）\(componentNote)"
         }
         return "尚未安装到 ~/Library/Input Methods/"
+    }
+
+    /// 宿主包里携带的输入法组件版本（Sparkle 更新宿主后，这份是新的）
+    static var embeddedIMEVersion: (version: String, build: Int)? {
+        guard let url = Bundle.main.url(forResource: "MeifengWubiIME", withExtension: "payload") else { return nil }
+        return bundleVersion(at: url)
+    }
+
+    /// 已安装到 ~/Library/Input Methods 的输入法版本
+    static var installedIMEVersion: (version: String, build: Int)? {
+        bundleVersion(at: installedIMEURL)
+    }
+
+    /// 宿主里的 payload 比已安装副本新：Sparkle 只换了宿主，需要重跑一次安装
+    static var hasNewerEmbeddedComponent: Bool {
+        guard let embedded = embeddedIMEVersion, let installed = installedIMEVersion else { return false }
+        if UpdateChecker.isNewer(embedded.version, than: installed.version) { return true }
+        return embedded.version == installed.version && embedded.build > installed.build
+    }
+
+    /// 输入法进程是否在跑。没在跑时换组件不会打断用户打字。
+    static var isIMERunning: Bool {
+        !NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).isEmpty
+    }
+
+    /// 更新宿主后自动换上新组件；输入法正在使用时不动，等用户点「安装 / 更新」。
+    @discardableResult
+    static func applyComponentUpdateIfIdle() -> Bool {
+        guard hasNewerEmbeddedComponent, !isIMERunning else { return false }
+        do {
+            try copyEmbeddedIME()
+            finishInstallOnMain()
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func bundleVersion(at url: URL) -> (version: String, build: Int)? {
+        let plist = url.appendingPathComponent("Contents/Info.plist")
+        guard let info = NSDictionary(contentsOf: plist) else { return nil }
+        let version = info["CFBundleShortVersionString"] as? String ?? ""
+        let build = Int(info["CFBundleVersion"] as? String ?? "") ?? 0
+        return version.isEmpty ? nil : (version, build)
     }
 
     static func copyEmbeddedIME() throws {

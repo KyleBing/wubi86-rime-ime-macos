@@ -45,6 +45,42 @@ https://github.com/KyleBing/wubi86-rime-ime-macos/releases/latest/download/Meife
 
 注意：仓库必须是 public，未登录的人才能下载 Release 附件。私有仓库的附件只有登录且有权限的账号能取。
 
+## 程序更新
+
+正式包用 [Sparkle 2](https://sparkle-project.org/)（SPM 依赖）。Info.plist 的 `SUFeedURL` 指向本仓库 Release 里的
+`appcast.xml`，有可用更新时由 Sparkle 下载、校验、替换并重启宿主 App。
+
+发版工作流需要两个 Secrets 才会生成 appcast：
+
+| Secret | 用途 |
+| --- | --- |
+| `SPARKLE_PUBLIC_ED_KEY` | 编进 Info.plist，客户端用它验证更新包 |
+| `SPARKLE_ED_PRIVATE_KEY` | EdDSA 私钥文件内容，`generate_appcast` 用它签名 |
+
+没配时 Sparkle 不启用（`AppUpdater` 检测到公钥为空就跳过），窗口里的「程序更新」退回轻量检查：
+读 `update.json`，显示版本和更新说明，再打开下载页。
+
+两件事必须一起做，否则用户收不到更新：
+
+- `project.yml` 里三个 target 的 `CURRENT_PROJECT_VERSION` 要同时递增。Sparkle 用构建号判断新旧，
+  工作流会校验它与上一版 appcast 的关系，没涨就失败。
+- 发版标签、`MARKETING_VERSION`、`CFBundleShortVersionString` 保持一致（工作流已有校验）。
+
+生成密钥只做一次（工具随 Sparkle 的 SPM 产物下载，在
+`build/DerivedDataDist/SourcePackages/artifacts/sparkle/Sparkle/bin/`）：
+
+```bash
+./generate_keys                       # 私钥存进钥匙串，并打印 SUPublicEDKey
+./generate_keys -x sparkle_private    # 导出私钥文件，内容填进 SPARKLE_ED_PRIVATE_KEY
+```
+
+Sparkle 只替换 `/Applications` 里的宿主 App，`~/Library/Input Methods/MeifengWubiIME.app` 是安装时复制的副本。
+宿主里的 payload 比副本新时，如果输入法进程没在运行，开窗会自动换上新组件；否则在「输入法安装」里提示，
+点「安装 / 更新输入法」即可。
+
+备用清单地址 `https://kylebing.cn/wubi/update/macos.json` 由说明站仓库的
+`scripts/sync_update_manifests.sh` 同步。
+
 ## 设计要点（对标鼠须管痛点）
 
 - 候选条：`NSPanel` + `nonactivatingPanel`，不抢 key window

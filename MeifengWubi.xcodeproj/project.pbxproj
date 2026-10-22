@@ -65,6 +65,7 @@
 		565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		587585789D18AC65610E3599 /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
 		59565BD9469DE3D4EE08E1BD /* RimeFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0990233D9C7B25C80D44FD /* RimeFileStore.swift */; };
+		5A97965C0A2A7D5882045FCA /* UpdateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B94B0D392609970DE77E561 /* UpdateModel.swift */; };
 		5B02FC2C813959CA06B89555 /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
 		63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
 		6536193F51DA7EA36C22B448 /* AccountSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */; };
@@ -83,11 +84,13 @@
 		763F95DF29A320C6FE512AC2 /* DictSyncDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */; };
 		76B4CABCC59B489C456F85A1 /* LexiconDirectorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17A604C41B27EE4160FB15B /* LexiconDirectorySettingsView.swift */; };
 		78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6CC320D09B833995CAE420 /* RimeBehaviorPrefs.swift */; };
+		796454E59646141730E303EB /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E3A27EA1D400708520C416 /* AppUpdater.swift */; };
 		7B51FE9EF536A7D947180C8A /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
 		7CD4A212701F4C99DCE7915B /* WubiCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */; };
 		7EBB5925C68CB60B2128A1FC /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		7F074AAC5692FF21475E7E8E /* SettingsLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A0FD460C13C268F780AD30C2 /* SettingsLogo.png */; };
 		7F1CD73F293039DBEDF6D3AC /* MeifengWubiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */; };
+		83042758981C8CAEB9D0C0BF /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00E0116485828CAD9D7FA21 /* UpdateChecker.swift */; };
 		84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
 		84D3D97B8CF81544E6E1BFDD /* QuickAddHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810632C05167B29784D226C2 /* QuickAddHotKey.swift */; };
 		88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC83F4A4F26EEBE7A8C33C71 /* CandidateBarLayout.swift */; };
@@ -95,6 +98,8 @@
 		8F0284E5F3D67C633B23B6F7 /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
 		9055E4A82FF5D9319DBE6173 /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
 		92BD783033B1BEDE471A869A /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
+		940D10E4C4751F6DCE9B12BD /* CandidateRankPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 087865DFD814FA753B234463 /* CandidateRankPanel.swift */; };
+		964246111AAEC3AD49D18E60 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 19D0AF68C97132AED82EA4E7 /* Sparkle */; };
 		9673E76439E2C4003EBCC841 /* MeifengPreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */; };
 		96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		976EDE71DD4F10047249C22B /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6269A413234603D67F46D15D /* AppKit.framework */; };
@@ -113,7 +118,6 @@
 		B80276E0A12DF071A888237B /* CandidateSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */; };
 		BA2FDA9F04F122F5F8310790 /* IMESettingsControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE3D797CB5C78E585105DB6 /* IMESettingsControls.swift */; };
 		BAC4E278D39E26725815C7E9 /* DeleteCandidatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */; };
-		C4A1E7B29D0F4A6E8B3C1D55 /* CandidateRankPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */; };
 		C1FD11772FF7E1924A7B8850 /* PunctuationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */; };
 		C6D33D3D8C0A776E39ADA42F /* CandidateSkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F220CA1EC617E507C9EEC /* CandidateSkinSettingsView.swift */; };
 		C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A8C602BC53C20B6837FD2 /* QuickAddHotkeySettingsView.swift */; };
@@ -172,6 +176,7 @@
 		042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddWordPanel.swift; sourceTree = "<group>"; };
 		064C42D5A8170877BEAB35CD /* RimeBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RimeBridge.mm; sourceTree = "<group>"; };
 		08721ADD6D7A108F671DE9F6 /* PunctuationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunctuationSettingsView.swift; sourceTree = "<group>"; };
+		087865DFD814FA753B234463 /* CandidateRankPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateRankPanel.swift; sourceTree = "<group>"; };
 		0A138AABE28E2DC1350C0063 /* RimeMaintenanceDeployer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RimeMaintenanceDeployer.h; sourceTree = "<group>"; };
 		0A287D41E220FEEB52D93FED /* IMEAppearancePrefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppearancePrefs.swift; sourceTree = "<group>"; };
 		0E1E8383EB913ACD399FD6F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -205,11 +210,13 @@
 		61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundedChromeView.swift; sourceTree = "<group>"; };
 		6269A413234603D67F46D15D /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtraDictUpdater.swift; sourceTree = "<group>"; };
+		68E3A27EA1D400708520C416 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		69C92DB1F8633FEDE8CA0D22 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		6CA9CAFCFDBF3D2C787A40D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePanelController.swift; sourceTree = "<group>"; };
 		73273824288403B472874C04 /* MeifengPreferencesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengPreferencesPane.swift; sourceTree = "<group>"; };
 		739F6041699AE1BBA2342DC9 /* CandidateSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateSkin.swift; sourceTree = "<group>"; };
+		7B94B0D392609970DE77E561 /* UpdateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateModel.swift; sourceTree = "<group>"; };
 		7D6BE3001140B76FEA5ED3EF /* MeifengWubiPrefs.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MeifengWubiPrefs.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidatePrefsView.swift; sourceTree = "<group>"; };
 		80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictEditorIcons.swift; sourceTree = "<group>"; };
@@ -221,9 +228,9 @@
 		929D457D120AA7CECBC4C0FC /* MeifengWubi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeifengWubi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9687F06C9E880D7DE056F96F /* AccountSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSyncSettingsView.swift; sourceTree = "<group>"; };
 		98C6A2B34E367C393E89B872 /* MeifengWubiIME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeifengWubiIME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00E0116485828CAD9D7FA21 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		A0FD460C13C268F780AD30C2 /* SettingsLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SettingsLogo.png; sourceTree = "<group>"; };
 		A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteCandidatePanel.swift; sourceTree = "<group>"; };
-		B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateRankPanel.swift; sourceTree = "<group>"; };
 		AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengWubiApp.swift; sourceTree = "<group>"; };
 		AAD7E585CB24473394B373D9 /* MeifengPreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeifengPreferencesWindowController.swift; sourceTree = "<group>"; };
 		B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMEAppDelegate.swift; sourceTree = "<group>"; };
@@ -260,6 +267,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				964246111AAEC3AD49D18E60 /* Sparkle in Frameworks */,
 				976EDE71DD4F10047249C22B /* AppKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -312,7 +320,7 @@
 				F0CF3F6662273519E251BADF /* InfoPlist.strings */,
 				46A2085C3B99ED28ED427D7B /* PrefsPane */,
 				6F1CB9B277836AD250713B88 /* CandidatePanelController.swift */,
-				B8E2F14A6C904D7E9A1B2C33 /* CandidateRankPanel.swift */,
+				087865DFD814FA753B234463 /* CandidateRankPanel.swift */,
 				A474721C90E2AED62BBDC328 /* DeleteCandidatePanel.swift */,
 				8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */,
 				B35FBA776CD1D955A643A63C /* IMEAppDelegate.swift */,
@@ -458,12 +466,15 @@
 			children = (
 				31E1D0191E43B851502D4CD2 /* AppIcon.icns */,
 				B9A8254A0CEAC5801EC4BD36 /* AppIcon.png */,
+				68E3A27EA1D400708520C416 /* AppUpdater.swift */,
 				0E1E8383EB913ACD399FD6F8 /* Assets.xcassets */,
 				80C53EE2D4B846BEEEC6EECE /* CandidatePrefsView.swift */,
 				56DF06354369309DB0A2AB6E /* IMEInstaller.swift */,
 				EF68B9218FC255AC341E959B /* Info.plist */,
 				AAD4D83B3B4540DBFA070573 /* MeifengWubiApp.swift */,
 				D856B4925F0354EB314DFC1A /* SetupView.swift */,
+				A00E0116485828CAD9D7FA21 /* UpdateChecker.swift */,
+				7B94B0D392609970DE77E561 /* UpdateModel.swift */,
 				8A7D61DD46F9981DD7954F00 /* UserLexiconMacView.swift */,
 			);
 			path = App;
@@ -528,6 +539,7 @@
 			);
 			name = MeifengWubi;
 			packageProductDependencies = (
+				19D0AF68C97132AED82EA4E7 /* Sparkle */,
 			);
 			productName = MeifengWubi;
 			productReference = 929D457D120AA7CECBC4C0FC /* MeifengWubi.app */;
@@ -566,6 +578,9 @@
 			);
 			mainGroup = 75F1A39250B039F384CD3074;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E8A729CD5931198782ADE126 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DF7BE71B45DC6C58EC309D85 /* Products */;
 			projectDirPath = "";
@@ -666,6 +681,7 @@
 			files = (
 				7562E8EA0A89890BC17C4FCD /* AccountSyncSettingsView.swift in Sources */,
 				F0ADB441F0E1138DBC4B7F46 /* AppGroupPaths.swift in Sources */,
+				796454E59646141730E303EB /* AppUpdater.swift in Sources */,
 				4189185775A7CF9E826C572B /* BrandIcon.swift in Sources */,
 				88123E0D0CE29B09B4BF7C1F /* CandidateBarLayout.swift in Sources */,
 				15F6F6711F1448C36B76EE9C /* CandidatePrefsView.swift in Sources */,
@@ -698,6 +714,8 @@
 				6F1D51FFE9B5354D3D61ABB1 /* RimeResourceDeployer.swift in Sources */,
 				72F94FFBA6C4B75C2D8F4209 /* RoundedChromeView.swift in Sources */,
 				1B9755E1514A556D3B14334A /* SetupView.swift in Sources */,
+				83042758981C8CAEB9D0C0BF /* UpdateChecker.swift in Sources */,
+				5A97965C0A2A7D5882045FCA /* UpdateModel.swift in Sources */,
 				E7C0D46C471910A67A1020C0 /* UserDictWriter+Active.swift in Sources */,
 				E6BB287298A61BF8B153832C /* UserDictWriter.swift in Sources */,
 				029C183DFA7038E4CD9F6773 /* UserLexiconMacView.swift in Sources */,
@@ -753,8 +771,8 @@
 				565698A270F6302EBBE99706 /* BrandIcon.swift in Sources */,
 				4A9412B256928658AFE5C38D /* CandidateBarLayout.swift in Sources */,
 				B22E4FDA10C39DFB2FF4060B /* CandidatePanelController.swift in Sources */,
-				C4A1E7B29D0F4A6E8B3C1D55 /* CandidateRankPanel.swift in Sources */,
 				1DEAABE28CECE6AEDDBFC240 /* CandidatePreviewPanelController.swift in Sources */,
+				940D10E4C4751F6DCE9B12BD /* CandidateRankPanel.swift in Sources */,
 				524BECCB61835EF647986BE0 /* CandidateSkin.swift in Sources */,
 				696CBBBC88E1DC2561E8ED05 /* CandidateSkinSettingsView.swift in Sources */,
 				1F1E1635DA501A9AE230D46E /* CloudDictSync.swift in Sources */,
@@ -922,6 +940,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.wubi86rime.macos;
 				PRODUCT_NAME = "玫枫五笔";
 				SDKROOT = macosx;
+				SPARKLE_PUBLIC_ED_KEY = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Shared/Engine/Meifeng-Bridging-Header.h";
 			};
 			name = Release;
@@ -955,6 +974,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.wubi86rime.macos;
 				PRODUCT_NAME = "玫枫五笔";
 				SDKROOT = macosx;
+				SPARKLE_PUBLIC_ED_KEY = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Shared/Engine/Meifeng-Bridging-Header.h";
 			};
 			name = Debug;
@@ -1168,6 +1188,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E8A729CD5931198782ADE126 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		19D0AF68C97132AED82EA4E7 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E8A729CD5931198782ADE126 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4FAD49D3CD23760CF43E7196 /* Project object */;
 }
