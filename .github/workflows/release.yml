@@ -2,8 +2,9 @@
 # 推送 v1.0.4 这类标签时自动打包 DMG 并发布；手动运行只打包，产物留在 Actions 里。
 #
 # 附件名固定为 MeifengWubi-macOS.dmg，不带版本号，说明站因此可以一直用
-#   https://github.com/KyleBing/wubi86-rime-macos-ime/releases/latest/download/MeifengWubi-macOS.dmg
+#   https://github.com/KyleBing/wubi86-rime-ime-macos/releases/latest/download/MeifengWubi-macOS.dmg
 # 这条链接，发新版本只换附件，不用改文档。版本号看 Release 标题。
+# 同时会生成 update.json（轻量检查）和 appcast.xml（Sparkle）。
 #
 # 需要的 Secrets（都可选，不配时打自签名包、跳过公证）：
 #   MACOS_CERT_P12        Developer ID Application 证书的 base64（务必包含私钥）
@@ -11,6 +12,8 @@
 #   APPLE_ID              公证用的 Apple ID
 #   APPLE_APP_PASSWORD    App 专用密码
 #   APPLE_TEAM_ID         团队 ID，留空用脚本里的默认值
+#   SPARKLE_PUBLIC_ED_KEY   Sparkle 的 EdDSA 公钥，编进 Info.plist
+#   SPARKLE_ED_PRIVATE_KEY  私钥文件内容，只用来签 appcast；没配则跳过 Sparkle 更新源
 name: Release
 
 on:
