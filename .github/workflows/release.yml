@@ -153,7 +153,6 @@ jobs:
               "build": int(os.environ["BUILD"] or 0),
               "published_at": datetime.date.today().isoformat(),
               "download_url": f"https://github.com/{repo}/releases/latest/download/{asset}",
-              "fallback_url": "https://kylebing.cn/wubi/download/MeifengWubi-macOS.dmg",
               "sha256": os.environ["HASH"],
               "size": int(os.environ["SIZE"]),
               "min_system": "13.0",

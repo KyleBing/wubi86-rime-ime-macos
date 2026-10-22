@@ -81,8 +81,8 @@ Sparkle 只替换 `/Applications` 里的宿主 App，`~/Library/Input Methods/Me
 注意：带 Sparkle 的版本发布时，老用户装的还是不带 Sparkle 的 1.0.4，需要手动装一次；
 从下一个版本开始才会自动更新。
 
-备用清单地址 `https://kylebing.cn/wubi/update/macos.json` 由说明站仓库的
-`scripts/sync_update_manifests.sh` 同步。
+所有安装包和更新清单都只放在本仓库的 Releases 里，不在别的服务器上托管文件。
+清单里的 `download_url` 就是 `releases/latest/download/<固定附件名>`，客户端也只请求这一个地址。
 
 ## 设计要点（对标鼠须管痛点）
 

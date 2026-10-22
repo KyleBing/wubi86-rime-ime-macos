@@ -7,7 +7,6 @@ struct UpdateManifest: Decodable {
     let version: String
     let build: Int?
     let downloadURL: String?
-    let fallbackURL: String?
     let sha256: String?
     let size: Int64?
     let minimumVersion: String?
@@ -17,7 +16,6 @@ struct UpdateManifest: Decodable {
     enum CodingKeys: String, CodingKey {
         case platform, version, build, sha256, size, notes
         case downloadURL = "download_url"
-        case fallbackURL = "fallback_url"
         case minimumVersion = "minimum_version"
         case notesURL = "notes_url"
     }
@@ -29,11 +27,10 @@ enum UpdateCheckResult {
     case failed(String)
 }
 
-/// 查更新：主地址是 Release 的固定附件，备用地址是国内镜像。
+/// 查更新：只读 GitHub Release 的固定附件 update.json，不调用 GitHub API（未登录时限流 60 次/小时/IP）。
 /// Sparkle 启用时由 Sparkle 自己检查，这里只服务开发包和未配公钥的构建。
 enum UpdateChecker {
     static let source = URL(string: "https://github.com/KyleBing/wubi86-rime-ime-macos/releases/latest/download/update.json")!
-    static let mirror = URL(string: "https://kylebing.cn/wubi/update/macos.json")!
     static let autoCheckInterval: TimeInterval = 24 * 60 * 60
 
     private static let lastCheckKey = "update.lastCheckAt"
@@ -74,22 +71,8 @@ enum UpdateChecker {
     }
 
     static func check(completion: @escaping (UpdateCheckResult) -> Void) {
-        attempt([source, mirror], index: 0, lastError: nil, completion: completion)
-    }
-
-    private static func attempt(
-        _ sources: [URL],
-        index: Int,
-        lastError: String?,
-        completion: @escaping (UpdateCheckResult) -> Void
-    ) {
-        guard index < sources.count else {
-            completion(.failed(lastError ?? "无法连接更新服务器"))
-            return
-        }
-
         var request = URLRequest(
-            url: sources[index],
+            url: source,
             cachePolicy: .reloadIgnoringLocalCacheData,
             timeoutInterval: 10
         )
@@ -108,13 +91,13 @@ enum UpdateChecker {
                 let reason = status == 404
                     ? "更新服务器上还没有发布版本"
                     : (error?.localizedDescription ?? "更新清单格式不正确")
-                attempt(sources, index: index + 1, lastError: reason, completion: completion)
+                completion(.failed(reason))
                 return
             }
 
             // 两个平台的清单分开托管，防止拿错包
             if let platform = manifest.platform, platform != "macos" {
-                attempt(sources, index: index + 1, lastError: "清单平台是 \(platform)", completion: completion)
+                completion(.failed("清单平台是 \(platform)"))
                 return
             }
 

@@ -55,7 +55,7 @@ final class UpdateModel: ObservableObject {
 
     func openDownloadPage() {
         guard case .available(let manifest) = state else { return }
-        let raw = manifest.downloadURL ?? manifest.fallbackURL
+        let raw = manifest.downloadURL
         guard let raw, let url = URL(string: raw) else { return }
         NSWorkspace.shared.open(url)
     }
