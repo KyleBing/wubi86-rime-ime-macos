@@ -24,7 +24,7 @@ struct WubiCloudUserInfo: Codable, Equatable {
 }
 
 enum WubiCloudConfig {
-    static let defaultBaseURL = "https://kylebing.cn/wubi/"
+    static let defaultBaseURL = "https://kylebing.cn/wubi/portal/"
     static let syncDictFileName = "wubi86_jidian_user.dict.yaml"
     static let extraDictFileName = "wubi86_jidian_extra.dict.yaml"
     static let syncMaxContentLength = 40_000

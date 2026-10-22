@@ -27,13 +27,24 @@ xcodebuild -project MeifengWubi.xcodeproj -scheme MeifengWubi -configuration Deb
 
 也可手动把 `MeifengWubiIME.app` 拷到 `~/Library/Input Methods/`。
 
+## 云端同步
+
+「设置 → 账户」登录门户账号，和码表助手、iOS、Windows 共用。默认请求地址是：
+
+```
+https://kylebing.cn/wubi/portal/
+```
+
+`https://kylebing.cn/wubi/` 是说明站，接口统一在 `/wubi/portal/` 下，旧地址不再兼容。
+注册地址是 `https://kylebing.cn/wubi/manager/#/register`（管理后台 `/wubi/manager/`）。
+
 ## 打包与发布
 
 ```bash
 ./scripts/package_dmg.sh   # 通用二进制 DMG，Developer ID 签名并公证
 ```
 
-推 `v1.0.4` 这类标签时，`.github/workflows/release.yml` 会在 macOS runner 上打包 DMG 并发布到**本仓库**的 Releases，更新说明取自 `CHANGELOG.md` 对应版本。发版前先把版本号写进 `project.yml`（`MARKETING_VERSION`）并提交；标签与版本不一致时工作流会直接失败。
+推 `v1.1.0` 这类标签时，`.github/workflows/release.yml` 会在 macOS runner 上打包 DMG 并发布到**本仓库**的 Releases，更新说明取自 `CHANGELOG.md` 对应版本。发版前先把版本号写进 `project.yml`（`MARKETING_VERSION`）并提交；标签与版本不一致时工作流会直接失败。
 
 附件名固定为 `MeifengWubi-macOS.dmg`，所以说明站只用一条不变的地址：
 
