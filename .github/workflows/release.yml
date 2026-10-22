@@ -36,7 +36,8 @@ env:
 jobs:
   macos:
     name: 打包 DMG
-    runs-on: macos-14
+    # 工程是 objectVersion 77（Xcode 16 起的格式），macos-14 自带的 Xcode 15 打不开
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       # 没有证书时让脚本走自签名，避免 xcodebuild 因缺少签名身份失败
@@ -49,6 +50,12 @@ jobs:
       HAS_SPARKLE: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' && secrets.SPARKLE_PUBLIC_ED_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      # 失败时先看这一段：工程格式与 Xcode 版本不匹配会直接退出
+      - name: 打印 Xcode 版本
+        run: |
+          xcodebuild -version
+          xcode-select -p
 
       # 版本号以 project.yml 为准，发版前先改版本再打标签
       - name: 读取版本
