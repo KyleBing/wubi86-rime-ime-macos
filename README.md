@@ -78,6 +78,9 @@ Sparkle 只替换 `/Applications` 里的宿主 App，`~/Library/Input Methods/Me
 宿主里的 payload 比副本新时，如果输入法进程没在运行，开窗会自动换上新组件；否则在「输入法安装」里提示，
 点「安装 / 更新输入法」即可。
 
+注意：带 Sparkle 的版本发布时，老用户装的还是不带 Sparkle 的 1.0.4，需要手动装一次；
+从下一个版本开始才会自动更新。
+
 备用清单地址 `https://kylebing.cn/wubi/update/macos.json` 由说明站仓库的
 `scripts/sync_update_manifests.sh` 同步。
 

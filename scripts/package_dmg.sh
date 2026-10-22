@@ -122,9 +122,19 @@ sign_bundle() {
 
 PAYLOAD="$STAGE/${APP_NAME}.app/Contents/Resources/MeifengWubiIME.payload"
 PREFPANE="$PAYLOAD/Contents/Resources/Preferences.prefPane"
+SPARKLE="$STAGE/${APP_NAME}.app/Contents/Frameworks/Sparkle.framework"
 echo "正在签名…"
 sign_bundle "$PREFPANE"
 sign_bundle "$PAYLOAD"
+# Sparkle 是 SPM 下载的预签名框架，签名团队和我们不同；
+# 强化运行时（library validation）会因此拒绝加载，必须先按自己的证书重签整棵子树
+if [[ -d "$SPARKLE" ]]; then
+  if [[ "$ADHOC" == "1" ]]; then
+    codesign --force --deep --options runtime --sign "$SIGN_IDENTITY" "$SPARKLE"
+  else
+    codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE"
+  fi
+fi
 sign_bundle "$STAGE/${APP_NAME}.app"
 codesign --verify --deep --strict --verbose=2 "$STAGE/${APP_NAME}.app"
 

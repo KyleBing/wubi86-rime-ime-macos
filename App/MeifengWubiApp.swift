@@ -4,6 +4,12 @@ import SwiftUI
 struct MeifengWubiApp: App {
     @State private var openPrefs = false
 
+    init() {
+        // 启动时就创建 Sparkle 控制器：它负责按 Info.plist 的间隔定时检查，
+        // 只放在设置窗口里会变成「打开设置才检查」
+        _ = AppUpdater.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             SetupView(preferOpenCandidatePrefs: $openPrefs)
