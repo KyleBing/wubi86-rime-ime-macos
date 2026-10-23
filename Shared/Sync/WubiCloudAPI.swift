@@ -8,7 +8,7 @@ enum WubiCloudAPI {
         case httpStatus(Int)
         case serverMessage(String)
         case decodeFailed
-        case contentTooLarge
+        case contentTooLarge(Int)
         case emptyResponse
         case revisionConflict(Int)
 
@@ -19,10 +19,47 @@ enum WubiCloudAPI {
             case .httpStatus(let code): return "网络错误（HTTP \(code)）"
             case .serverMessage(let msg): return msg
             case .decodeFailed: return "响应解析失败"
-            case .contentTooLarge: return "同步内容超过 \(WubiCloudConfig.syncMaxContentLength) 字"
+            case .contentTooLarge(let max): return "同步内容超过 \(max) 字"
             case .emptyResponse: return "服务器无返回"
             case .revisionConflict: return "版本已变化"
             }
+        }
+    }
+
+    private struct PublicSystemConfig: Decodable {
+        let dict_sync_max_chars: Int?
+    }
+
+    private static let maxCharsCacheLock = NSLock()
+    private static var maxCharsCache: (value: Int, at: Date)?
+    private static let maxCharsCacheTTL: TimeInterval = 300
+
+    /// 公开配置中的同步字符上限；失败回退本地默认。短时缓存避免连续 push 重复请求。
+    static func fetchDictSyncMaxChars(baseURL: String = WubiCloudConfig.baseURL) async -> Int {
+        maxCharsCacheLock.lock()
+        if let cached = maxCharsCache, Date().timeIntervalSince(cached.at) < maxCharsCacheTTL {
+            let value = cached.value
+            maxCharsCacheLock.unlock()
+            return value
+        }
+        maxCharsCacheLock.unlock()
+
+        let fallback = WubiCloudConfig.syncMaxContentLength
+        do {
+            let url = try makeURL(base: baseURL, path: "system-config")
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            let (data, response) = try await URLSession.shared.data(for: request)
+            try validateHTTP(response)
+            let envelope = try JSONDecoder().decode(Envelope<PublicSystemConfig>.self, from: data)
+            let value = envelope.data?.dict_sync_max_chars ?? 0
+            let maxChars = value > 0 ? value : fallback
+            maxCharsCacheLock.lock()
+            maxCharsCache = (maxChars, Date())
+            maxCharsCacheLock.unlock()
+            return maxChars
+        } catch {
+            return fallback
         }
     }
 
@@ -157,8 +194,9 @@ enum WubiCloudAPI {
         baseURL: String = WubiCloudConfig.baseURL
     ) async throws -> Int {
         guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
-        guard yaml.count < WubiCloudConfig.syncMaxContentLength else {
-            throw APIError.contentTooLarge
+        let maxChars = await fetchDictSyncMaxChars(baseURL: baseURL)
+        guard yaml.count < maxChars else {
+            throw APIError.contentTooLarge(maxChars)
         }
         let url = try makeURL(base: baseURL, path: "dict/push")
         var request = URLRequest(url: url)
