@@ -26,6 +26,7 @@ enum CandidateBarLayout {
         padding: (top: NSLayoutConstraint, bottom: NSLayoutConstraint, leading: NSLayoutConstraint, trailing: NSLayoutConstraint),
         candidates: [String],
         codes: [String],
+        comments: [String] = [],
         colors: CandidateSkin.Colors,
         onSelect: ((Int) -> Void)?
     ) {
@@ -37,7 +38,15 @@ enum CandidateBarLayout {
         let fontSize = CGFloat(skin.candidateFontSize)
         let showCode = IMEAppearancePrefs.showPreeditInPanel
         let codeSize = CGFloat(skin.codeFontSize)
-        let rowHeight = ceil(max(fontSize, CGFloat(skin.indexFontSize), showCode ? codeSize : 0) * 1.35)
+        let showComment = IMEAppearancePrefs.showCommentInPanel
+        let commentSize = CGFloat(skin.commentFontSize)
+        // 行高取所有可见字号的较大者，备注开关切换时不会跳高低。
+        let rowHeight = ceil(max(
+            fontSize,
+            CGFloat(skin.indexFontSize),
+            showCode ? codeSize : 0,
+            showComment ? commentSize : 0
+        ) * 1.35)
 
         stack.edgeInsets = .init()
         stack.orientation = vertical ? .vertical : .horizontal
@@ -90,16 +99,29 @@ enum CandidateBarLayout {
                 tag: highlighted ? 4 : 2
             )
             let code = codes.indices.contains(i) ? codes[i] : ""
+            let comment = comments.indices.contains(i) ? comments[i] : ""
+            // 词条后面紧跟编码与备注，两者都用固定 4pt 间距，不跟序号间距走。
+            var trailing: [NSView] = [word]
             if showCode, !code.isEmpty {
-                let codeField = textField(
+                trailing.append(textField(
                     code,
                     size: codeSize,
                     weight: .regular,
                     color: highlighted ? colors.highlightCodeText.nsColor : colors.codeText.nsColor,
                     tag: highlighted ? 6 : 5
-                )
-                // 编码紧跟词条，间距固定，不跟序号间距走。
-                let pair = NSStackView(views: [word, codeField])
+                ))
+            }
+            if showComment, !comment.isEmpty {
+                trailing.append(textField(
+                    comment,
+                    size: commentSize,
+                    weight: skin.commentWeight,
+                    color: highlighted ? colors.highlightCommentText.nsColor : colors.commentText.nsColor,
+                    tag: highlighted ? 8 : 7
+                ))
+            }
+            if trailing.count > 1 {
+                let pair = NSStackView(views: trailing)
                 pair.orientation = .horizontal
                 pair.alignment = skin.verticalAlignment.textAlignment
                 pair.spacing = 4
@@ -133,7 +155,7 @@ enum CandidateBarLayout {
         }
     }
 
-    // 切换亮暗外观时只刷新颜色：1/2 普通序号和词，3/4 首选序号和词，5/6 普通和首选编码。
+    // 切换亮暗外观时只刷新颜色：1/2 普通序号和词，3/4 首选序号和词，5/6 普通和首选编码，7/8 普通和首选备注。
     static func updateTextColors(in view: NSView, colors: CandidateSkin.Colors) {
         for child in view.subviews {
             if let field = child as? NSTextField {
@@ -143,6 +165,8 @@ enum CandidateBarLayout {
                 case 4: field.textColor = colors.highlightText.nsColor
                 case 5: field.textColor = colors.codeText.nsColor
                 case 6: field.textColor = colors.highlightCodeText.nsColor
+                case 7: field.textColor = colors.commentText.nsColor
+                case 8: field.textColor = colors.highlightCommentText.nsColor
                 default: field.textColor = colors.candidateText.nsColor
                 }
             } else if let box = child as? CandidateHitView, box.isHighlighted {

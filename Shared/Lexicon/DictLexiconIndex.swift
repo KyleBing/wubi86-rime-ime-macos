@@ -148,6 +148,25 @@ final class DictLexiconIndex {
         }
     }
 
+    // 候选条词后要标的备注：取码表第四列的备注，同词多条时优先当前编码命中的那条。
+    func displayNotes(texts: [String], preedit: String) -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        reloadIfNeeded()
+        let prefix = preedit.lowercased().filter { $0.isASCII && $0.isLetter }
+        let reverse = Self.isReverseLookup(preedit)
+        return texts.map { text in
+            let all = byText[text] ?? []
+            guard !all.isEmpty else { return "" }
+            // 反查时输入的是拼音，不对编码做筛选。
+            let matched = reverse ? all : all.filter { prefix.isEmpty || $0.entry.code.hasPrefix(prefix) }
+            let pool = matched.isEmpty ? all : matched
+            let exact = prefix.isEmpty ? [] : pool.filter { $0.entry.code == prefix }
+            let preferred = exact.isEmpty ? pool : exact
+            return preferred.first { !$0.entry.note.isEmpty }?.entry.note ?? ""
+        }
+    }
+
     /// 当前输入下，这个候选最可能对应的码，以及同词的其它编码。
     func match(text: String, preedit: String) -> (hits: [DictLexiconHit], otherCodes: [String]) {
         lock.lock()

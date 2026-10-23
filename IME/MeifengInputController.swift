@@ -597,12 +597,14 @@ final class MeifengInputController: IMKInputController {
         let preedit = snap.preedit ?? ""
         let special = DateTimeCandidates.candidates(for: preedit)
         let texts: [String] = special ?? snap.candidates.map(\.text)
+        // 备注来自 Rime 候选的 comment；预置候选（日期时间）没有备注。
+        let comments: [String] = special == nil ? snap.candidates.map { $0.comment ?? "" } : []
 
         log("update preedit=\(preedit) candidates=\(texts.prefix(5).joined(separator: ",")) composing=\(snap.isComposing)")
 
         if snap.isComposing || !texts.isEmpty {
             setMarkedText(preedit)
-            showCandidates(texts, preedit: preedit)
+            showCandidates(texts, comments: comments, preedit: preedit)
         } else {
             panel.hide()
             if snap.commitText == nil || snap.commitText?.isEmpty == true {
@@ -628,7 +630,7 @@ final class MeifengInputController: IMKInputController {
         return consumeRimeUpdate()
     }
 
-    private func showCandidates(_ texts: [String], preedit: String) {
+    private func showCandidates(_ texts: [String], comments: [String] = [], preedit: String) {
         // 没有候选时只保留编码下划线，不弹出空候选窗。
         guard !texts.isEmpty else {
             panel.hide()
@@ -645,8 +647,28 @@ final class MeifengInputController: IMKInputController {
             page = Array(texts[start..<min(start + pageSize, texts.count)])
         }
         let codes = candidateCodes(for: page, preedit: preedit)
-        panel.show(candidates: page, codes: codes, caretRect: caret) { [weak self] idx in
+        // 备注按当前页对齐：Rime 的 comment 优先，缺失时回退到码表备注。
+        let pageComments = candidateComments(comments, for: page, preedit: preedit)
+        panel.show(candidates: page, codes: codes, comments: pageComments, caretRect: caret) { [weak self] idx in
             _ = self?.selectCandidate(index: idx)
+        }
+    }
+
+    // 备注：Rime 候选自带的 comment 优先；没有时取码表第四列的备注（云端扩展词库的备注写在这一列）。
+    private func candidateComments(_ rime: [String], for texts: [String], preedit: String) -> [String] {
+        guard IMEAppearancePrefs.showCommentInPanel,
+              DateTimeCandidates.candidates(for: preedit) == nil else {
+            return []
+        }
+        let typed = RimeSession.shared.bridgeEngine.rawInput()
+        let input = typed.isEmpty ? preedit : typed
+        let notes = DictLexiconIndex.shared.displayNotes(texts: texts, preedit: input)
+        return texts.indices.map { i in
+            let value = rime.indices.contains(i)
+                ? rime[i].trimmingCharacters(in: .whitespacesAndNewlines)
+                : ""
+            if !value.isEmpty { return value }
+            return notes.indices.contains(i) ? notes[i] : ""
         }
     }
 

@@ -7,7 +7,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case paddingTop, paddingBottom, paddingLeft, paddingRight
         case offsetTop, offsetLeft
         case cornerRadius, spacing, indexSpacing
-        case candidateSize, indexSize, codeSize, borderWidth
+        case candidateSize, indexSize, codeSize, commentSize, borderWidth
         case shadowRadius, shadowX, shadowY
         case highlightRadius
         case highlightTop, highlightBottom, highlightLeft, highlightRight
@@ -106,6 +106,12 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         root.addArrangedSubview(card(
             title: "布局细节",
             content: layoutBody
+        ))
+
+        // 备注：开关放在这里，字号、粗细和配色跟随皮肤一起保存与分享。
+        root.addArrangedSubview(card(
+            title: "备注",
+            content: commentForm(skin)
         ))
 
         let colorCard = card(
@@ -443,6 +449,36 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         return row(title, popup)
     }
 
+    // 备注卡片：开关、字号、粗细与明暗配色。
+    private func commentForm(_ skin: CandidateSkin) -> NSView {
+        let enabled = NSButton(
+            checkboxWithTitle: "显示候选备注",
+            target: self,
+            action: #selector(commentShownChanged(_:))
+        )
+        enabled.state = IMEAppearancePrefs.showCommentInPanel ? .on : .off
+        enabled.toolTip = "显示 Rime 候选项自带的备注（comment 字段）"
+        let hint = NSTextField(wrappingLabelWithString: "备注优先取 Rime 候选的 comment；没有时显示码表第四列的备注（云端扩展词库的备注写在这一列）。")
+        hint.font = .systemFont(ofSize: 11)
+        hint.textColor = .secondaryLabelColor
+        hint.preferredMaxLayoutWidth = 240
+        let settings = form([
+            enabled,
+            numberRow("备注字号", value: skin.commentFontSize, field: .commentSize),
+            weightRow("备注粗细", fontName: skin.fontName, value: skin.commentWeight, tag: 203),
+            hint
+        ])
+        return twoColumns(settings, commentColorForm(skin))
+    }
+
+    // 备注配色：普通行与首选高亮行各一列。
+    private func commentColorForm(_ skin: CandidateSkin) -> NSView {
+        colorColumns([
+            ("备注", skin.light.commentText, skin.dark.commentText, 10),
+            ("首选备注", skin.light.highlightCommentText, skin.dark.highlightCommentText, 11)
+        ])
+    }
+
     private func pairedColorForm(
         light: CandidateSkin.Colors,
         dark: CandidateSkin.Colors
@@ -458,7 +494,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         ])
     }
 
-    // 首选配色：颜色槽位 5–7，暗色为 +10。
+    // 首选配色：颜色槽位 5–7，暗色为 +100。
     private func highlightColorForm(_ skin: CandidateSkin) -> NSView {
         colorColumns([
             ("高亮背景", skin.light.highlightBackground, skin.dark.highlightBackground, 5),
@@ -487,7 +523,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         let columns = entries.map { title, lightColor, darkColor, tag -> NSView in
             let titleLabel = centeredLabel(title)
             let lightWell = colorWell(lightColor, tag: tag)
-            let darkWell = colorWell(darkColor, tag: tag + 10)
+            let darkWell = colorWell(darkColor, tag: tag + 100)
             let col = NSStackView(views: [titleLabel, lightWell, darkWell])
             col.orientation = .vertical
             col.alignment = .centerX
@@ -641,6 +677,11 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         IMEAppearancePrefs.updateSkin { $0.highlightEnabled = sender.state == .on }
     }
 
+    // 备注显示开关单独存偏好，切换后候选条立即重排。
+    @objc private func commentShownChanged(_ sender: NSButton) {
+        IMEAppearancePrefs.showCommentInPanel = sender.state == .on
+    }
+
     // 与 CandidateSkin.normalized 的取值范围保持一致，供步进器限位。
     private static func range(for field: NumberField) -> ClosedRange<Double> {
         switch field {
@@ -651,6 +692,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case .cornerRadius: return 0...30
         case .indexSpacing: return 0...20
         case .codeSize: return 8...32
+        case .commentSize: return 8...32
         case .highlightRadius, .highlightTop, .highlightBottom, .highlightLeft, .highlightRight:
             return 0...20
         default: return 0...100
@@ -664,6 +706,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
             switch sender.tag {
             case 200: $0.candidateWeight = weight
             case 202: $0.highlightWeight = weight
+            case 203: $0.commentWeight = weight
             default: $0.indexWeight = weight
             }
         }
@@ -708,6 +751,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
             case .candidateSize: $0.candidateFontSize = value
             case .indexSize: $0.indexFontSize = value
             case .codeSize: $0.codeFontSize = value
+            case .commentSize: $0.commentFontSize = value
             case .borderWidth: $0.borderWidth = value
             case .shadowRadius: $0.shadowRadius = value
             case .shadowX: $0.shadowOffsetX = value
@@ -727,8 +771,9 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
 
     @objc private func colorChanged(_ sender: ColorSwatchButton) {
         let color = CandidateSkin.RGBAColor(sender.color)
-        let dark = sender.tag >= 10
-        let slot = sender.tag % 10
+        // 暗色槽位统一加 100，槽位号用余数取回，便于继续扩充颜色项。
+        let dark = sender.tag >= 100
+        let slot = sender.tag % 100
         IMEAppearancePrefs.updateSkin {
             if dark {
                 Self.setColor(color, slot: slot, colors: &$0.dark)
@@ -819,6 +864,7 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case .candidateSize: return skin.candidateFontSize
         case .indexSize: return skin.indexFontSize
         case .codeSize: return skin.codeFontSize
+        case .commentSize: return skin.commentFontSize
         case .borderWidth: return skin.borderWidth
         case .shadowRadius: return skin.shadowRadius
         case .shadowX: return skin.shadowOffsetX
@@ -847,6 +893,8 @@ final class CandidateSkinSettingsView: NSView, NSTextFieldDelegate {
         case 7: colors.highlightIndexText = value
         case 8: colors.codeText = value
         case 9: colors.highlightCodeText = value
+        case 10: colors.commentText = value
+        case 11: colors.highlightCommentText = value
         default: break
         }
     }

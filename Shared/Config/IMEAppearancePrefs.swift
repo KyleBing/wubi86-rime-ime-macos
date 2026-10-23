@@ -249,6 +249,15 @@ enum IMEAppearancePrefs {
         }
     }
 
+    // 是否在每个候选词后面显示 Rime 提供的备注（comment）
+    static var showCommentInPanel: Bool {
+        get { defaults.bool(forKey: Keys.showComment) }
+        set {
+            defaults.set(newValue, forKey: Keys.showComment)
+            notify()
+        }
+    }
+
     // 每页候选数（写入 Rime menu/page_size，见 RimeBehaviorPrefs）
     static var pageSize: Int {
         get { RimeBehaviorPrefs.pageSize }
@@ -462,6 +471,7 @@ enum IMEAppearancePrefs {
         static let fontSize = "candidate.fontSize"
         static let fontName = "candidate.fontName"
         static let showPreedit = "candidate.showPreedit"
+        static let showComment = "candidate.showComment"
         static let showCaretModeHint = "input.showCaretModeHint"
         static let codeDetail = "candidate.codeDetail"
         static let showIndex = "candidate.showIndex"

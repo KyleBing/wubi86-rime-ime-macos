@@ -11,6 +11,7 @@ final class CandidatePanelController {
     private var onSelect: ((Int) -> Void)?
     private var lastCandidates: [String] = []
     private var lastCodes: [String] = []
+    private var lastComments: [String] = []
     private var lastCaretRect = NSRect.zero
 
     init() {
@@ -63,10 +64,17 @@ final class CandidatePanelController {
         DistributedNotificationCenter.default().removeObserver(self)
     }
 
-    func show(candidates: [String], codes: [String], caretRect: NSRect, onSelect: @escaping (Int) -> Void) {
+    func show(
+        candidates: [String],
+        codes: [String],
+        comments: [String] = [],
+        caretRect: NSRect,
+        onSelect: @escaping (Int) -> Void
+    ) {
         self.onSelect = onSelect
         lastCandidates = candidates
         lastCodes = codes
+        lastComments = comments
         lastCaretRect = caretRect
         // 「不显示」模式只保留编码下划线，选词按键仍由输入控制器处理。
         guard !IMEAppearancePrefs.hideCandidatePanel else {
@@ -114,6 +122,7 @@ final class CandidatePanelController {
             padding: paddingConstraints,
             candidates: lastCandidates,
             codes: lastCodes,
+            comments: lastComments,
             colors: colors,
             onSelect: { [weak self] idx in self?.onSelect?(idx) }
         )

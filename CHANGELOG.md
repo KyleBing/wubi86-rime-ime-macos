@@ -1,4 +1,5 @@
 ## v1.1.0 `2026-10-22`
+- 候选条支持显示备注：勾选后展示 Rime 的 `comment`，缺失时回退到码表第四列的备注（扩展词库的备注）；备注字号、粗细、明暗配色可单独设置，随皮肤保存和分享
 - 云端同步默认地址改为 `https://kylebing.cn/wubi/portal/`，与新的接口前缀一致
 - 文档站占用 `https://kylebing.cn/wubi/`，账号注册入口改为 `https://kylebing.cn/wubi/manager/#/register`
 

@@ -28,6 +28,9 @@ struct CandidateSkin: Codable, Equatable {
     var indexWeight: FontWeight
     /// 词条后面的五笔编码字号。
     var codeFontSize: Double
+    /// 候选备注（Rime comment，缺失时用码表备注）字号与粗细。
+    var commentFontSize: Double
+    var commentWeight: FontWeight
     var borderWidth: Double
     var shadowEnabled: Bool
     var shadowRadius: Double
@@ -152,6 +155,10 @@ struct CandidateSkin: Codable, Equatable {
         var codeText: RGBAColor
         /// 首选高亮行里的编码颜色。
         var highlightCodeText: RGBAColor
+        /// 普通候选后面的备注颜色。
+        var commentText: RGBAColor
+        /// 首选高亮行里的备注颜色。
+        var highlightCommentText: RGBAColor
     }
 
     struct RGBAColor: Codable, Equatable {
@@ -215,6 +222,8 @@ struct CandidateSkin: Codable, Equatable {
             indexFontSize: 11,
             indexWeight: .regular,
             codeFontSize: 11,
+            commentFontSize: 11,
+            commentWeight: .regular,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 10,
@@ -237,7 +246,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 1, green: 1, blue: 1),
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
-                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493)
+                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493),
+                commentText: .init(red: 0.52, green: 0.52, blue: 0.55),
+                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.9)
             ),
             dark: Colors(
                 background: .init(red: 0.13, green: 0.13, blue: 0.15, alpha: 0.94),
@@ -249,7 +260,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 1, green: 1, blue: 1),
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
-                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042)
+                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042),
+                commentText: .init(red: 0.70, green: 0.70, blue: 0.73),
+                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.9)
             )
         )
     }
@@ -282,6 +295,8 @@ struct CandidateSkin: Codable, Equatable {
             indexFontSize: 11,
             indexWeight: .light,
             codeFontSize: 12,
+            commentFontSize: 11,
+            commentWeight: .regular,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 4,
@@ -304,7 +319,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 1, green: 1, blue: 1),
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
-                highlightCodeText: .init(red: 1, green: 1, blue: 1)
+                highlightCodeText: .init(red: 1, green: 1, blue: 1),
+                commentText: .init(red: 0.55, green: 0.55, blue: 0.58),
+                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.92)
             ),
             dark: Colors(
                 background: .init(red: 0.1355506262357012, green: 0.1355506262357012, blue: 0.138404323630137, alpha: 0.94),
@@ -316,7 +333,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 1, green: 1, blue: 1),
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
-                highlightCodeText: .init(red: 1, green: 1, blue: 1)
+                highlightCodeText: .init(red: 1, green: 1, blue: 1),
+                commentText: .init(red: 0.70, green: 0.70, blue: 0.73),
+                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.92)
             )
         )
     }
@@ -343,6 +362,8 @@ struct CandidateSkin: Codable, Equatable {
             indexFontSize: 11,
             indexWeight: .light,
             codeFontSize: 12,
+            commentFontSize: 11,
+            commentWeight: .regular,
             borderWidth: 0.5,
             shadowEnabled: true,
             shadowRadius: 4,
@@ -365,7 +386,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 0, green: 0, blue: 0),
                 highlightIndexText: .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695),
                 codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
-                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493)
+                highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493),
+                commentText: .init(red: 0.55, green: 0.55, blue: 0.58),
+                highlightCommentText: .init(red: 0.38, green: 0.38, blue: 0.41)
             ),
             dark: Colors(
                 background: .init(red: 0.13736087328767124, green: 0.13736087328767124, blue: 0.13736087328767124, alpha: 0.94),
@@ -377,7 +400,9 @@ struct CandidateSkin: Codable, Equatable {
                 highlightText: .init(red: 1, green: 1, blue: 1),
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.68),
                 codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
-                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042)
+                highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042),
+                commentText: .init(red: 0.70, green: 0.70, blue: 0.73),
+                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.85)
             )
         )
     }
@@ -410,6 +435,7 @@ struct CandidateSkin: Codable, Equatable {
         result.candidateFontSize = candidateFontSize.clamped(to: 9...40)
         result.indexFontSize = indexFontSize.clamped(to: 8...32)
         result.codeFontSize = codeFontSize.clamped(to: 8...32)
+        result.commentFontSize = commentFontSize.clamped(to: 8...32)
         result.borderWidth = borderWidth.clamped(to: 0...6)
         result.shadowRadius = shadowRadius.clamped(to: 0...40)
         result.shadowOffsetX = shadowOffsetX.clamped(to: -30...30)
@@ -463,7 +489,9 @@ private extension CandidateSkin.Colors {
             highlightText: highlightText.normalized(),
             highlightIndexText: highlightIndexText.normalized(),
             codeText: codeText.normalized(),
-            highlightCodeText: highlightCodeText.normalized()
+            highlightCodeText: highlightCodeText.normalized(),
+            commentText: commentText.normalized(),
+            highlightCommentText: highlightCommentText.normalized()
         )
     }
 }

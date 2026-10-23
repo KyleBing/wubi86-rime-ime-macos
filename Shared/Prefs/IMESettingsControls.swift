@@ -709,6 +709,7 @@ private final class SettingsRootView: NSView {
             ("仅圆点", "不展开候选词，只用小圆点表示当前页候选数量，适合熟练盲打"),
             ("不显示", "完全隐藏候选框，只保留编码下划线，数字键、空格等选词照常"),
             ("距光标上 / 左", "在「外观配置 › 布局细节」中调整候选窗与光标的距离"),
+            ("备注", "在「外观配置 › 备注」中开启；优先显示 Rime 的 comment，没有时显示码表第四列的备注"),
             ("皮肤分享", "外观可导出为文件，在其他设备从文件导入")
         ])
 
@@ -1033,6 +1034,8 @@ final class CandidateInlinePreviewView: NSView {
     private let candidates = NSStackView()
     private let hiddenHint = NSTextField(labelWithString: "候选框已隐藏，仅显示编码")
     private var heightConstraint: NSLayoutConstraint!
+    // 宽度跟真实候选窗一样按内容收紧，避免竖排时被预览区撑开、无备注行留白。
+    private var chromeWidthConstraint: NSLayoutConstraint!
     // 相对 chrome 背景的内边距约束，避免 edgeInsets 只撑开外层容器。
     private var paddingConstraints: (top: NSLayoutConstraint, bottom: NSLayoutConstraint, leading: NSLayoutConstraint, trailing: NSLayoutConstraint)!
     private var observers: [NSObjectProtocol] = []
@@ -1067,9 +1070,11 @@ final class CandidateInlinePreviewView: NSView {
         addSubview(hiddenHint)
 
         heightConstraint = heightAnchor.constraint(equalToConstant: 88)
+        chromeWidthConstraint = chrome.widthAnchor.constraint(equalToConstant: 120)
         NSLayoutConstraint.activate([
             widthAnchor.constraint(greaterThanOrEqualToConstant: 264),
             heightConstraint,
+            chromeWidthConstraint,
             hiddenHint.centerXAnchor.constraint(equalTo: centerXAnchor),
             hiddenHint.centerYAnchor.constraint(equalTo: centerYAnchor),
 
@@ -1118,23 +1123,34 @@ final class CandidateInlinePreviewView: NSView {
         let sample = ["五", "吾", "伍", "捂", "梧", "妩", "坞", "晤", "勿"]
         let fullCodes = ["gghg", "ggg", "wgg", "rgkg", "sgkg", "vntg", "fggy", "jgkg", "qre"]
         let restCodes = ["hg", "g", "gg", "kg", "g", "tg", "gy", "kg", "re"]
+        // 备注示例：只给部分词条备注，与真实候选一致——没有备注的不占位。
+        let sampleComments = ["数字", "", "姓氏", "", "", "妩媚", "", "会晤", ""]
         let sampleCodes = IMEAppearancePrefs.codeDetail == .full ? fullCodes : restCodes
         let hidden = IMEAppearancePrefs.hideCandidatePanel
         chrome.isHidden = hidden
         hiddenHint.isHidden = !hidden
         chrome.applySkin()
         // 与实际候选窗走同一套排版，保证所见即所得。
+        let pageSize = RimeBehaviorPrefs.pageSize
+        let pageComments = IMEAppearancePrefs.showCommentInPanel
+            ? Array(sampleComments.prefix(pageSize))
+            : []
         CandidateBarLayout.populate(
             candidates,
             padding: paddingConstraints,
-            candidates: Array(sample.prefix(RimeBehaviorPrefs.pageSize)),
-            codes: Array(sampleCodes.prefix(RimeBehaviorPrefs.pageSize)),
+            candidates: Array(sample.prefix(pageSize)),
+            codes: Array(sampleCodes.prefix(pageSize)),
+            comments: pageComments,
             colors: colors,
             onSelect: nil
         )
-        // fittingSize 已含阴影外扩；再留一点余量避免贴边。
+        // 先松开宽度再量 fittingSize，否则会被上一轮的定宽卡住。
+        chromeWidthConstraint.isActive = false
         chrome.layoutSubtreeIfNeeded()
-        heightConstraint.constant = max(72, ceil(chrome.fittingSize.height + 16))
+        let fitted = chrome.fittingSize
+        chromeWidthConstraint.constant = max(1, ceil(fitted.width))
+        chromeWidthConstraint.isActive = true
+        heightConstraint.constant = max(72, ceil(fitted.height + 16))
         invalidateIntrinsicContentSize()
         needsLayout = true
     }
@@ -1175,6 +1191,9 @@ private final class FontTarget: NSObject {
             }
             if !choices.contains(skin.indexWeight) {
                 skin.indexWeight = choices.first ?? .regular
+            }
+            if !choices.contains(skin.commentWeight) {
+                skin.commentWeight = choices.first ?? .regular
             }
         }
     }
