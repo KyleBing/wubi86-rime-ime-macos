@@ -31,9 +31,12 @@ enum IMEAppearancePrefs {
                 return migratedDefaultSkin()
             }
             let value = decoded.normalized()
-            let corrected = correctedCoralHighlightCode(value)
+            let corrected = correctedMonochromeCommentColors(
+                correctedDefaultCommentColors(correctedCoralHighlightCode(value))
+            )
             if corrected != value, let data = try? JSONEncoder().encode(corrected) {
-                // 已套用的珊瑚红仍带着旧的灰色首选编码，读到时改成白色。
+                // 已套用的珊瑚红仍带着旧的灰色首选编码，读到时改成白色；
+                // 「玫枫默认」「简约黑白」仍停在旧灰/白备注色时，读到时改成 #8CC555。
                 defaults.set(data, forKey: Keys.skin)
             }
             return corrected
@@ -372,6 +375,53 @@ enum IMEAppearancePrefs {
         }
         if nearly(value.dark.highlightCodeText, grayDark) {
             value.dark.highlightCodeText = white
+        }
+        return value
+    }
+
+    // 「玫枫默认」备注色从灰/白改为 #8CC555。只改还停在旧默认备注色上的四项。
+    private static func correctedDefaultCommentColors(_ skin: CandidateSkin) -> CandidateSkin {
+        guard skin.name == "玫枫默认" else { return skin }
+        let oldLightComment = CandidateSkin.RGBAColor(red: 0.52, green: 0.52, blue: 0.55)
+        let oldDarkComment = CandidateSkin.RGBAColor(red: 0.70, green: 0.70, blue: 0.73)
+        let oldHighlightComment = CandidateSkin.RGBAColor(red: 1, green: 1, blue: 1, alpha: 0.9)
+        let green = CandidateSkin.defaultSkin.light.commentText
+        var value = skin
+        if nearly(value.light.commentText, oldLightComment) {
+            value.light.commentText = green
+        }
+        if nearly(value.light.highlightCommentText, oldHighlightComment) {
+            value.light.highlightCommentText = green
+        }
+        if nearly(value.dark.commentText, oldDarkComment) {
+            value.dark.commentText = green
+        }
+        if nearly(value.dark.highlightCommentText, oldHighlightComment) {
+            value.dark.highlightCommentText = green
+        }
+        return value
+    }
+
+    // 「简约黑白」备注色改为 #8CC555。只改还停在旧灰备注色上的四项；珊瑚红不迁。
+    private static func correctedMonochromeCommentColors(_ skin: CandidateSkin) -> CandidateSkin {
+        guard skin.name == "简约黑白" else { return skin }
+        let oldLightComment = CandidateSkin.RGBAColor(red: 0.55, green: 0.55, blue: 0.58)
+        let oldLightHighlight = CandidateSkin.RGBAColor(red: 0.38, green: 0.38, blue: 0.41)
+        let oldDarkComment = CandidateSkin.RGBAColor(red: 0.70, green: 0.70, blue: 0.73)
+        let oldDarkHighlight = CandidateSkin.RGBAColor(red: 1, green: 1, blue: 1, alpha: 0.85)
+        let green = CandidateSkin.defaultSkin.light.commentText
+        var value = skin
+        if nearly(value.light.commentText, oldLightComment) {
+            value.light.commentText = green
+        }
+        if nearly(value.light.highlightCommentText, oldLightHighlight) {
+            value.light.highlightCommentText = green
+        }
+        if nearly(value.dark.commentText, oldDarkComment) {
+            value.dark.commentText = green
+        }
+        if nearly(value.dark.highlightCommentText, oldDarkHighlight) {
+            value.dark.highlightCommentText = green
         }
         return value
     }

@@ -202,7 +202,9 @@ struct CandidateSkin: Codable, Equatable {
     }
 
     static var defaultSkin: CandidateSkin {
-        CandidateSkin(
+        // 备注默认色 #8CC555：亮/暗、普通/首选四套都用同一绿色。
+        let commentGreen = RGBAColor(red: 140.0 / 255.0, green: 197.0 / 255.0, blue: 85.0 / 255.0)
+        return CandidateSkin(
             version: currentVersion,
             name: "玫枫默认",
             author: "玫枫五笔",
@@ -247,8 +249,8 @@ struct CandidateSkin: Codable, Equatable {
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
                 highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493),
-                commentText: .init(red: 0.52, green: 0.52, blue: 0.55),
-                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.9)
+                commentText: commentGreen,
+                highlightCommentText: commentGreen
             ),
             dark: Colors(
                 background: .init(red: 0.13, green: 0.13, blue: 0.15, alpha: 0.94),
@@ -261,8 +263,8 @@ struct CandidateSkin: Codable, Equatable {
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.78),
                 codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
                 highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042),
-                commentText: .init(red: 0.70, green: 0.70, blue: 0.73),
-                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.9)
+                commentText: commentGreen,
+                highlightCommentText: commentGreen
             )
         )
     }
@@ -342,7 +344,9 @@ struct CandidateSkin: Codable, Equatable {
 
     // 简约黑白：白底 / 深灰底，首选与背景同色，靠文字颜色区分。
     private static var monochromePreset: CandidateSkin {
-        CandidateSkin(
+        // 备注色与玫枫默认一致：#8CC555。
+        let commentGreen = RGBAColor(red: 140.0 / 255.0, green: 197.0 / 255.0, blue: 85.0 / 255.0)
+        return CandidateSkin(
             version: currentVersion,
             name: "简约黑白",
             author: "玫枫五笔",
@@ -387,8 +391,8 @@ struct CandidateSkin: Codable, Equatable {
                 highlightIndexText: .init(red: 0.243, green: 0.247, blue: 0.247, alpha: 0.695),
                 codeText: .init(red: 0.614888698630137, green: 0.614888698630137, blue: 0.614888698630137),
                 highlightCodeText: .init(red: 0.3245130565068493, green: 0.3245130565068493, blue: 0.3245130565068493),
-                commentText: .init(red: 0.55, green: 0.55, blue: 0.58),
-                highlightCommentText: .init(red: 0.38, green: 0.38, blue: 0.41)
+                commentText: commentGreen,
+                highlightCommentText: commentGreen
             ),
             dark: Colors(
                 background: .init(red: 0.13736087328767124, green: 0.13736087328767124, blue: 0.13736087328767124, alpha: 0.94),
@@ -401,8 +405,8 @@ struct CandidateSkin: Codable, Equatable {
                 highlightIndexText: .init(red: 1, green: 1, blue: 1, alpha: 0.68),
                 codeText: .init(red: 0.7359364297945206, green: 0.7359364297945206, blue: 0.7359364297945206),
                 highlightCodeText: .init(red: 0.7462810359589042, green: 0.7462810359589042, blue: 0.7462810359589042),
-                commentText: .init(red: 0.70, green: 0.70, blue: 0.73),
-                highlightCommentText: .init(red: 1, green: 1, blue: 1, alpha: 0.85)
+                commentText: commentGreen,
+                highlightCommentText: commentGreen
             )
         )
     }
