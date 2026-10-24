@@ -21,6 +21,8 @@ final class AccountSyncSettingsView: NSView {
     private let loginButton = NSButton(title: "登录", target: nil, action: nil)
     private let logoutButton = NSButton(title: "退出登录", target: nil, action: nil)
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
+    private let registerInfoLabel = NSTextField(wrappingLabelWithString: "")
+    private let registerApplyButton = NSButton(title: "在浏览器中申请注册", target: nil, action: nil)
     private let loginForm = NSStackView()
 
     private var busy = false
@@ -71,18 +73,23 @@ final class AccountSyncSettingsView: NSView {
         loginForm.addArrangedSubview(labeled("密码", passwordField))
         loginForm.addArrangedSubview(buttonRow([loginButton]))
 
-        let hint = NSTextField(wrappingLabelWithString: "登录后到「用户词」页同步用户词，或获取扩展词库。")
-        hint.font = .systemFont(ofSize: 11)
-        hint.textColor = .secondaryLabelColor
-        hint.preferredMaxLayoutWidth = 460
+        registerInfoLabel.font = .systemFont(ofSize: 12)
+        registerInfoLabel.textColor = .secondaryLabelColor
+        registerInfoLabel.preferredMaxLayoutWidth = 460
+        registerInfoLabel.stringValue = "付费申请同步账号，实现多端个人用户词同步。"
+        registerApplyButton.target = self
+        registerApplyButton.action = #selector(openRegisterApplyPage)
+        registerApplyButton.bezelStyle = .rounded
 
         let root = NSStackView(views: [
             sectionTitle("登录"),
             accountLabel,
             loginForm,
             logoutButton,
-            hint,
-            statusLabel
+            statusLabel,
+            sectionTitle("申请注册"),
+            registerInfoLabel,
+            buttonRow([registerApplyButton])
         ])
         root.orientation = .vertical
         root.alignment = .leading
@@ -115,6 +122,15 @@ final class AccountSyncSettingsView: NSView {
         loginForm.isHidden = loggedIn
         logoutButton.isHidden = !loggedIn
         loginButton.isEnabled = !busy
+    }
+
+    @objc private func openRegisterApplyPage() {
+        guard let url = WubiCloudConfig.registerApplyURL else {
+            statusLabel.textColor = .systemRed
+            statusLabel.stringValue = "无法打开申请页面，请检查请求地址"
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func loginClicked() {
@@ -327,10 +343,11 @@ final class UserLexiconCloudBar: NSView {
         }
         let count = ExtraDictUpdater.localEntryCount()
         extraMeta.stringValue = "\(count) 条"
-        let enabled = loggedIn && !busy
-        for button in [compareButton, mergeButton, uploadButton, downloadButton, extraButton] {
-            button.isEnabled = enabled
+        let syncEnabled = loggedIn && !busy
+        for button in [compareButton, mergeButton, uploadButton, downloadButton] {
+            button.isEnabled = syncEnabled
         }
+        extraButton.isEnabled = !busy
         autoSyncCheck.state = UserDictAutoSync.isEnabled ? .on : .off
         if !loggedIn {
             setStatus(syncStatus, syncIdleLoggedOut)

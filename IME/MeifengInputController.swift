@@ -32,6 +32,8 @@ final class MeifengInputController: IMKInputController {
         case halfWidthAfterDigit(String)
     }
     private var recentInput: RecentInput = .other
+    // 中文引号、单引号：第一次前引号，第二次后引号。
+    private var quotePair = PunctuationPrefs.PairState()
     // 强引用，避免设置窗口闪一下被释放
     private var preferencesWindowController: MeifengPreferencesWindowController?
     // 菜单交给另一个进程绘制，必须自己留着，否则项会被释放掉
@@ -96,6 +98,7 @@ final class MeifengInputController: IMKInputController {
         commitOrClearPending()
         clearPunctuation()
         recentInput = .other
+        quotePair.reset()
         panel.hide()
         // 输入框失焦后提示不再属于当前会话，立刻收掉，避免残留在别的窗口上。
         modeHint.hide()
@@ -419,7 +422,7 @@ final class MeifengInputController: IMKInputController {
             return
         }
         if mode == .direct {
-            commitPunctuation(symbols.first ?? item.key)
+            commitPunctuation(quotePair.directSymbol(key: item.key, symbols: symbols))
             return
         }
         punctSymbols = symbols

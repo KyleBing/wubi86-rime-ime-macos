@@ -2,6 +2,7 @@ import Foundation
 
 /// 标点由输入法处理，不走 Rime 的标点表。
 /// 符号内容与 default.custom.yaml 的 half_shape 一致。默认全部直接上屏第一项。
+/// 双引号和单引号除外：直接上屏时第一次出前引号，第二次出后引号，然后交替。
 enum PunctuationPrefs {
     enum Mode: String, CaseIterable {
         case direct
@@ -115,5 +116,23 @@ enum PunctuationPrefs {
 
     private static var defaults: UserDefaults {
         UserDefaults(suiteName: suiteName) ?? .standard
+    }
+
+    /// 记住引号下一次该出前还是后。失焦后清掉，下一处从前往引号开始。
+    struct PairState {
+        private var closingNext: [String: Bool] = [:]
+
+        mutating func reset() {
+            closingNext.removeAll()
+        }
+
+        /// 直接上屏用的符号。引号、单引号在两项之间交替，其它键仍是第一项。
+        mutating func directSymbol(key: String, symbols: [String]) -> String {
+            let primary = symbols.first ?? key
+            guard symbols.count >= 2, key == "\"" || key == "'" else { return primary }
+            let closing = closingNext[key] == true
+            closingNext[key] = !closing
+            return closing ? symbols[1] : primary
+        }
     }
 }

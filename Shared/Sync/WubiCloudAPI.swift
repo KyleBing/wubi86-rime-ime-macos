@@ -262,12 +262,13 @@ enum WubiCloudAPI {
         userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
         baseURL: String = WubiCloudConfig.baseURL
     ) async throws -> [ExtraWordItem] {
-        guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
         let url = try makeURL(base: baseURL, path: "word/export-extra")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        applyAuth(userInfo, to: &request)
+        if let userInfo, userInfo.isLoggedIn {
+            applyAuth(userInfo, to: &request)
+        }
         request.httpBody = Data("{}".utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)

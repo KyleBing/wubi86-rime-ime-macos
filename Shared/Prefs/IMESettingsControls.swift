@@ -610,7 +610,7 @@ private final class SettingsRootView: NSView {
         let body = PunctuationSettingsView(frame: .zero)
         return page(
             title: "标点",
-            subtitle: "标点由输入法处理。默认每键直接上屏第一项。输出用空格分开多项，可直接修改。改成候选列表后会弹出全部符号供选择。",
+            subtitle: "标点由输入法处理。默认每键直接上屏第一项。引号和单引号第一次出前引号，第二次出后引号。输出用空格分开多项，可直接修改。改成候选列表后会弹出全部符号供选择。",
             content: card(title: "标点输出", subtitle: nil, content: body)
         )
     }
@@ -804,7 +804,7 @@ private final class SettingsRootView: NSView {
         account.translatesAutoresizingMaskIntoConstraints = false
         return page(
             title: "账户",
-            subtitle: "登录后，到「用户词」页同步用户词并获取扩展词库。",
+            subtitle: "登录门户同步账号。",
             content: card(title: nil, subtitle: nil, content: account)
         )
     }
@@ -983,7 +983,9 @@ private final class AppearancePreviewHost: NSView {
         super.init(frame: frameRect)
         preview.translatesAutoresizingMaskIntoConstraints = false
         testField.placeholderString = "在此打字，查看实际候选窗"
-        testField.font = .systemFont(ofSize: 14)
+        testField.font = NSFont(name: "Consolas", size: 14)
+            ?? NSFont(name: "Monaco", size: 14)
+            ?? .monospacedSystemFont(ofSize: 14, weight: .regular)
         testField.bezelStyle = .roundedBezel
         testField.translatesAutoresizingMaskIntoConstraints = false
         testField.setContentCompressionResistancePriority(.required, for: .horizontal)

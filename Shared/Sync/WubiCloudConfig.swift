@@ -39,6 +39,20 @@ enum WubiCloudConfig {
         var lastExtraPullAt: Double = 0
     }
 
+    /// 管理后台根地址（由 API base 推导，用于注册申请等页面）。
+    static func managerPublicBase(fromBaseURL raw: String? = nil) -> String {
+        var base = resolveBaseURL(raw ?? baseURL)
+        if base.hasSuffix("/") { base.removeLast() }
+        if base.contains("/portal") {
+            return base.replacingOccurrences(of: "/portal", with: "/manager")
+        }
+        return base + "/wubi/manager"
+    }
+
+    static var registerApplyURL: URL? {
+        URL(string: managerPublicBase() + "/#/register-apply")
+    }
+
     static func resolveBaseURL(_ raw: String?) -> String {
         var base = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if base.isEmpty { base = defaultBaseURL }
