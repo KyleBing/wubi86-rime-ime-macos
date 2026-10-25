@@ -239,6 +239,8 @@ final class UserLexiconSettingsView: NSView, NSTextFieldDelegate, NSTableViewDat
     private func styleScroll(_ scroll: NSScrollView) {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
+        // overlay 滚动条会压在最后一列操作按钮上；legacy 在右侧单独占一列宽度。
+        scroll.scrollerStyle = .legacy
         scroll.borderType = .bezelBorder
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .vertical)
