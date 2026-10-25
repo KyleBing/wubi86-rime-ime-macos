@@ -20,6 +20,7 @@
 		179B4B2F64F4F21E6605C608 /* QuickAddWordPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042BAF43085260C8695E3371 /* QuickAddWordPanel.swift */; };
 		17D7FE2D86019E5D9E661B6C /* WubiCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */; };
 		18120E1FCFA44B7ABAA36407 /* ime-fn.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 8F4DC471C0A42896B3056EB7 /* ime-fn.tiff */; };
+		184054087CA81175FE418E4B /* RegistrationApplyCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82A43F24A0B0276D16701BA /* RegistrationApplyCopy.swift */; };
 		1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1011A7659BB3848622DD84 /* QuickAddPrefs.swift */; };
 		1B9755E1514A556D3B14334A /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D856B4925F0354EB314DFC1A /* SetupView.swift */; };
 		1DB78EC17209EA333B2C4BCB /* RoundedChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61795AD18300EBC4AA37FF32 /* RoundedChromeView.swift */; };
@@ -33,6 +34,7 @@
 		262DDDEB941A30FAFBA34C2E /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35C1942992FCC9EB78784C5 /* BrandIcon.swift */; };
 		269ADB51357707561C741F56 /* DictModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036632193DB85E22A8599BC8 /* DictModels.swift */; };
 		27A609918F3948AC141B711E /* WubiCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */; };
+		28E0E0F2E835358AA1A2C947 /* RegistrationApplyCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82A43F24A0B0276D16701BA /* RegistrationApplyCopy.swift */; };
 		29B22D608E3CC1D191E813F1 /* MacKeyMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615469236E5D6367D75035EA /* MacKeyMapper.swift */; };
 		2CA04F2ED254A7880B0C164C /* DictEditorIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E930D5EC0288A7F08E035E /* DictEditorIcons.swift */; };
 		2EBB459ED60911BFA9C2AFE1 /* CloudDictSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */; };
@@ -124,6 +126,7 @@
 		C786E1C3C70A4BD6C17C698B /* Rime in Resources */ = {isa = PBXBuildFile; fileRef = 0F7AB148116CEA6F22CB446A /* Rime */; };
 		C858DFB0B9FA9466611D701F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 31E1D0191E43B851502D4CD2 /* AppIcon.icns */; };
 		CA1FC1D425185D324FE6997C /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
+		CAE070844E8F33030A3826C9 /* RegistrationApplyCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82A43F24A0B0276D16701BA /* RegistrationApplyCopy.swift */; };
 		CD928E022A76F6B11BB69BC6 /* PunctuationPrefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA77F95743D47A7A7CDBD83E /* PunctuationPrefs.swift */; };
 		CEF0673E3EF001351D9FECFC /* UserLexiconSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242DC68F834A44C41A236048 /* UserLexiconSettingsView.swift */; };
 		D0E10C427D459808935F6126 /* AppGroupPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */; };
@@ -250,6 +253,7 @@
 		F223E928BD4DC6671B7D4F9D /* AppGroupPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupPaths.swift; sourceTree = "<group>"; };
 		F35C1942992FCC9EB78784C5 /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
 		F57DFE5123783D71073CC374 /* RimeMaintenanceDeployer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RimeMaintenanceDeployer.mm; sourceTree = "<group>"; };
+		F82A43F24A0B0276D16701BA /* RegistrationApplyCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationApplyCopy.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -395,6 +399,7 @@
 				35C444A931D8A04C63CB3B37 /* CloudDictSync.swift */,
 				81ECE5009CF15A64149E1E88 /* DictSyncDiff.swift */,
 				641036DB7E07AC3B96D33279 /* ExtraDictUpdater.swift */,
+				F82A43F24A0B0276D16701BA /* RegistrationApplyCopy.swift */,
 				EB7AD770E12542F5F14C25AE /* WubiCloudAPI.swift */,
 				1E20381500FE161097FA5BB5 /* WubiCloudConfig.swift */,
 			);
@@ -704,6 +709,7 @@
 				3456786CD1B50A35801714E2 /* PunctuationSettingsView.swift in Sources */,
 				92BD783033B1BEDE471A869A /* QuickAddHotkeySettingsView.swift in Sources */,
 				D242DD8FDF78FAD0E78EBAB6 /* QuickAddPrefs.swift in Sources */,
+				28E0E0F2E835358AA1A2C947 /* RegistrationApplyCopy.swift in Sources */,
 				63A8C109D00613A6A231B507 /* RimeBehaviorPrefs.swift in Sources */,
 				4B8B61E5F2A190D6763ADCF9 /* RimeBridge.mm in Sources */,
 				4DAC73FDBF2F9B72CFD055AA /* RimeConfigDeploy.swift in Sources */,
@@ -750,6 +756,7 @@
 				D6E6C23DDDD513ADF5031D91 /* PunctuationSettingsView.swift in Sources */,
 				9055E4A82FF5D9319DBE6173 /* QuickAddHotkeySettingsView.swift in Sources */,
 				96F225A02B7EE1939089058C /* QuickAddPrefs.swift in Sources */,
+				184054087CA81175FE418E4B /* RegistrationApplyCopy.swift in Sources */,
 				78E9340AD079DED1A8011A95 /* RimeBehaviorPrefs.swift in Sources */,
 				0C2D08E8E8729C07352E374A /* RimeResourceDeployer.swift in Sources */,
 				84B7F4B0AD083AA5280BF698 /* RoundedChromeView.swift in Sources */,
@@ -797,6 +804,7 @@
 				C727853AB84E489ECF76AE7E /* QuickAddHotkeySettingsView.swift in Sources */,
 				1A41650B20E3993B4E6C7E81 /* QuickAddPrefs.swift in Sources */,
 				179B4B2F64F4F21E6605C608 /* QuickAddWordPanel.swift in Sources */,
+				CAE070844E8F33030A3826C9 /* RegistrationApplyCopy.swift in Sources */,
 				06F9F1DE3C028705EDA3F6F9 /* RimeBehaviorPrefs.swift in Sources */,
 				E95376FACDA911D591856DDD /* RimeBridge.mm in Sources */,
 				395CF399073BC362344F9142 /* RimeConfigDeploy.swift in Sources */,
@@ -916,7 +924,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -931,7 +939,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -950,7 +958,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -965,7 +973,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -983,7 +991,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
@@ -991,7 +999,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.inputmethod.meifengwubi.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
@@ -1005,7 +1013,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1020,7 +1028,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",
@@ -1038,7 +1046,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEFINES_MODULE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = IME/PrefsPane/Info.plist;
@@ -1046,7 +1054,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.kylebing.inputmethod.meifengwubi.Preferences;
 				PRODUCT_NAME = Preferences;
 				SDKROOT = macosx;
@@ -1060,7 +1068,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1075,7 +1083,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/librime-static.xcframework/macos-arm64_x86_64",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lrime",

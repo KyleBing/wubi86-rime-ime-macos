@@ -30,21 +30,19 @@ enum WubiCloudAPI {
         let dict_sync_max_chars: Int?
     }
 
-    private static let maxCharsCacheLock = NSLock()
-    private static var maxCharsCache: (value: Int, at: Date)?
-    private static let maxCharsCacheTTL: TimeInterval = 300
+    private static let publicConfigCacheLock = NSLock()
+    private static var publicConfigCache: (config: PublicSystemConfig, at: Date)?
+    private static let publicConfigCacheTTL: TimeInterval = 300
 
-    /// 公开配置中的同步字符上限；失败回退本地默认。短时缓存避免连续 push 重复请求。
-    static func fetchDictSyncMaxChars(baseURL: String = WubiCloudConfig.baseURL) async -> Int {
-        maxCharsCacheLock.lock()
-        if let cached = maxCharsCache, Date().timeIntervalSince(cached.at) < maxCharsCacheTTL {
-            let value = cached.value
-            maxCharsCacheLock.unlock()
-            return value
+    private static func fetchPublicSystemConfig(baseURL: String) async -> PublicSystemConfig? {
+        publicConfigCacheLock.lock()
+        if let cached = publicConfigCache, Date().timeIntervalSince(cached.at) < publicConfigCacheTTL {
+            let config = cached.config
+            publicConfigCacheLock.unlock()
+            return config
         }
-        maxCharsCacheLock.unlock()
+        publicConfigCacheLock.unlock()
 
-        let fallback = WubiCloudConfig.syncMaxContentLength
         do {
             let url = try makeURL(base: baseURL, path: "system-config")
             var request = URLRequest(url: url)
@@ -52,15 +50,22 @@ enum WubiCloudAPI {
             let (data, response) = try await URLSession.shared.data(for: request)
             try validateHTTP(response)
             let envelope = try JSONDecoder().decode(Envelope<PublicSystemConfig>.self, from: data)
-            let value = envelope.data?.dict_sync_max_chars ?? 0
-            let maxChars = value > 0 ? value : fallback
-            maxCharsCacheLock.lock()
-            maxCharsCache = (maxChars, Date())
-            maxCharsCacheLock.unlock()
-            return maxChars
+            guard let config = envelope.data else { return nil }
+            publicConfigCacheLock.lock()
+            publicConfigCache = (config, Date())
+            publicConfigCacheLock.unlock()
+            return config
         } catch {
-            return fallback
+            return nil
         }
+    }
+
+    /// 公开配置中的同步字符上限；失败回退本地默认。短时缓存避免连续 push 重复请求。
+    static func fetchDictSyncMaxChars(baseURL: String = WubiCloudConfig.baseURL) async -> Int {
+        let fallback = WubiCloudConfig.syncMaxContentLength
+        guard let config = await fetchPublicSystemConfig(baseURL: baseURL) else { return fallback }
+        let value = config.dict_sync_max_chars ?? 0
+        return value > 0 ? value : fallback
     }
 
     private struct Envelope<T: Decodable>: Decodable {

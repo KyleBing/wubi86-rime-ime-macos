@@ -76,7 +76,8 @@ final class AccountSyncSettingsView: NSView {
         registerInfoLabel.font = .systemFont(ofSize: 12)
         registerInfoLabel.textColor = .secondaryLabelColor
         registerInfoLabel.preferredMaxLayoutWidth = 460
-        registerInfoLabel.stringValue = "付费申请同步账号，实现多端个人用户词同步。"
+        registerInfoLabel.stringValue = RegistrationApplyCopy.hint
+
         registerApplyButton.target = self
         registerApplyButton.action = #selector(openRegisterApplyPage)
         registerApplyButton.bezelStyle = .rounded
