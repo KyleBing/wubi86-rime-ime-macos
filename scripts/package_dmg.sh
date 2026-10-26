@@ -269,8 +269,23 @@ notarize() {
   else
     return 1
   fi
-  xcrun stapler staple "$dmg"
-  echo "公证并装订完成。"
+  # 票据已经 Accepted，但 stapler 还要联网去 Apple 取回来。
+  # CI 上偶发 -1005「The network connection was lost」会返回 Error 68，重试几次即可。
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    if xcrun stapler staple "$dmg" && xcrun stapler validate "$dmg"; then
+      echo "公证并装订完成。"
+      return 0
+    fi
+    if [[ "$attempt" -lt 5 ]]; then
+      echo "装订第 ${attempt} 次失败（多为网络瞬时故障），$((attempt * 10)) 秒后重试…"
+      sleep $((attempt * 10))
+    fi
+  done
+  # 没装订上不阻断发版：公证已通过，用户联网首次打开仍可正常校验
+  echo "::warning::票据装订失败，DMG 已公证但未 staple，用户首次打开需联网校验。"
+  echo "警告: 未能装订公证票据，DMG 已公证但未 staple。"
+  return 0
 }
 
 # 未指定时，用钥匙串里已经存好的公证配置。没有该配置时 notarytool 会立刻报错，不会联网。
