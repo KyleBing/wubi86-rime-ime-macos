@@ -46,6 +46,8 @@ https://kylebing.cn/wubi/portal/
 
 推 `v1.1.0` 这类标签时，`.github/workflows/release.yml` 会在 macOS runner 上打包 DMG 并发布到**本仓库**的 Releases，更新说明取自 `CHANGELOG.md` 对应版本。发版前先把版本号写进 `project.yml`（`MARKETING_VERSION`）并提交；标签与版本不一致时工作流会直接失败。
 
+Release 说明末尾会拼上 `docs/release-notes-footer.md`（「无法打开」的处理办法），`update.json` 里的 `notes` 只用 `CHANGELOG.md` 的正文，不带上这段。
+
 附件名固定为 `MeifengWubi-macOS.dmg`，所以说明站只用一条不变的地址：
 
 ```

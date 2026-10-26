@@ -135,7 +135,9 @@ jobs:
           if [ ! -s notes.md ]; then
             echo "v$VERSION" > notes.md
           fi
-          cat notes.md
+          # Release 页面在更新说明后附「无法打开」处理办法；update.json 的 notes 只用更新说明
+          cat notes.md docs/release-notes-footer.md > release-notes.md
+          cat release-notes.md
 
       # 客户端只读这个附件：releases/latest/download/update.json
       - name: 生成更新清单
@@ -232,10 +234,10 @@ jobs:
           for f in dist/*.delta; do [ -e "$f" ] && FILES+=("$f"); done
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TITLE" --notes-file notes.md --latest
+            gh release edit "$TAG" --title "$TITLE" --notes-file release-notes.md --latest
             gh release upload "$TAG" "${FILES[@]}" --clobber
           else
-            gh release create "$TAG" "${FILES[@]}" --title "$TITLE" --notes-file notes.md --latest
+            gh release create "$TAG" "${FILES[@]}" --title "$TITLE" --notes-file release-notes.md --latest
           fi
           echo "已发布：https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
           echo "固定下载：https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/${ASSET_NAME}"

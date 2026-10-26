@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Sparkle 由 SPM 下载时已自带 Sparkle 团队的签名。
+	  启用强化运行时（hardened runtime）后，库校验只允许加载同一 Team ID 的库，
+	  自签名包会被 dyld 直接拒绝：Library not loaded: @rpath/Sparkle.framework/Versions/B/Sparkle
+	  打包脚本虽会按自己的证书重签，但本地 Xcode 自签名构建没有证书可用，只能靠这个授权放行。
+	-->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

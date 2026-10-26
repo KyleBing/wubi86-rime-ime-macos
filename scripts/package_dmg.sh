@@ -135,7 +135,13 @@ if [[ -d "$SPARKLE" ]]; then
     codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE"
   fi
 fi
-sign_bundle "$STAGE/${APP_NAME}.app"
+# 主 App 带「允许加载不同签名的库」授权，重签时必须显式带上，否则会被丢掉
+APP_ENTITLEMENTS="$ROOT/App/MeifengWubi.entitlements"
+if [[ "$ADHOC" == "1" ]]; then
+  codesign --force --options runtime --entitlements "$APP_ENTITLEMENTS" --sign "$SIGN_IDENTITY" "$STAGE/${APP_NAME}.app"
+else
+  codesign --force --options runtime --timestamp --entitlements "$APP_ENTITLEMENTS" --sign "$SIGN_IDENTITY" "$STAGE/${APP_NAME}.app"
+fi
 codesign --verify --deep --strict --verbose=2 "$STAGE/${APP_NAME}.app"
 
 # 窗口背景：箭头 + 一句安装说明。失败也不影响出包。
