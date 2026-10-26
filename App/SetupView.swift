@@ -165,10 +165,10 @@ struct SetupView: View {
                     }
                     HStack(spacing: 4) {
                         Text("QQ 群：")
-                        Text("878750538").textSelection(.enabled)
+                        Text("1064664481").textSelection(.enabled)
                         Button("复制") {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString("878750538", forType: .string)
+                            NSPasteboard.general.setString("1064664481", forType: .string)
                             message = "已复制 QQ 群号"
                         }
                         .controlSize(.small)

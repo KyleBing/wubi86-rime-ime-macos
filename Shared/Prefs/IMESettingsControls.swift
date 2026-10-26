@@ -752,7 +752,7 @@ private final class SettingsRootView: NSView {
         list.alignment = .leading
         list.spacing = 8
         list.addArrangedSubview(contactRow(label: "邮箱", value: "kylebing@163.com"))
-        list.addArrangedSubview(contactRow(label: "QQ 群", value: "878750538"))
+        list.addArrangedSubview(contactRow(label: "QQ 群", value: "1064664481"))
         return list
     }
 
