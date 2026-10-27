@@ -24,6 +24,11 @@ final class AccountSyncSettingsView: NSView {
     private let registerInfoLabel = NSTextField(wrappingLabelWithString: "")
     private let registerApplyButton = NSButton(title: "在浏览器中申请注册", target: nil, action: nil)
     private let loginForm = NSStackView()
+    // 账号数据区：删除线上同步数据 / 注销账号
+    private let accountDataSection = NSStackView()
+    private let accountDataInfo = NSTextField(wrappingLabelWithString: "")
+    private let clearSyncButton = NSButton(title: "删除线上同步数据", target: nil, action: nil)
+    private let destroyAccountButton = NSButton(title: "注销账号", target: nil, action: nil)
 
     private var busy = false
 
@@ -82,6 +87,23 @@ final class AccountSyncSettingsView: NSView {
         registerApplyButton.action = #selector(openRegisterApplyPage)
         registerApplyButton.bezelStyle = .rounded
 
+        clearSyncButton.target = self
+        clearSyncButton.action = #selector(clearSyncClicked)
+        clearSyncButton.bezelStyle = .rounded
+        destroyAccountButton.target = self
+        destroyAccountButton.action = #selector(destroyAccountClicked)
+        destroyAccountButton.bezelStyle = .rounded
+        accountDataInfo.font = .systemFont(ofSize: 12)
+        accountDataInfo.textColor = .secondaryLabelColor
+        accountDataInfo.preferredMaxLayoutWidth = 460
+        accountDataInfo.stringValue = "删除线上同步数据：清空云端备份的个人词库，同步次数归零；本机词库和账号资料不受影响。\n注销账号：永久删除账号及全部线上数据（个人词库备份、本人提交的词条、邀请码、邮箱验证记录、本人提交的注册申请），无法登录也无法恢复；本机词库仍保留在本地。\n两项操作都需要输入完整账号邮箱后才能执行。"
+        accountDataSection.orientation = .vertical
+        accountDataSection.alignment = .leading
+        accountDataSection.spacing = 8
+        accountDataSection.addArrangedSubview(sectionTitle("账号数据"))
+        accountDataSection.addArrangedSubview(accountDataInfo)
+        accountDataSection.addArrangedSubview(buttonRow([clearSyncButton, destroyAccountButton]))
+
         let root = NSStackView(views: [
             sectionTitle("登录"),
             accountLabel,
@@ -90,7 +112,9 @@ final class AccountSyncSettingsView: NSView {
             statusLabel,
             sectionTitle("申请注册"),
             registerInfoLabel,
-            buttonRow([registerApplyButton])
+            buttonRow([registerApplyButton]),
+            // 账号数据区放在申请注册下方
+            accountDataSection
         ])
         root.orientation = .vertical
         root.alignment = .leading
@@ -122,6 +146,8 @@ final class AccountSyncSettingsView: NSView {
         }
         loginForm.isHidden = loggedIn
         logoutButton.isHidden = !loggedIn
+        // 账号数据只在已登录时展示
+        accountDataSection.isHidden = !loggedIn
         loginButton.isEnabled = !busy
     }
 
@@ -179,6 +205,103 @@ final class AccountSyncSettingsView: NSView {
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.stringValue = "已退出登录"
         refresh()
+    }
+
+    // 删除线上同步数据：只清空云端个人词库，账号保持登录；需输入完整账号邮箱确认
+    @objc private func clearSyncClicked() {
+        guard !busy else { return }
+        guard let mail = confirmByEmail(
+            title: "删除线上同步数据",
+            message: "云端备份的个人词库会被删除，同步次数归零。本机词库和账号资料不受影响，下次自动同步时会重新上传本机词库。",
+            confirmTitle: "删除"
+        ) else { return }
+        busy = true
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.stringValue = "正在删除线上同步数据…（\(mail)）"
+        refresh()
+        Task {
+            do {
+                let message = try await WubiCloudAPI.clearSyncData()
+                await MainActor.run {
+                    self.statusLabel.textColor = .systemGreen
+                    self.statusLabel.stringValue = message
+                    self.busy = false
+                    self.refresh()
+                }
+            } catch {
+                await MainActor.run {
+                    self.statusLabel.textColor = .systemRed
+                    self.statusLabel.stringValue = error.localizedDescription
+                    self.busy = false
+                    self.refresh()
+                }
+            }
+        }
+    }
+
+    // 注销账号：先输入完整邮箱，再在服务端删除全部用户数据并清本地登录态
+    @objc private func destroyAccountClicked() {
+        guard !busy else { return }
+        guard confirmByEmail(
+            title: "注销账号",
+            message: "注销会永久删除账号资料、云端个人词库、本人提交的词条、邀请码、邮箱验证记录和本人提交的注册申请。注销后无法登录，也无法恢复；本机词库仍保留在本地。",
+            confirmTitle: "永久注销"
+        ) != nil else { return }
+        busy = true
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.stringValue = "正在注销…"
+        refresh()
+        Task {
+            do {
+                let message = try await WubiCloudAPI.destroyAccount()
+                await MainActor.run {
+                    WubiCloudConfig.logout()
+                    self.passwordField.stringValue = ""
+                    self.statusLabel.textColor = .secondaryLabelColor
+                    self.statusLabel.stringValue = message
+                    self.busy = false
+                    self.refresh()
+                }
+            } catch {
+                await MainActor.run {
+                    self.statusLabel.textColor = .systemRed
+                    self.statusLabel.stringValue = error.localizedDescription
+                    self.busy = false
+                    self.refresh()
+                }
+            }
+        }
+    }
+
+    // 破坏性操作确认：要求完整输入当前账号邮箱，一致才返回输入的邮箱，否则返回 nil
+    private func confirmByEmail(title: String, message: String, confirmTitle: String) -> String? {
+        let expected = (WubiCloudConfig.userInfo?.email ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !expected.isEmpty else {
+            statusLabel.textColor = .systemRed
+            statusLabel.stringValue = "没有读到账号邮箱，请重新登录后再试"
+            return nil
+        }
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message + "\n\n请输入账号邮箱 \(expected) 以确认。"
+        alert.addButton(withTitle: confirmTitle)
+        alert.addButton(withTitle: "取消")
+        // 邮箱输入框放在按钮下方，和系统确认框的输入习惯一致
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        field.placeholderString = "输入账号邮箱"
+        field.font = .systemFont(ofSize: 13)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        let typed = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard typed.lowercased() == expected.lowercased() else {
+            statusLabel.textColor = .systemRed
+            statusLabel.stringValue = "邮箱不一致，操作已取消"
+            return nil
+        }
+        return typed
     }
 
     private func sectionTitle(_ text: String) -> NSTextField {

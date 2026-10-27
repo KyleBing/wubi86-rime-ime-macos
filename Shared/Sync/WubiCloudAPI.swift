@@ -286,6 +286,50 @@ enum WubiCloudAPI {
         return list
     }
 
+    // 删除线上同步数据：清空云端个人词库备份，账号与本地词库保留
+    @discardableResult
+    static func clearSyncData(
+        userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
+        baseURL: String = WubiCloudConfig.baseURL
+    ) async throws -> String {
+        guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
+        let url = try makeURL(base: baseURL, path: "user/clear-sync-data")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        applyAuth(userInfo, to: &request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTP(response)
+        applyRenewedToken(from: response)
+        let envelope = try JSONDecoder().decode(Envelope<EmptyData>.self, from: data)
+        guard envelope.success else {
+            throw APIError.serverMessage(envelope.message ?? "删除失败")
+        }
+        // 云端已无备份，清掉本地同步时间
+        WubiCloudConfig.lastSyncAt = nil
+        return envelope.message ?? "线上同步数据已删除"
+    }
+
+    // 注销账号：删除服务端全部用户数据，成功后调用方清理本地登录态
+    @discardableResult
+    static func destroyAccount(
+        userInfo: WubiCloudUserInfo? = WubiCloudConfig.userInfo,
+        baseURL: String = WubiCloudConfig.baseURL
+    ) async throws -> String {
+        guard let userInfo, userInfo.isLoggedIn else { throw APIError.notLoggedIn }
+        let url = try makeURL(base: baseURL, path: "user/destroy-account")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        applyAuth(userInfo, to: &request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTP(response)
+        applyRenewedToken(from: response)
+        let envelope = try JSONDecoder().decode(Envelope<EmptyData>.self, from: data)
+        guard envelope.success else {
+            throw APIError.serverMessage(envelope.message ?? "注销失败")
+        }
+        return envelope.message ?? "账号已注销"
+    }
+
     private static func makeURL(base: String, path: String) throws -> URL {
         let root = WubiCloudConfig.resolveBaseURL(base)
         let cleaned = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
