@@ -252,9 +252,12 @@ enum IMEAppearancePrefs {
         }
     }
 
-    // 是否在每个候选词后面显示 Rime 提供的备注（comment）
+    // 是否在每个候选词后面显示 Rime 提供的备注（comment）。默认显示
     static var showCommentInPanel: Bool {
-        get { defaults.bool(forKey: Keys.showComment) }
+        get {
+            if defaults.object(forKey: Keys.showComment) == nil { return true }
+            return defaults.bool(forKey: Keys.showComment)
+        }
         set {
             defaults.set(newValue, forKey: Keys.showComment)
             notify()
