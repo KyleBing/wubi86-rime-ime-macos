@@ -23,6 +23,7 @@ final class AccountSyncSettingsView: NSView {
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
     private let registerInfoLabel = NSTextField(wrappingLabelWithString: "")
     private let registerApplyButton = NSButton(title: "在浏览器中申请注册", target: nil, action: nil)
+    private let registerSection = NSStackView()
     private let loginForm = NSStackView()
     // 账号数据区：删除线上同步数据 / 注销账号
     private let accountDataSection = NSStackView()
@@ -86,6 +87,12 @@ final class AccountSyncSettingsView: NSView {
         registerApplyButton.target = self
         registerApplyButton.action = #selector(openRegisterApplyPage)
         registerApplyButton.bezelStyle = .rounded
+        registerSection.orientation = .vertical
+        registerSection.alignment = .leading
+        registerSection.spacing = 8
+        registerSection.addArrangedSubview(sectionTitle("申请注册"))
+        registerSection.addArrangedSubview(registerInfoLabel)
+        registerSection.addArrangedSubview(buttonRow([registerApplyButton]))
 
         clearSyncButton.target = self
         clearSyncButton.action = #selector(clearSyncClicked)
@@ -110,10 +117,7 @@ final class AccountSyncSettingsView: NSView {
             loginForm,
             logoutButton,
             statusLabel,
-            sectionTitle("申请注册"),
-            registerInfoLabel,
-            buttonRow([registerApplyButton]),
-            // 账号数据区放在申请注册下方
+            registerSection,
             accountDataSection
         ])
         root.orientation = .vertical
@@ -146,6 +150,8 @@ final class AccountSyncSettingsView: NSView {
         }
         loginForm.isHidden = loggedIn
         logoutButton.isHidden = !loggedIn
+        // 已登录不再展示申请注册
+        registerSection.isHidden = loggedIn
         // 账号数据只在已登录时展示
         accountDataSection.isHidden = !loggedIn
         loginButton.isEnabled = !busy

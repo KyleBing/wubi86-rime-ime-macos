@@ -237,6 +237,7 @@ final class MeifengInputController: IMKInputController {
         log("key=\(mapped.keyCode) handled=\(handled) chars=\(event.characters ?? "")")
         if handled {
             applyEmptyCodeClear()
+            applyUniqueFourCodeSelect()
             return consumeRimeUpdate()
         }
         if RimeSession.shared.bridgeEngine.snapshot()?.isComposing == true {
@@ -573,6 +574,18 @@ final class MeifengInputController: IMKInputController {
         guard Self.isFullFourCode(code(for: preedit)), snap.candidates.isEmpty else { return }
         guard DateTimeCandidates.candidates(for: preedit) == nil else { return }
         engine.clearComposition()
+    }
+
+    // 四码唯一：打满四码且整表只有一个候选时上屏第一项
+    private func applyUniqueFourCodeSelect() {
+        guard RimeBehaviorPrefs.autoSelectUniqueFourCode else { return }
+        let engine = RimeSession.shared.bridgeEngine
+        guard let snap = engine.peekSnapshot(), snap.isComposing else { return }
+        let preedit = snap.preedit ?? ""
+        guard Self.isFullFourCode(code(for: preedit)) else { return }
+        guard DateTimeCandidates.candidates(for: preedit) == nil else { return }
+        guard engine.allCandidateTexts().count == 1 else { return }
+        _ = engine.selectCandidate(index: 0)
     }
 
     // 当前实际输入的编码

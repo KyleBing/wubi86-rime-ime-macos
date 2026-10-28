@@ -513,7 +513,16 @@ private final class SettingsRootView: NSView {
         settings.alignment = .leading
         settings.spacing = 14
 
-        // 空码清空 / 回车清码：输入法按键时直接判断，改完立即生效，不需要重新部署
+        // 四码唯一 / 空码清空 / 回车清码：输入法按键时直接判断，改完立即生效，不需要重新部署
+        let uniqueFour = NSButton(
+            checkboxWithTitle: "",
+            target: ToggleTarget.shared,
+            action: #selector(ToggleTarget.autoSelectUniqueFourCodeChanged(_:))
+        )
+        uniqueFour.state = RimeBehaviorPrefs.autoSelectUniqueFourCode ? .on : .off
+        uniqueFour.toolTip = "输入满四码且只有一个候选时自动上屏"
+        settings.addArrangedSubview(formRow("四码唯一上屏", uniqueFour, settingHint(uniqueFour.toolTip ?? "")))
+
         let emptyCode = NSButton(
             checkboxWithTitle: "",
             target: ToggleTarget.shared,
@@ -582,7 +591,7 @@ private final class SettingsRootView: NSView {
         )
         settings.addArrangedSubview(formRow("排序", rank))
 
-        let note = NSTextField(wrappingLabelWithString: "空码清空和回车清码在按键时直接判断，改完立即生效；z 开头的拼音反查和 date / time 等预置编码不参与。翻页与选词写入 Rime 配置，下次按键时生效。造词与排序快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选。排序只改被拖动词条的权重，幅度为 5 或 10。")
+        let note = NSTextField(wrappingLabelWithString: "四码唯一上屏、空码清空和回车清码在按键时直接判断，改完立即生效；z 开头的拼音反查和 date / time 等预置编码不参与。翻页与选词写入 Rime 配置，下次按键时生效。造词与排序快捷键立即作用于输入法。候选出现时，用与造词相同的修饰键加数字（默认 ⌃⌥1）可删除对应候选。排序只改被拖动词条的权重，幅度为 5 或 10。")
         note.textColor = .secondaryLabelColor
         note.font = .systemFont(ofSize: 11)
         note.preferredMaxLayoutWidth = 460
@@ -590,7 +599,7 @@ private final class SettingsRootView: NSView {
 
         return page(
             title: "输入习惯",
-            subtitle: "设置打码与回车清码、翻页、快捷选词、造词和排序快捷键。",
+            subtitle: "设置四码唯一上屏、空码清空、回车清码、翻页、快捷选词、造词和排序快捷键。",
             content: card(title: "打码与按键", subtitle: nil, content: settings)
         )
     }
@@ -678,6 +687,7 @@ private final class SettingsRootView: NSView {
             ("选词与翻页", "与普通候选相同：数字键、空格、; ' 选词，翻页键按「输入习惯」页设置")
         ])
         let lookup = helpList([
+            ("z", "单独按 z 调出上次上屏的字词，空格上屏"),
             ("z + 拼音", "拼音反查：不会五笔拆字时，以 z 开头输入拼音，候选中选字上屏。单字后面会标出词库里的五笔编码，词组不现造编码"),
             ("'", "反查结束符，拼音输完可按 ' 结束反查")
         ])
@@ -693,7 +703,7 @@ private final class SettingsRootView: NSView {
             ("- = / , .", "候选翻页，方式在「输入习惯」页设置"),
             ("Esc", "清空当前编码"),
             ("回车", "默认直接上屏已输入的编码字母；开启回车清码后改为清空编码"),
-            ("四码唯一", "输入满四码且只有一个候选时自动上屏"),
+            ("四码唯一上屏", "输入满四码且只有一个候选时自动上屏。可在「输入习惯」页开启，默认关闭"),
             ("空码清空", "打满四码仍无候选时自动清空编码。可在「输入习惯」页开启"),
             ("回车清码", "编码中按回车只清空编码，不上屏字母。可在「输入习惯」页开启")
         ])
@@ -891,7 +901,8 @@ private final class SettingsRootView: NSView {
     private func formRow(_ title: String, _ controls: NSView...) -> NSView {
         let label = NSTextField(labelWithString: title)
         label.alignment = .right
-        label.widthAnchor.constraint(equalToConstant: 82).isActive = true
+        // 宽一点以容纳「四码唯一上屏」
+        label.widthAnchor.constraint(equalToConstant: 108).isActive = true
         let row = NSStackView(views: [label] + controls)
         row.orientation = .horizontal
         row.alignment = .centerY
@@ -1219,6 +1230,10 @@ private final class ToggleTarget: NSObject {
 
     @objc func caretModeHintChanged(_ sender: NSButton) {
         IMEAppearancePrefs.showCaretModeHint = sender.state == .on
+    }
+
+    @objc func autoSelectUniqueFourCodeChanged(_ sender: NSButton) {
+        RimeBehaviorPrefs.autoSelectUniqueFourCode = sender.state == .on
     }
 
     @objc func clearEmptyCodeChanged(_ sender: NSButton) {

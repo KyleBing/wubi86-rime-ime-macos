@@ -12,11 +12,16 @@ final class RimeEngineLibrime: RimeEngine {
         // 共享目录单独指向内置预设，避免用户目录没有 default.yaml 时编译不出方案
         let shared = RimeResourceDeployer.resolveSharedDataURL() ?? dirs.user
         RimeResourceDeployer.ensureMissingImportedDicts(at: dirs.user)
+        // 关掉方案里旧的 auto_select 后需要重新编译，否则本轮仍会四码唯一自动上屏
+        let force = forceFullCheck || UserDictWriter.peekNeedsDeploy()
         try bridge.start(
             withSharedDir: shared.path,
             userDir: dirs.user.path,
-            forceFullCheck: forceFullCheck
+            forceFullCheck: force
         )
+        if force {
+            _ = UserDictWriter.consumeNeedsDeploy()
+        }
         // 不强制切换方案，使用该目录 schema_list 里的默认方案
         isReady = true
     }

@@ -79,6 +79,19 @@ enum RimeBehaviorPrefs {
         UserDefaults(suiteName: suiteName) ?? .standard
     }
 
+    /// 四码唯一：打满四码且只有一个候选时自动上屏。默认关；方案里的 auto_select 已关闭，由输入法按开关处理
+    static var autoSelectUniqueFourCode: Bool {
+        get {
+            guard defaults.object(forKey: Keys.autoSelectUniqueFourCode) != nil else { return false }
+            return defaults.bool(forKey: Keys.autoSelectUniqueFourCode)
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.autoSelectUniqueFourCode)
+            defaults.synchronize()
+            DistributedNotificationCenter.default().post(name: didChangeNotification, object: nil)
+        }
+    }
+
     /// 空码清空：打满四码仍没有候选时清空编码。默认关，与方案里的 auto_clear 注释状态一致
     static var clearEmptyCode: Bool {
         get {
@@ -217,6 +230,7 @@ enum RimeBehaviorPrefs {
         static let secondThirdKeys = "rime.secondThirdKeys"
         static let clearEmptyCode = "rime.clearEmptyCode"
         static let enterClearsCode = "rime.enterClearsCode"
+        static let autoSelectUniqueFourCode = "rime.autoSelectUniqueFourCode"
     }
 }
 

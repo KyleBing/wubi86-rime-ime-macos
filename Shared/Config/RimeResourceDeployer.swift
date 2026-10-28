@@ -113,6 +113,7 @@ enum RimeResourceDeployer {
         let defaults = UserDefaults(suiteName: AppGroupPaths.appGroupId) ?? .standard
         let user = resolveUserDataURL()
         if containsSchemaFile(at: user) {
+            disableSchemaAutoSelectIfNeeded(at: user)
             return (user, user)
         }
         copyMissingBundledFiles(into: user)
@@ -128,12 +129,14 @@ enum RimeResourceDeployer {
                 atPath: user.appendingPathComponent("wubi86_jidian.dict.yaml").path
             )
             if schemaOK && dictOK {
+                disableSchemaAutoSelectIfNeeded(at: user)
                 return (user, user)
             }
         }
         guard (try? forceSyncBundledResources(overwriteUserDict: false)) != nil else {
             return nil
         }
+        disableSchemaAutoSelectIfNeeded(at: user)
         return (user, user)
     }
 
@@ -221,6 +224,22 @@ enum RimeResourceDeployer {
                 continue
             }
             try? fm.copyItem(at: item, to: target)
+        }
+    }
+
+    // 已安装用户目录里的方案仍可能是旧的 auto_select: true，关掉后四码唯一才交给设置开关
+    @discardableResult
+    static func disableSchemaAutoSelectIfNeeded(at root: URL) -> Bool {
+        let url = root.appendingPathComponent(schemaFileName)
+        guard var text = try? String(contentsOf: url, encoding: .utf8),
+              text.contains("auto_select: true") else { return false }
+        text = text.replacingOccurrences(of: "auto_select: true", with: "auto_select: false")
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            UserDictWriter.markNeedsDeploy()
+            return true
+        } catch {
+            return false
         }
     }
 
