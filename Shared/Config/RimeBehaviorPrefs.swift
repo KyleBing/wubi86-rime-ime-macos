@@ -79,10 +79,10 @@ enum RimeBehaviorPrefs {
         UserDefaults(suiteName: suiteName) ?? .standard
     }
 
-    /// 四码唯一：打满四码且只有一个候选时自动上屏。默认关；方案里的 auto_select 已关闭，由输入法按开关处理
+    /// 四码唯一：打满四码且只有一个候选时自动上屏。默认开；方案里的 auto_select 已关闭，由输入法按开关处理
     static var autoSelectUniqueFourCode: Bool {
         get {
-            guard defaults.object(forKey: Keys.autoSelectUniqueFourCode) != nil else { return false }
+            guard defaults.object(forKey: Keys.autoSelectUniqueFourCode) != nil else { return true }
             return defaults.bool(forKey: Keys.autoSelectUniqueFourCode)
         }
         set {
